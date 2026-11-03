@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+
+# builds and test output
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# environment and secrets — only .env.example files are committed
+.env
+.env.*
+!.env.example
+
+# local storage (uploads, generated reports)
+storage/
+
+# logs
+*.log
+logs/
+
+# editors and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Original Word specs and private notes (incl. credentials). docs/*.md is the source of truth.
+Documentations/
+~$*
+*.tmp

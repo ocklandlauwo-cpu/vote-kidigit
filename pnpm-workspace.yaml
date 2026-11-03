@@ -1,0 +1,13 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'e2e'
+saveExact: true
+engineStrict: true
+# Tech Stack 5.3: the only packages allowed to run install scripts
+allowBuilds:
+  argon2: true
+  puppeteer: true
+  prisma: true
+  '@prisma/engines': true
+  sharp: true
