@@ -22,7 +22,15 @@ export default defineConfig(
   {
     languageOptions: {
       parserOptions: {
-        projectService: { allowDefaultProject: ['*.mjs', '*.cjs', '*.js'] },
+        projectService: {
+          allowDefaultProject: [
+            '*.mjs',
+            '*.cjs',
+            '*.js',
+            'playwright.config.ts',
+            'apps/api/scripts/*.mjs',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },

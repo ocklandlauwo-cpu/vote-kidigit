@@ -478,7 +478,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 **Phase 0 — Project setup**
 
 - ☑ 1. Initialize the monorepo
-- ☐ 2. Scaffold the apps and shared package
+- ☑ 2. Scaffold the apps and shared package
 - ☐ 3. Local database and Redis
 - ☐ 4. Continuous integration
 - ☐ 5. Design tokens and component gallery
