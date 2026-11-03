@@ -32,6 +32,13 @@ const shared = spawnSync('pnpm', ['--filter', '@vote-kidigit/shared', 'build'], 
 });
 if (shared.status !== 0) process.exit(shared.status ?? 1);
 
+const generate = spawnSync('pnpm', ['exec', 'prisma', 'generate'], {
+  cwd: apiDir,
+  stdio: 'inherit',
+  shell: isWindows,
+});
+if (generate.status !== 0) process.exit(generate.status ?? 1);
+
 // Start from an empty dist so the entry points launch only after the first fresh build;
 // a stale dist from `pnpm build` would start them before the watcher deletes and rebuilds it.
 rmSync(join(apiDir, 'dist'), { recursive: true, force: true });

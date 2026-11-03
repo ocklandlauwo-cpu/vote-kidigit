@@ -1,0 +1,53 @@
+# Development only: PostgreSQL 18.6 and Redis 7.2 with the same image tags as CI (Tech Stack 8.2).
+# Host ports 5433 / 6380 avoid clashing with a native PostgreSQL or Redis/Memurai on the default ports.
+# Start with scripts/dev-db-setup.sh, which also creates the database roles and apps/api/.env.
+name: vote-kidigit-dev
+
+services:
+  postgres:
+    image: postgres:18.6
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev
+      POSTGRES_DB: postgres
+      TZ: UTC
+    command: ['postgres', '-c', 'timezone=UTC']
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      # PostgreSQL 18 images keep PGDATA under /var/lib/postgresql/18/docker
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.2
+    # Tech Stack 9.3: password, noeviction (BullMQ never loses jobs), append-only file
+    command:
+      [
+        'redis-server',
+        '--requirepass',
+        'vk_redis_dev',
+        '--maxmemory',
+        '768mb',
+        '--maxmemory-policy',
+        'noeviction',
+        '--appendonly',
+        'yes',
+      ]
+    ports:
+      - '127.0.0.1:6380:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '-a', 'vk_redis_dev', '--no-auth-warning', 'ping']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  postgres-data:
+  redis-data:

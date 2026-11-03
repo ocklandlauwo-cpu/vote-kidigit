@@ -100,7 +100,7 @@ Never deploy to production while any event is Open.
 
 Resolved by the precedence rule or by the newer, more specific document; listed so they are not rediscovered.
 
-1. **Voting code storage.** Tech Stack says codes are hashed with argon2; Backend Schema 5.4 uses an HMAC-SHA256 fingerprint (`CODE_HMAC_KEY`) for lookup plus an AES-256-GCM copy (`CODE_ENCRYPTION_KEY`) for re-sending. Follow the Backend Schema; Tech Stack section 10 still needs its extra variables (Backend Schema 13.5).
+1. **Voting code storage.** Tech Stack says codes are hashed with argon2; Backend Schema 5.4 uses an HMAC-SHA256 fingerprint (`CODE_HMAC_KEY`) for lookup plus an AES-256-GCM copy (`CODE_ENCRYPTION_KEY`) for re-sending. Follow the Backend Schema. The extra variables (Backend Schema 13.5) are in `apps/api/.env.example` and the Zod env schema; Tech Stack section 10 itself is not yet updated.
 2. **Primary key default.** Tech Stack 11.3 says `@default(uuid())`; Backend Schema 1.2 uses PostgreSQL 18 `uuidv7()` (and `gen_random_uuid()` for ballots). Follow the Backend Schema.
 3. **Ballot write path.** Tech Stack 6.3 describes a `prisma.$transaction`; Backend Schema 11.4 moves it into the SQL function `app.cast_ballot()`. Follow the Backend Schema.
 4. **Icons in the voter app.** Design System 6 uses `@ant-design/icons` in both apps; Tech Stack 7.2 lists it only for the staff portal. Add it to the voter app list before step 24.
@@ -109,3 +109,9 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 ## Local development (Windows)
 
 PostgreSQL 18.6 and Redis 7.2 run in Docker using the same image tags as CI (Implementation Plan 3 allows this). Node 24.22.2 is managed with nvm-windows; pnpm 11.28.10 through Corepack.
+
+- `bash scripts/dev-db-setup.sh` starts `docker-compose.dev.yml`, creates the `vk_owner` / `vk_api` / `vk_readonly` roles and the `vote_kidigit` and `vote_kidigit_test` databases (`deploy/sql/000_roles.sql`), and writes `apps/api/.env` with fresh secrets if it does not exist. Safe to re-run.
+- Host ports are **5433** (PostgreSQL) and **6380** (Redis): this PC already runs a native PostgreSQL 18 service on 5432 and Memurai on 6379. Never change or stop those.
+- The API connects as `vk_api` (`DATABASE_URL`); Prisma CLI commands use `vk_owner` (`MIGRATION_DATABASE_URL`). In development only, `vk_owner` has `CREATEDB` for Prisma's shadow database.
+- API tests are partly integration tests: Docker PostgreSQL and Redis must be running and `apps/api/.env` must exist.
+- On Windows, stopping `pnpm dev` from a tool can leave Vite/Nest node processes holding ports 3000/5173/5174; check for them before restarting.

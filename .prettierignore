@@ -1,4 +1,5 @@
 pnpm-lock.yaml
+apps/api/src/generated/
 docs/
 Documentations/
 **/dist/

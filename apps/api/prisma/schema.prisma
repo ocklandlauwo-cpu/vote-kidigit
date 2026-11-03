@@ -1,0 +1,13 @@
+// Vote-Kidigit database schema (Backend Schema). Models are added from step 6 on;
+// RLS policies, functions, triggers and grants live as SQL in the same migrations.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "ballot", "audit"]
+}

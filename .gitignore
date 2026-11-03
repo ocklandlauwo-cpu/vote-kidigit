@@ -14,6 +14,9 @@ test-results/
 .env.*
 !.env.example
 
+# generated Prisma client (prisma generate runs before build, typecheck and test)
+apps/api/src/generated/
+
 # local storage (uploads, generated reports)
 storage/
 
