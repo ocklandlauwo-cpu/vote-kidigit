@@ -9,17 +9,26 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./design/tokens.css": "./src/design/tokens.css",
+    "./design/fonts/*": "./src/design/fonts/*"
   },
   "files": [
-    "dist"
+    "dist",
+    "src/design/tokens.css",
+    "src/design/fonts"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "jsdom": "29.1.1",
+    "vitest": "4.1.12"
   }
 }

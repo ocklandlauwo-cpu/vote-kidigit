@@ -1,0 +1,390 @@
+/*
+ * Vote-Kidigit design tokens (Design System 12.1). The only place raw colour, size and
+ * motion values live; components use the --vk-* variables. Imported first by both apps.
+ * The dark palette appears twice with identical declarations: once for the device setting
+ * (prefers-color-scheme) unless the user chose light, once for an explicit dark choice.
+ */
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable-Italic.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* primitives */
+  --vk-primary-50: #eef7fa;
+  --vk-primary-100: #d5ecf3;
+  --vk-primary-200: #a9d7e6;
+  --vk-primary-300: #72bbd3;
+  --vk-primary-400: #3d9cbd;
+  --vk-primary-500: #1a80a3;
+  --vk-primary-600: #0b6a8a;
+  --vk-primary-700: #09566f;
+  --vk-primary-800: #0a4559;
+  --vk-primary-900: #0b3646;
+  --vk-primary-950: #072330;
+  --vk-neutral-0: #ffffff;
+  --vk-neutral-50: #f4f6f8;
+  --vk-neutral-100: #e9edf1;
+  --vk-neutral-200: #d6dde3;
+  --vk-neutral-300: #b8c3cc;
+  --vk-neutral-400: #7f8c98;
+  --vk-neutral-500: #5e6b77;
+  --vk-neutral-600: #4c5864;
+  --vk-neutral-700: #36414b;
+  --vk-neutral-800: #232c35;
+  --vk-neutral-900: #161d24;
+  --vk-neutral-950: #0d1217;
+
+  /* semantic: surfaces and text (light) */
+  --vk-bg: var(--vk-neutral-50);
+  --vk-surface: var(--vk-neutral-0);
+  --vk-surface-raised: var(--vk-neutral-0);
+  --vk-surface-muted: var(--vk-neutral-50);
+  --vk-border: var(--vk-neutral-200);
+  --vk-border-strong: var(--vk-neutral-400);
+  --vk-text: var(--vk-neutral-900);
+  --vk-text-secondary: var(--vk-neutral-600);
+  --vk-text-tertiary: var(--vk-neutral-500);
+  --vk-text-disabled: var(--vk-neutral-400);
+  --vk-text-inverse: var(--vk-neutral-0);
+  --vk-primary: var(--vk-primary-600);
+  --vk-primary-hover: var(--vk-primary-700);
+  --vk-primary-active: var(--vk-primary-800);
+  --vk-on-primary: var(--vk-neutral-0);
+  --vk-primary-subtle: var(--vk-primary-50);
+  --vk-primary-subtle-text: var(--vk-primary-700);
+  --vk-focus: var(--vk-primary-500);
+  --vk-focus-soft: rgba(26, 128, 163, 0.24);
+  --vk-danger-soft: rgba(220, 38, 38, 0.2);
+  --vk-overlay: rgba(13, 18, 23, 0.48);
+  --vk-skeleton: var(--vk-neutral-100);
+  --vk-tooltip-bg: var(--vk-neutral-900);
+  --vk-logo-ink: var(--vk-primary-600);
+  --vk-logo-paper: #ffffff;
+  --vk-logo-slot: var(--vk-primary-800);
+
+  /* semantic: tones (light) */
+  --vk-success-fg: #15803d;
+  --vk-success-bg: #f0fdf4;
+  --vk-success-border: #bbf7d0;
+  --vk-success-solid: #15803d;
+  --vk-success-solid-hover: #166534;
+  --vk-on-success-solid: #ffffff;
+  --vk-warning-fg: #b45309;
+  --vk-warning-bg: #fffbeb;
+  --vk-warning-border: #fde68a;
+  --vk-warning-solid: #b45309;
+  --vk-warning-solid-hover: #92400e;
+  --vk-on-warning-solid: #ffffff;
+  --vk-danger-fg: #dc2626;
+  --vk-danger-bg: #fef2f2;
+  --vk-danger-border: #fecaca;
+  --vk-danger-solid: #dc2626;
+  --vk-danger-solid-hover: #b91c1c;
+  --vk-on-danger-solid: #ffffff;
+  --vk-violet-fg: #7c3aed;
+  --vk-violet-bg: #f5f3ff;
+  --vk-violet-border: #ddd6fe;
+  --vk-violet-solid: #7c3aed;
+  --vk-violet-solid-hover: #6d28d9;
+  --vk-on-violet-solid: #ffffff;
+  --vk-info-fg: var(--vk-primary-600);
+  --vk-info-bg: var(--vk-primary-50);
+  --vk-info-border: var(--vk-primary-200);
+  --vk-neutral-fg: var(--vk-neutral-600);
+  --vk-neutral-bg: var(--vk-neutral-100);
+  --vk-neutral-border: var(--vk-neutral-200);
+
+  /* organization brand (voter surfaces); overwritten at runtime by deriveBrandTokens */
+  --vk-brand: var(--vk-primary);
+  --vk-brand-hover: var(--vk-primary-hover);
+  --vk-on-brand: var(--vk-on-primary);
+  --vk-brand-subtle: var(--vk-primary-subtle);
+
+  /* type */
+  --vk-font-family:
+    Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --vk-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* staff scale (default); the voter app adds class vk-voter on <html>, the kiosk vk-kiosk */
+  --vk-font-h1-size: 24px;
+  --vk-font-h1-line: 32px;
+  --vk-font-h2-size: 20px;
+  --vk-font-h2-line: 28px;
+  --vk-font-h3-size: 16px;
+  --vk-font-h3-line: 24px;
+  --vk-font-h4-size: 14px;
+  --vk-font-h4-line: 22px;
+  --vk-font-body-lg-size: 16px;
+  --vk-font-body-lg-line: 24px;
+  --vk-font-body-size: 14px;
+  --vk-font-body-line: 22px;
+  --vk-font-body-sm-size: 12px;
+  --vk-font-body-sm-line: 20px;
+  --vk-font-label-size: 14px;
+  --vk-font-label-line: 22px;
+  --vk-font-caption-size: 12px;
+  --vk-font-caption-line: 16px;
+  --vk-font-overline-size: 12px;
+  --vk-font-overline-line: 16px;
+  --vk-font-stat-size: 30px;
+  --vk-font-stat-line: 38px;
+  --vk-font-code-size: 14px;
+  --vk-font-code-line: 22px;
+  --vk-font-display-size: 36px;
+  --vk-font-display-line: 44px;
+
+  /* space, radius, shadow, layers, motion */
+  --vk-space-0: 0;
+  --vk-space-0-5: 2px;
+  --vk-space-1: 4px;
+  --vk-space-2: 8px;
+  --vk-space-3: 12px;
+  --vk-space-4: 16px;
+  --vk-space-5: 20px;
+  --vk-space-6: 24px;
+  --vk-space-8: 32px;
+  --vk-space-10: 40px;
+  --vk-space-12: 48px;
+  --vk-space-16: 64px;
+  --vk-space-20: 80px;
+  --vk-radius-xs: 4px;
+  --vk-radius-sm: 6px;
+  --vk-radius-md: 8px;
+  --vk-radius-lg: 12px;
+  --vk-radius-xl: 16px;
+  --vk-radius-full: 9999px;
+  --vk-shadow-sm: 0 1px 2px rgba(13, 18, 23, 0.06), 0 4px 12px rgba(13, 18, 23, 0.08);
+  --vk-shadow-md: 0 4px 8px rgba(13, 18, 23, 0.06), 0 12px 32px rgba(13, 18, 23, 0.16);
+  --vk-z-base: 0;
+  --vk-z-sticky: 100;
+  --vk-z-sidebar: 200;
+  --vk-z-dropdown: 1000;
+  --vk-z-overlay: 1100;
+  --vk-z-modal: 1110;
+  --vk-z-toast: 1200;
+  --vk-z-tooltip: 1300;
+  --vk-duration-fast: 120ms;
+  --vk-duration-base: 200ms;
+  --vk-duration-slow: 300ms;
+  --vk-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --vk-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+.vk-voter {
+  --vk-font-h1-size: 28px;
+  --vk-font-h1-line: 36px;
+  --vk-font-h2-size: 24px;
+  --vk-font-h2-line: 32px;
+  --vk-font-h3-size: 20px;
+  --vk-font-h3-line: 28px;
+  --vk-font-h4-size: 18px;
+  --vk-font-h4-line: 26px;
+  --vk-font-body-lg-size: 18px;
+  --vk-font-body-lg-line: 28px;
+  --vk-font-body-size: 16px;
+  --vk-font-body-line: 24px;
+  --vk-font-body-sm-size: 14px;
+  --vk-font-body-sm-line: 20px;
+  --vk-font-label-size: 16px;
+  --vk-font-label-line: 24px;
+  --vk-font-caption-size: 13px;
+  --vk-font-caption-line: 18px;
+  --vk-font-stat-size: 32px;
+  --vk-font-stat-line: 40px;
+  --vk-font-code-size: 20px;
+  --vk-font-code-line: 28px;
+}
+
+/* voter scale x 1.125 */
+.vk-kiosk {
+  --vk-font-h1-size: 32px;
+  --vk-font-h1-line: 40px;
+  --vk-font-h2-size: 27px;
+  --vk-font-h2-line: 36px;
+  --vk-font-h3-size: 23px;
+  --vk-font-h3-line: 32px;
+  --vk-font-h4-size: 20px;
+  --vk-font-h4-line: 29px;
+  --vk-font-body-lg-size: 20px;
+  --vk-font-body-lg-line: 32px;
+  --vk-font-body-size: 18px;
+  --vk-font-body-line: 27px;
+  --vk-font-body-sm-size: 16px;
+  --vk-font-body-sm-line: 23px;
+  --vk-font-label-size: 18px;
+  --vk-font-label-line: 27px;
+  --vk-font-caption-size: 15px;
+  --vk-font-caption-line: 20px;
+  --vk-font-code-size: 23px;
+  --vk-font-code-line: 32px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --vk-font-display-size: 28px;
+    --vk-font-display-line: 36px;
+  }
+}
+
+/* dark: device setting, unless the user chose light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --vk-bg: var(--vk-neutral-950);
+    --vk-surface: var(--vk-neutral-900);
+    --vk-surface-raised: var(--vk-neutral-800);
+    --vk-surface-muted: var(--vk-neutral-800);
+    --vk-border: var(--vk-neutral-700);
+    --vk-border-strong: var(--vk-neutral-400);
+    --vk-text: var(--vk-neutral-50);
+    --vk-text-secondary: var(--vk-neutral-300);
+    --vk-text-tertiary: var(--vk-neutral-400);
+    --vk-text-disabled: var(--vk-neutral-600);
+    --vk-text-inverse: var(--vk-neutral-950);
+    --vk-primary: var(--vk-primary-400);
+    --vk-primary-hover: var(--vk-primary-300);
+    --vk-primary-active: var(--vk-primary-200);
+    --vk-on-primary: var(--vk-neutral-950);
+    --vk-primary-subtle: var(--vk-primary-950);
+    --vk-primary-subtle-text: var(--vk-primary-200);
+    --vk-focus: var(--vk-primary-300);
+    --vk-focus-soft: rgba(114, 187, 211, 0.32);
+    --vk-danger-soft: rgba(248, 113, 113, 0.32);
+    --vk-overlay: rgba(0, 0, 0, 0.64);
+    --vk-skeleton: var(--vk-neutral-800);
+    --vk-tooltip-bg: var(--vk-neutral-100);
+    --vk-logo-ink: var(--vk-primary-400);
+    --vk-logo-slot: var(--vk-primary-700);
+    --vk-success-fg: #4ade80;
+    --vk-success-bg: #052e16;
+    --vk-success-border: #14532d;
+    --vk-success-solid: #4ade80;
+    --vk-success-solid-hover: #bbf7d0;
+    --vk-on-success-solid: #0d1217;
+    --vk-warning-fg: #fbbf24;
+    --vk-warning-bg: #451a03;
+    --vk-warning-border: #78350f;
+    --vk-warning-solid: #fbbf24;
+    --vk-warning-solid-hover: #fde68a;
+    --vk-on-warning-solid: #0d1217;
+    --vk-danger-fg: #f87171;
+    --vk-danger-bg: #450a0a;
+    --vk-danger-border: #991b1b;
+    --vk-danger-solid: #f87171;
+    --vk-danger-solid-hover: #fecaca;
+    --vk-on-danger-solid: #0d1217;
+    --vk-violet-fg: #a78bfa;
+    --vk-violet-bg: #2e1065;
+    --vk-violet-border: #5b21b6;
+    --vk-violet-solid: #a78bfa;
+    --vk-violet-solid-hover: #ddd6fe;
+    --vk-on-violet-solid: #0d1217;
+    --vk-info-fg: var(--vk-primary-300);
+    --vk-info-bg: var(--vk-primary-950);
+    --vk-info-border: var(--vk-primary-800);
+    --vk-neutral-fg: var(--vk-neutral-300);
+    --vk-neutral-bg: var(--vk-neutral-800);
+    --vk-neutral-border: var(--vk-neutral-700);
+    --vk-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.4);
+    --vk-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* dark: explicit choice */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --vk-bg: var(--vk-neutral-950);
+  --vk-surface: var(--vk-neutral-900);
+  --vk-surface-raised: var(--vk-neutral-800);
+  --vk-surface-muted: var(--vk-neutral-800);
+  --vk-border: var(--vk-neutral-700);
+  --vk-border-strong: var(--vk-neutral-400);
+  --vk-text: var(--vk-neutral-50);
+  --vk-text-secondary: var(--vk-neutral-300);
+  --vk-text-tertiary: var(--vk-neutral-400);
+  --vk-text-disabled: var(--vk-neutral-600);
+  --vk-text-inverse: var(--vk-neutral-950);
+  --vk-primary: var(--vk-primary-400);
+  --vk-primary-hover: var(--vk-primary-300);
+  --vk-primary-active: var(--vk-primary-200);
+  --vk-on-primary: var(--vk-neutral-950);
+  --vk-primary-subtle: var(--vk-primary-950);
+  --vk-primary-subtle-text: var(--vk-primary-200);
+  --vk-focus: var(--vk-primary-300);
+  --vk-focus-soft: rgba(114, 187, 211, 0.32);
+  --vk-danger-soft: rgba(248, 113, 113, 0.32);
+  --vk-overlay: rgba(0, 0, 0, 0.64);
+  --vk-skeleton: var(--vk-neutral-800);
+  --vk-tooltip-bg: var(--vk-neutral-100);
+  --vk-logo-ink: var(--vk-primary-400);
+  --vk-logo-slot: var(--vk-primary-700);
+  --vk-success-fg: #4ade80;
+  --vk-success-bg: #052e16;
+  --vk-success-border: #14532d;
+  --vk-success-solid: #4ade80;
+  --vk-success-solid-hover: #bbf7d0;
+  --vk-on-success-solid: #0d1217;
+  --vk-warning-fg: #fbbf24;
+  --vk-warning-bg: #451a03;
+  --vk-warning-border: #78350f;
+  --vk-warning-solid: #fbbf24;
+  --vk-warning-solid-hover: #fde68a;
+  --vk-on-warning-solid: #0d1217;
+  --vk-danger-fg: #f87171;
+  --vk-danger-bg: #450a0a;
+  --vk-danger-border: #991b1b;
+  --vk-danger-solid: #f87171;
+  --vk-danger-solid-hover: #fecaca;
+  --vk-on-danger-solid: #0d1217;
+  --vk-violet-fg: #a78bfa;
+  --vk-violet-bg: #2e1065;
+  --vk-violet-border: #5b21b6;
+  --vk-violet-solid: #a78bfa;
+  --vk-violet-solid-hover: #ddd6fe;
+  --vk-on-violet-solid: #0d1217;
+  --vk-info-fg: var(--vk-primary-300);
+  --vk-info-bg: var(--vk-primary-950);
+  --vk-info-border: var(--vk-primary-800);
+  --vk-neutral-fg: var(--vk-neutral-300);
+  --vk-neutral-bg: var(--vk-neutral-800);
+  --vk-neutral-border: var(--vk-neutral-700);
+  --vk-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --vk-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+html {
+  background: var(--vk-bg);
+  color: var(--vk-text);
+  font-family: var(--vk-font-family);
+  font-size: var(--vk-font-body-size);
+  line-height: var(--vk-font-body-line);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--vk-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+  }
+}

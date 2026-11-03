@@ -12,5 +12,5 @@
       "@vote-kidigit/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts", "../../packages/shared/vite-plugin-design.ts"]
 }

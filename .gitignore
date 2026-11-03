@@ -14,6 +14,9 @@ test-results/
 .env.*
 !.env.example
 
+# Inter fonts copied from packages/shared/src/design/fonts by the design-system Vite plugin
+apps/*/public/fonts/
+
 # generated Prisma client (prisma generate runs before build, typecheck and test)
 apps/api/src/generated/
 

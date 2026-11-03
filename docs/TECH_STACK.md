@@ -323,6 +323,7 @@ Contains the public website (PUB), voter web flow (VTR-WEB), kiosk screens (KSK,
 | react-dom | 19.3.1 | UI |
 | react-router | 7.18.5 | Routing; public site, voter flow and results pages split into separate lazy-loaded chunks |
 | tailwindcss | 4.3.4 | Styling |
+| @ant-design/icons | 6.3.4 | Icons, imported one by one so only used icons ship (Design System 6). Added 3 Nov 2026 in step 5 to resolve the Design System / Tech Stack mismatch. |
 | i18next | 26.7.1 | Swahili strings (English ready for later) |
 | react-i18next | 17.1.11 | React bindings |
 | zod | 4.6.7 | Input validation with shared schemas |

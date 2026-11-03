@@ -3,8 +3,10 @@
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
+    // No DOM types: src/ is compiled by the API too; browser code goes through globalThis.
     "lib": ["ES2023"],
-    "types": []
+    // Node types for vite-plugin-design.ts only; src/ never imports node: modules.
+    "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "vite-plugin-design.ts"]
 }

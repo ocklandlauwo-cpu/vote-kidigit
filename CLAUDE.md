@@ -103,8 +103,17 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 1. **Voting code storage.** Tech Stack says codes are hashed with argon2; Backend Schema 5.4 uses an HMAC-SHA256 fingerprint (`CODE_HMAC_KEY`) for lookup plus an AES-256-GCM copy (`CODE_ENCRYPTION_KEY`) for re-sending. Follow the Backend Schema. The extra variables (Backend Schema 13.5) are in `apps/api/.env.example` and the Zod env schema; Tech Stack section 10 itself is not yet updated.
 2. **Primary key default.** Tech Stack 11.3 says `@default(uuid())`; Backend Schema 1.2 uses PostgreSQL 18 `uuidv7()` (and `gen_random_uuid()` for ballots). Follow the Backend Schema.
 3. **Ballot write path.** Tech Stack 6.3 describes a `prisma.$transaction`; Backend Schema 11.4 moves it into the SQL function `app.cast_ballot()`. Follow the Backend Schema.
-4. **Icons in the voter app.** Design System 6 uses `@ant-design/icons` in both apps; Tech Stack 7.2 lists it only for the staff portal. Add it to the voter app list before step 24.
+4. **Icons in the voter app.** Resolved in step 5: `@ant-design/icons` 6.3.4 added to Tech Stack 7.2 for the voter app.
 5. **PRD section 9 and 10.1** (Laravel, cloud hosting, 15 Nov pilot) are superseded by the Tech Stack and the Implementation Plan dates.
+6. **Theme hook location.** Design System 12 puts `useEffectiveTheme` in `packages/shared/src/design/theme.ts`, but the shared package may depend only on zod. `theme.ts` is a framework-free store (`subscribeTheme`, `getEffectiveTheme`, `toggleTheme`…); each app has a two-line `useEffectiveTheme` hook on `useSyncExternalStore`.
+
+## Design system in code
+
+- Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.
+- Shared code under `packages/shared/src` is also compiled by the API, which has no DOM types: reach browser features through `globalThis` with local interfaces (see `theme.ts`).
+- React components cannot live in the shared package; small identical components (`LogoMark`, `Logo`) are copied into both apps.
+- `packages/shared/vite-plugin-design.ts` copies the Inter fonts into each app's `public/fonts/` (git-ignored), injects the pre-paint theme script and the font preload.
+- Component galleries: `/app/dev/components` (staff) and `/dev/components` (voter), development builds only. Add every new component variant there.
 
 ## Local development (Windows)
 
