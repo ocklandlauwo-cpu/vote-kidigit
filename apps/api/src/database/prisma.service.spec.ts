@@ -33,8 +33,9 @@ describe('PrismaService', () => {
     const prisma = new PrismaService(configWithDatabaseUrl(realUrl.toString()));
 
     const failure = prisma.onModuleInit();
+    const database = realUrl.pathname.slice(1); // vote_kidigit locally, vote_kidigit_test in CI
     await expect(failure).rejects.toThrow(
-      `Cannot connect to PostgreSQL at ${realUrl.hostname}:${realUrl.port}/vote_kidigit as vk_api: ` +
+      `Cannot connect to PostgreSQL at ${realUrl.hostname}:${realUrl.port}/${database} as vk_api: ` +
         'password authentication failed for user "vk_api"',
     );
     await expect(failure).rejects.not.toThrow('definitely-wrong-password');

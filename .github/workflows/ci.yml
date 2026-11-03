@@ -1,0 +1,95 @@
+# Continuous integration (Tech Stack 8.2, Implementation Plan step 4).
+# Lint, type check, unit + integration tests against real PostgreSQL 18.6 and Redis 7.2,
+# build, then Playwright end-to-end. Actions are pinned to full commit SHAs.
+name: ci
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18.6
+        env: { POSTGRES_USER: vk, POSTGRES_PASSWORD: vk, POSTGRES_DB: vk_test }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U vk -d vk_test"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+      redis:
+        image: redis:7.2
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      CI: 'true'
+      # Non-secret values for the API's validated configuration (apps/api/.env.example).
+      # Random secrets are generated per run in the "CI secrets" step below.
+      NODE_ENV: test
+      PORT: '3000'
+      APP_URL: http://localhost:5174
+      PROCESS_ROLE: api
+      DEFAULT_TIMEZONE: Africa/Dar_es_Salaam
+      DATABASE_URL: postgresql://vk_api:vk_api_ci@127.0.0.1:5432/vote_kidigit_test
+      MIGRATION_DATABASE_URL: postgresql://vk_owner:vk_owner_ci@127.0.0.1:5432/vote_kidigit_test
+      REDIS_URL: redis://127.0.0.1:6379/0
+      SESSION_IDLE_MINUTES: '15'
+      VOTER_IDLE_MINUTES: '10'
+      LOGIN_MAX_ATTEMPTS: '5'
+      LOGIN_LOCK_MINUTES: '15'
+      NEXTSMS_BASE_URL: http://localhost:9/nextsms-ci
+      NEXTSMS_USERNAME: ci
+      NEXTSMS_PASSWORD: ci
+      NEXTSMS_DEFAULT_SENDER_ID: VOTEKIDIGIT
+      USSD_SHORT_CODE: '*000#'
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
+      SMTP_USER: ci
+      SMTP_PASSWORD: ci
+      MAIL_FROM: Vote-Kidigit <no-reply@example.test>
+      STORAGE_DIR: /tmp/vk-storage
+      MAX_UPLOAD_MB: '2'
+      MAX_CSV_MB: '10'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version-file: .nvmrc }
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      - name: CI secrets
+        run: |
+          {
+            echo "SESSION_SECRET=$(openssl rand -base64 48 | tr -d '\n=+/')"
+            echo "BALLOT_TOKEN_SECRET=$(openssl rand -base64 48 | tr -d '\n=+/')"
+            echo "CODE_HMAC_KEY=$(openssl rand -hex 64)"
+            echo "CODE_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "DEPLOY_HEALTH_SECRET=$(openssl rand -hex 24)"
+            echo "NEXTSMS_DLR_SECRET=$(openssl rand -hex 24)"
+            echo "USSD_CALLBACK_SECRET=$(openssl rand -hex 24)"
+          } >> "$GITHUB_ENV"
+
+      - name: Database roles (deploy/sql/000_roles.sql)
+        env: { PGPASSWORD: vk }
+        run: >-
+          psql -h 127.0.0.1 -U vk -d vk_test
+          -v owner_pw=vk_owner_ci -v api_pw=vk_api_ci -v ro_pw=vk_readonly_ci
+          -v db_name=vote_kidigit_test
+          -f deploy/sql/000_roles.sql
+
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm --filter @vote-kidigit/api exec prisma migrate deploy
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e
