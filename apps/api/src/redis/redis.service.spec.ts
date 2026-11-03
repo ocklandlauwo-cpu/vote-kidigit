@@ -26,7 +26,7 @@ describe('RedisService', () => {
 
     const failure = redis.onModuleInit();
     await expect(failure).rejects.toThrow(
-      `Cannot connect to Redis at ${wrong.hostname}:${wrong.port}/0: WRONGPASS`,
+      `Cannot connect to Redis at ${wrong.hostname}:${wrong.port}${wrong.pathname}: WRONGPASS`,
     );
     await expect(failure).rejects.not.toThrow('definitely-wrong-password');
     await redis.onModuleDestroy();

@@ -24,12 +24,8 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U vk -d vk_test"
           --health-interval 2s --health-timeout 3s --health-retries 30
-      redis:
-        image: redis:7.2
-        ports: ['6379:6379']
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 2s --health-timeout 3s --health-retries 30
+      # Redis is started in a step instead: service containers cannot pass --requirepass,
+      # and production Redis always has a password (Tech Stack 9.3).
     env:
       CI: 'true'
       # Non-secret values for the API's validated configuration (apps/api/.env.example).
@@ -41,7 +37,7 @@ jobs:
       DEFAULT_TIMEZONE: Africa/Dar_es_Salaam
       DATABASE_URL: postgresql://vk_api:vk_api_ci@127.0.0.1:5432/vote_kidigit_test
       MIGRATION_DATABASE_URL: postgresql://vk_owner:vk_owner_ci@127.0.0.1:5432/vote_kidigit_test
-      REDIS_URL: redis://127.0.0.1:6379/0
+      REDIS_URL: redis://:vk_redis_ci@127.0.0.1:6379/0
       SESSION_IDLE_MINUTES: '15'
       VOTER_IDLE_MINUTES: '10'
       LOGIN_MAX_ATTEMPTS: '5'
@@ -63,6 +59,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version-file: .nvmrc }
+      - name: Redis 7.2 with a password, noeviction and AOF (Tech Stack 9.3)
+        run: |
+          docker run -d --name redis -p 6379:6379 redis:7.2 \
+            redis-server --requirepass vk_redis_ci --maxmemory-policy noeviction --appendonly yes
+          for i in $(seq 1 30); do
+            docker exec redis redis-cli -a vk_redis_ci --no-auth-warning ping | grep -q PONG && exit 0
+            sleep 1
+          done
+          echo "Redis did not start" && exit 1
+
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
 

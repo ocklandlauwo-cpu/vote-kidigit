@@ -16,8 +16,11 @@ export class RedisService extends Redis implements OnModuleInit, OnModuleDestroy
   private readonly logger = new Logger(RedisService.name);
   private readonly target: string;
   private readonly state: { started: boolean };
-  /** Last connection error; connect() itself rejects with a generic "Connection is closed". */
-  private lastError: unknown;
+  /**
+   * First error while starting. connect() itself rejects with a generic "Connection is closed",
+   * and later errors are consequences (a wrong password gives WRONGPASS, then NOAUTH on SELECT).
+   */
+  private startupError: unknown;
 
   constructor(config: ConfigService<Env, true>) {
     const url = config.get('REDIS_URL', { infer: true });
@@ -34,8 +37,8 @@ export class RedisService extends Redis implements OnModuleInit, OnModuleDestroy
     this.state = state;
     this.target = describeConnection(url);
     this.on('error', (error: unknown) => {
-      this.lastError = error;
       if (this.state.started) this.logger.warn(`Redis connection error: ${errorReason(error)}`);
+      else this.startupError ??= error;
     });
   }
 
@@ -47,7 +50,7 @@ export class RedisService extends Redis implements OnModuleInit, OnModuleDestroy
       this.state.started = true;
     } catch (error) {
       this.closeIfOpen();
-      const reason = errorReason(this.lastError ?? error);
+      const reason = errorReason(this.startupError ?? error);
       throw new Error(`Cannot connect to Redis at ${this.target}: ${reason}`, { cause: error });
     }
   }

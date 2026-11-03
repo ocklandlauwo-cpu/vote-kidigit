@@ -50,7 +50,12 @@
       "^.+\\.ts$": [
         "ts-jest",
         {
-          "tsconfig": "<rootDir>/../tsconfig.json"
+          "tsconfig": "<rootDir>/../tsconfig.json",
+          "diagnostics": {
+            "ignoreCodes": [
+              151002
+            ]
+          }
         }
       ]
     },
