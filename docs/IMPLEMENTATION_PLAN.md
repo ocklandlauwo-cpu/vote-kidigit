@@ -486,7 +486,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 **Phase 1 — Foundation**
 
 - ☑ 6. Database foundations
-- ☐ 7. Tenancy and identity tables with RLS
+- ☑ 7. Tenancy and identity tables with RLS
 - ☐ 8. API infrastructure
 - ☐ 9. Staff authentication
 - ☐ 10. Invitations, password reset and email

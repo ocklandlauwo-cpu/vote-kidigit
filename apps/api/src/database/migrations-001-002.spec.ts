@@ -54,13 +54,17 @@ describe('migrations 001_helpers and 002_enums', () => {
                        WHERE grantee = 0 AND privilege_type = 'EXECUTE') AS anyone
         FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
         WHERE n.nspname = 'app' ORDER BY p.proname`;
-      expect(rows.map((r) => r.fn)).toEqual([
-        'current_org_id',
-        'current_user_id',
-        'forbid_change',
-        'is_platform_admin',
-        'set_updated_at',
-      ]);
+      // 001's helpers are present; later migrations add more, and every app function follows
+      // the same rule (Backend Schema 11: EXECUTE revoked from PUBLIC, granted to vk_api).
+      expect(rows.map((r) => r.fn)).toEqual(
+        expect.arrayContaining([
+          'current_org_id',
+          'current_user_id',
+          'forbid_change',
+          'is_platform_admin',
+          'set_updated_at',
+        ]),
+      );
       for (const row of rows) expect(row).toMatchObject({ api: true, anyone: false });
     });
 

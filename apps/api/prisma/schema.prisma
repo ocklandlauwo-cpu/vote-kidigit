@@ -2,14 +2,207 @@
 // RLS policies, functions, triggers and grants live as SQL in the same migrations.
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  moduleFormat    = "cjs"
+  // Partial unique indexes (… WHERE deleted_at IS NULL) for soft-deleted tables.
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
   schemas  = ["public", "ballot", "audit"]
+}
+
+// -----------------------------------------------------------------------------------------------
+// Tenancy, identity and access (Backend Schema 4). Not expressible here and added as SQL in
+// migration 003: CHECK constraints, the generated users.email_normalized column, triggers,
+// RLS policies, grants and app.create_default_roles(). Child tables carry organization_id and
+// reference their parent through composite foreign keys (parent id + organization_id), so a
+// row can never claim a different organization than its parent.
+// -----------------------------------------------------------------------------------------------
+
+model Organization {
+  id                    String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  name                  String
+  slug                  String
+  /// FK to files.id (set null) is added with the files table in step 17.
+  logoFileId            String?   @map("logo_file_id") @db.Uuid
+  primaryColor          String?   @map("primary_color") @db.Char(7)
+  timeZone              String    @default("Africa/Dar_es_Salaam") @map("time_zone")
+  contactEmail          String?   @map("contact_email")
+  contactPhone          String?   @map("contact_phone")
+  smsSenderId           String?   @map("sms_sender_id")
+  helpPhone             String?   @map("help_phone")
+  sessionTimeoutMinutes Int       @default(15) @map("session_timeout_minutes") @db.SmallInt
+  archiveAfterDays      Int       @default(90) @map("archive_after_days")
+  onboardingDismissedAt DateTime? @map("onboarding_dismissed_at") @db.Timestamptz(6)
+  status                OrgStatus @default(active)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt             DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  users           User[]
+  roles           Role[]
+  passwordHistory PasswordHistory[]
+  userTokens      UserToken[]
+
+  @@unique([slug], map: "organizations_slug_key", where: raw("deleted_at IS NULL"))
+  @@map("organizations")
+  @@schema("public")
+}
+
+model User {
+  id                String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// NULL only for Platform Super Admins.
+  organizationId    String?    @map("organization_id") @db.Uuid
+  email             String
+  /// Generated column lower(trim(email)); never written by the application.
+  emailNormalized   String     @default(dbgenerated()) @map("email_normalized")
+  fullName          String     @map("full_name")
+  phone             String?
+  passwordHash      String?    @map("password_hash")
+  status            UserStatus @default(invited)
+  isPlatformAdmin   Boolean    @default(false) @map("is_platform_admin")
+  isOrgSuperAdmin   Boolean    @default(false) @map("is_org_super_admin")
+  language          String     @default("sw")
+  themePreference   String     @default("system") @map("theme_preference")
+  failedLoginCount  Int        @default(0) @map("failed_login_count") @db.SmallInt
+  lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(6)
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?  @map("deleted_at") @db.Timestamptz(6)
+
+  organization    Organization?     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  passwordHistory PasswordHistory[]
+  tokens          UserToken[]       @relation("UserTokenOwner")
+  tokensCreated   UserToken[]       @relation("UserTokenCreator")
+  /// At most one in V1: user_roles.user_id is unique.
+  userRoles       UserRole[]
+
+  @@unique([emailNormalized], map: "users_email_normalized_key", where: raw("deleted_at IS NULL"))
+  /// Target of composite foreign keys from organization-owned child tables.
+  @@unique([id, organizationId], map: "users_id_organization_id_key")
+  @@index([organizationId])
+  @@map("users")
+  @@schema("public")
+}
+
+model PasswordHistory {
+  id             String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  /// Copied from the user by trigger, for RLS.
+  organizationId String?  @map("organization_id") @db.Uuid
+  passwordHash   String   @map("password_hash")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([organizationId])
+  @@map("password_history")
+  @@schema("public")
+}
+
+model UserToken {
+  id             String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  /// Copied from the user by trigger, for RLS.
+  organizationId String?   @map("organization_id") @db.Uuid
+  /// invite | password_reset
+  purpose        String
+  /// SHA-256 of the random 32-byte token sent by email.
+  tokenHash      Bytes     @unique(map: "user_tokens_token_hash_key") @map("token_hash")
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt         DateTime? @map("used_at") @db.Timestamptz(6)
+  createdBy      String?   @map("created_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user         User          @relation("UserTokenOwner", fields: [userId], references: [id], onDelete: Cascade)
+  creator      User?         @relation("UserTokenCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([createdBy])
+  @@index([organizationId])
+  @@map("user_tokens")
+  @@schema("public")
+}
+
+/// Global permission catalogue (Backend Schema 9.1), seeded by migration; read-only for vk_api.
+model Permission {
+  key                  String  @id
+  module               String
+  descriptionEn        String  @map("description_en")
+  descriptionSw        String  @map("description_sw")
+  isFixedForSuperAdmin Boolean @default(false) @map("is_fixed_for_super_admin")
+  /// org | event | platform
+  scope                String
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+  @@schema("public")
+}
+
+model Role {
+  id             String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  description    String?
+  /// org_super_admin | admin | moderator | observer for default roles; NULL for custom roles.
+  systemKey      String?  @map("system_key")
+  isSystem       Boolean  @default(false) @map("is_system")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  @@unique([organizationId, name], map: "roles_organization_id_name_key")
+  @@unique([organizationId, systemKey], map: "roles_organization_id_system_key_key")
+  /// Target of composite foreign keys from role_permissions and user_roles.
+  @@unique([id, organizationId], map: "roles_id_organization_id_key")
+  @@map("roles")
+  @@schema("public")
+}
+
+model RolePermission {
+  roleId         String   @map("role_id") @db.Uuid
+  permissionKey  String   @map("permission_key")
+  organizationId String   @map("organization_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  role       Role       @relation(fields: [roleId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionKey], references: [key], onDelete: Restrict)
+
+  @@id([roleId, permissionKey])
+  @@index([organizationId])
+  @@index([permissionKey])
+  @@map("role_permissions")
+  @@schema("public")
+}
+
+model UserRole {
+  userId         String   @unique(map: "user_roles_user_id_key") @map("user_id") @db.Uuid
+  roleId         String   @map("role_id") @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  role Role @relation(fields: [roleId, organizationId], references: [id, organizationId], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@index([organizationId])
+  @@map("user_roles")
+  @@schema("public")
 }
 
 // -----------------------------------------------------------------------------------------------
