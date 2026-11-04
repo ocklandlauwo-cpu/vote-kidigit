@@ -49,11 +49,12 @@ export class AuthGuard implements CanActivate {
       orgId: data.orgId ?? null,
       isPlatformAdmin: data.isPlatformAdmin ?? false,
     });
-    // Sessions issued before the latest password change end, even if the session index that
-    // destroyAllForUser relies on was lost.
+    // Sessions issued at or before the latest password change end, even if the session index
+    // that destroyAllForUser relies on was lost, and even for a sign-in that verified the old
+    // password while the change happened (its issue time is taken before the hash is read).
     const staleAfterPasswordChange =
       state?.passwordChangedAt != null &&
-      (data.issuedAt ?? 0) < Date.parse(state.passwordChangedAt);
+      (data.issuedAt ?? 0) <= Date.parse(state.passwordChangedAt);
     if (!state || staleAfterPasswordChange) {
       await destroySession(req);
       throw new AppError('UNAUTHENTICATED');

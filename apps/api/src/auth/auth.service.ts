@@ -36,20 +36,26 @@ export const PASSWORD_HISTORY_SIZE = 5;
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error));
 
+/** Failure counts start again after a day without failures, for accounts and unknown emails alike. */
+export const FAILURE_WINDOW_SECONDS = 24 * 60 * 60;
+
 /**
- * Failure counter for unknown emails, mirroring the account lockout. Returns the remaining lock
- * in ms (0 when not locked). KEYS: count, lock; ARGV: max attempts, lock ms. Counts are kept
- * for a day, like a real account's counter which only resets on success or lock.
+ * Failure counter for unknown emails, mirroring the account lockout exactly: the count lives for
+ * FAILURE_WINDOW_SECONDS after the latest failure (accounts: last_failed_login_at), and the lock
+ * stores its absolute unlock time, returned unchanged while it lasts (accounts: locked_until).
+ * Returns that unlock time in epoch ms, or 0 when not locked.
+ * KEYS: count, lock; ARGV: max attempts, lock ms, now ms, window seconds.
  */
 const UNKNOWN_EMAIL_SCRIPT = `
-local lockTtl = redis.call('PTTL', KEYS[2])
-if lockTtl > 0 then return lockTtl end
+local lockedUntil = redis.call('GET', KEYS[2])
+if lockedUntil then return tonumber(lockedUntil) end
 local count = redis.call('INCR', KEYS[1])
-redis.call('EXPIRE', KEYS[1], 86400)
+redis.call('EXPIRE', KEYS[1], ARGV[4])
 if count >= tonumber(ARGV[1]) then
+  local unlock = tonumber(ARGV[3]) + tonumber(ARGV[2])
   redis.call('DEL', KEYS[1])
-  redis.call('SET', KEYS[2], '1', 'PX', ARGV[2])
-  return tonumber(ARGV[2])
+  redis.call('SET', KEYS[2], tostring(unlock), 'PX', ARGV[2])
+  return unlock
 end
 return 0
 `;
@@ -92,6 +98,10 @@ export class AuthService {
    * account exists. The account status is only revealed after a correct password.
    */
   async login(body: LoginRequest, req: Request): Promise<MeResponse> {
+    // Taken before the password hash is read: if the password changes while this sign-in is
+    // verifying the old one, the new session counts as issued before the change and AuthGuard
+    // rejects it.
+    const issuedAt = Date.now();
     const ctx = this.requestContext.getOrThrow();
     const anonymous: DbContext = {
       orgId: null,
@@ -144,10 +154,23 @@ export class AuthService {
         });
         if (!org || org.status !== 'active' || org.deletedAt) throw new AppError('ORG_SUSPENDED');
       }
-      await tx.user.update({
-        where: { id: row.id },
-        data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: now },
-      });
+      // Conditional: a lock set by a concurrent wrong attempt while this one was verifying
+      // the password still wins.
+      const unlocked = await tx.$queryRaw<{ id: string }[]>`
+        UPDATE public.users
+        SET failed_login_count = 0, locked_until = NULL, last_failed_login_at = NULL,
+            last_login_at = now()
+        WHERE id = ${row.id}::uuid AND (locked_until IS NULL OR locked_until <= now())
+        RETURNING id`;
+      if (unlocked.length === 0) {
+        const { lockedUntil } = await tx.user.findUniqueOrThrow({
+          where: { id: row.id },
+          select: { lockedUntil: true },
+        });
+        throw new AppError('ACCOUNT_LOCKED', undefined, {
+          lockedUntil: (lockedUntil ?? now).toISOString(),
+        });
+      }
     });
 
     await this.authState.invalidateUser(row.id);
@@ -165,7 +188,7 @@ export class AuthService {
     req.session.isPlatformAdmin = state.isPlatformAdmin;
     req.session.csrf = randomBytes(32).toString('base64url');
     req.session.timeoutMinutes = state.sessionTimeoutMinutes;
-    req.session.issuedAt = Date.now();
+    req.session.issuedAt = issuedAt;
     req.session.cookie.maxAge = state.sessionTimeoutMinutes * 60_000;
     await this.sessions.track(state.userId, req.sessionID, state.sessionTimeoutMinutes);
 
@@ -260,6 +283,7 @@ export class AuthService {
       });
     }
 
+    const changedAt = new Date();
     await this.prisma.withContext(context, async (tx) => {
       const user = await tx.user.findUniqueOrThrow({
         where: { id: auth.userId },
@@ -280,7 +304,7 @@ export class AuthService {
       const passwordHash = await hashPassword(body.newPassword);
       await tx.user.update({
         where: { id: auth.userId },
-        data: { passwordHash, passwordChangedAt: new Date() },
+        data: { passwordHash, passwordChangedAt: changedAt },
       });
       await tx.passwordHistory.create({ data: { userId: auth.userId, passwordHash } });
       const keep = await tx.passwordHistory.findMany({
@@ -311,7 +335,8 @@ export class AuthService {
       isPlatformAdmin: auth.isPlatformAdmin,
       csrf,
       timeoutMinutes,
-      issuedAt: Date.now(),
+      // Strictly after the change, which AuthGuard compares with <=.
+      issuedAt: Math.max(Date.now(), changedAt.getTime() + 1),
     });
     req.session.cookie.maxAge = auth.sessionTimeoutMinutes * 60_000;
     await this.sessions.track(auth.userId, req.sessionID, auth.sessionTimeoutMinutes);
@@ -330,13 +355,20 @@ export class AuthService {
     if (!userId) throw new Error('recordFailure needs a user');
     return this.prisma.withContext(context, async (tx) => {
       const [row] = await tx.$queryRaw<{ locked_until: Date | null; locked_now: boolean }[]>`
-        UPDATE public.users SET
-          failed_login_count = CASE WHEN failed_login_count + 1 >= ${this.maxAttempts}
-                                    THEN 0 ELSE failed_login_count + 1 END,
-          locked_until = CASE WHEN failed_login_count + 1 >= ${this.maxAttempts}
+        WITH current AS (
+          SELECT id,
+                 CASE WHEN last_failed_login_at > now() - make_interval(secs => ${FAILURE_WINDOW_SECONDS})
+                      THEN failed_login_count ELSE 0 END + 1 AS attempts
+          FROM public.users WHERE id = ${userId}::uuid FOR UPDATE
+        )
+        UPDATE public.users u SET
+          failed_login_count = CASE WHEN c.attempts >= ${this.maxAttempts} THEN 0 ELSE c.attempts END,
+          locked_until = CASE WHEN c.attempts >= ${this.maxAttempts}
                               THEN now() + make_interval(mins => ${this.lockMinutes})
-                              ELSE locked_until END
-        WHERE id = ${userId}::uuid
+                              ELSE u.locked_until END,
+          last_failed_login_at = now()
+        FROM current c
+        WHERE u.id = c.id
         RETURNING locked_until, (locked_until > now()) AS locked_now`;
       const lockedUntil = row?.locked_now ? row.locked_until : null;
       await this.audit.record(tx, {
@@ -355,17 +387,19 @@ export class AuthService {
    */
   private async failUnknownEmail(email: string): Promise<never> {
     const digest = createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
-    const result = (await this.redis.eval(
+    const lockedUntil = (await this.redis.eval(
       UNKNOWN_EMAIL_SCRIPT,
       2,
       `login-unknown:${digest}:count`,
       `login-unknown:${digest}:lock`,
       this.maxAttempts,
       this.lockMinutes * 60_000,
+      Date.now(),
+      FAILURE_WINDOW_SECONDS,
     )) as number;
-    if (result > 0) {
+    if (lockedUntil > 0) {
       throw new AppError('ACCOUNT_LOCKED', undefined, {
-        lockedUntil: new Date(Date.now() + result).toISOString(),
+        lockedUntil: new Date(lockedUntil).toISOString(),
       });
     }
     throw new AppError('INVALID_CREDENTIALS');

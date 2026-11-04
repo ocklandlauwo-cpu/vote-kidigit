@@ -69,6 +69,8 @@ model User {
   themePreference   String     @default("system") @map("theme_preference")
   failedLoginCount  Int        @default(0) @map("failed_login_count") @db.SmallInt
   lockedUntil       DateTime?  @map("locked_until") @db.Timestamptz(6)
+  /// Last wrong password; failure counts older than 24 h start again (same window as unknown emails).
+  lastFailedLoginAt DateTime?  @map("last_failed_login_at") @db.Timestamptz(6)
   lastLoginAt       DateTime?  @map("last_login_at") @db.Timestamptz(6)
   passwordChangedAt DateTime?  @map("password_changed_at") @db.Timestamptz(6)
   createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
