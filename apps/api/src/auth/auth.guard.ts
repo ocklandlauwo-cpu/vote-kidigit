@@ -6,6 +6,7 @@ import { AppError } from '../common/app-error.js';
 import { RequestContextService } from '../context/request-context.js';
 import { AuthStateService } from './auth-state.service.js';
 import { IS_PUBLIC } from './decorators.js';
+import { SessionService } from './session.service.js';
 
 function destroySession(req: Request): Promise<void> {
   return new Promise((resolve) => req.session.destroy(() => resolve()));
@@ -24,6 +25,7 @@ export class AuthGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly authState: AuthStateService,
     private readonly requestContext: RequestContextService,
+    private readonly sessions: SessionService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -47,10 +49,16 @@ export class AuthGuard implements CanActivate {
       orgId: data.orgId ?? null,
       isPlatformAdmin: data.isPlatformAdmin ?? false,
     });
-    if (!state) {
+    // Sessions issued before the latest password change end, even if the session index that
+    // destroyAllForUser relies on was lost.
+    const staleAfterPasswordChange =
+      state?.passwordChangedAt != null &&
+      (data.issuedAt ?? 0) < Date.parse(state.passwordChangedAt);
+    if (!state || staleAfterPasswordChange) {
       await destroySession(req);
       throw new AppError('UNAUTHENTICATED');
     }
+    await this.sessions.track(state.userId, req.sessionID, state.sessionTimeoutMinutes);
 
     // The organization may have changed its timeout since sign-in.
     if (data.timeoutMinutes !== state.sessionTimeoutMinutes) {

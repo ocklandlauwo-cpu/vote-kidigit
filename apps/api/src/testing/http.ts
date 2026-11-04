@@ -28,3 +28,13 @@ export async function createTestHttpApp(controllers: Type[] = []): Promise<TestH
   await app.init();
   return { app, logs };
 }
+
+/**
+ * A random client address for one test. The API trusts one proxy hop, so sending it as
+ * X-Forwarded-For makes it the client IP (as the DirectAdmin proxy does in production): each
+ * test gets its own per-IP rate-limit counters, independent of tests running in parallel.
+ */
+export function testIp(): string {
+  const octet = () => Math.floor(Math.random() * 254) + 1;
+  return `10.${octet()}.${octet()}.${octet()}`;
+}

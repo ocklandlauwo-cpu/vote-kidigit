@@ -9,9 +9,8 @@ import { z } from 'zod';
 import { AppError } from '../common/app-error.js';
 import { zodDto } from '../common/zod-validation.pipe.js';
 import { PrismaService } from '../database/prisma.service.js';
-import { RedisService } from '../redis/redis.service.js';
 import { platformContext } from '../testing/db.js';
-import { createTestHttpApp } from '../testing/http.js';
+import { createTestHttpApp, testIp } from '../testing/http.js';
 
 const VOTING_CODE = 'K7M4-Q9XR';
 const PASSWORD = 'S3cret!Passw0rd';
@@ -69,10 +68,6 @@ describe('HTTP pipeline', () => {
 
   beforeAll(async () => {
     ({ app, logs } = await createTestHttpApp([ProbeController]));
-    // Start from clean rate-limit counters for this client.
-    const redis = app.get(RedisService);
-    const keys = await redis.keys('rl:*');
-    if (keys.length > 0) await redis.del(...keys);
   });
 
   afterAll(async () => {
@@ -155,8 +150,10 @@ describe('HTTP pipeline', () => {
 
   describe('rate limiting', () => {
     it('returns 429 RATE_LIMITED with Retry-After once the limit is passed', async () => {
-      for (let i = 0; i < 3; i += 1) await http().get('/api/probe/limited').expect(200);
-      const response = await http().get('/api/probe/limited').expect(429);
+      const ip = testIp(); // own counters, whatever else runs in parallel
+      const limited = () => http().get('/api/probe/limited').set('X-Forwarded-For', ip);
+      for (let i = 0; i < 3; i += 1) await limited().expect(200);
+      const response = await limited().expect(429);
       expect(response.body).toMatchObject({ code: 'RATE_LIMITED' });
       expect(Number(response.headers['retry-after'])).toBeGreaterThan(0);
     });

@@ -24,6 +24,8 @@ export interface AuthState {
   mappedEventIds: string[];
   /** Idle timeout of this user's sessions (organization setting; platform default for admins). */
   sessionTimeoutMinutes: number;
+  /** ISO time of the last password change; sessions issued before it are rejected. */
+  passwordChangedAt: string | null;
 }
 
 // Staff session contents in Redis (Backend Schema 7.9 sess:{sid}).
@@ -34,6 +36,8 @@ declare module 'express-session' {
     isPlatformAdmin: boolean;
     csrf: string;
     timeoutMinutes: number;
+    /** Epoch ms when this session was issued (sign-in or password change). */
+    issuedAt: number;
   }
 }
 

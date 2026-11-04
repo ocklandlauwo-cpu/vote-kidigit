@@ -14,7 +14,7 @@ import {
   ownerClient,
   uniqueSuffix,
 } from '../testing/db.js';
-import { createTestHttpApp } from '../testing/http.js';
+import { createTestHttpApp, testIp } from '../testing/http.js';
 import {
   AUTH_CACHE_SECONDS,
   AuthStateService,
@@ -36,6 +36,8 @@ describe('staff authentication', () => {
   const platformUserIds: string[] = [];
 
   const server = () => app.getHttpServer();
+  /** A cookie-less client from this test's own address. */
+  const anon = () => request.agent(server()).set('X-Forwarded-For', ip);
 
   async function newUser(
     overrides: Parameters<typeof createUser>[2] = {},
@@ -49,7 +51,7 @@ describe('staff authentication', () => {
 
   /** Signs in and returns an agent holding the cookie, plus the response body. */
   async function signIn(email: string, password = PASSWORD) {
-    const agent = request.agent(server());
+    const agent = request.agent(server()).set('X-Forwarded-For', ip);
     const response = await agent.post(LOGIN).send({ email, password }).expect(200);
     return { agent, me: response.body as MeResponse, response };
   }
@@ -86,10 +88,9 @@ describe('staff authentication', () => {
     });
   });
 
-  beforeEach(async () => {
-    // Every test signs in several times; start each from clean sign-in rate limits.
-    const keys = await redis.keys('rl:*');
-    if (keys.length > 0) await redis.del(...keys);
+  let ip: string;
+  beforeEach(() => {
+    ip = testIp(); // own per-IP rate-limit counters for every test
   });
 
   afterAll(async () => {
@@ -140,11 +141,11 @@ describe('staff authentication', () => {
 
     it('answers a wrong password and an unknown email identically', async () => {
       const user = await newUser();
-      const wrong = await request(server())
+      const wrong = await anon()
         .post(LOGIN)
         .send({ email: user.email, password: 'Wrong12345' })
         .expect(401);
-      const unknown = await request(server())
+      const unknown = await anon()
         .post(LOGIN)
         .send({ email: `nobody-${uniqueSuffix()}@example.test`, password: 'Wrong12345' })
         .expect(401);
@@ -161,12 +162,9 @@ describe('staff authentication', () => {
     it('locks the account for 15 minutes after 5 wrong passwords, then lets it in again', async () => {
       const user = await newUser();
       for (let i = 0; i < 4; i += 1) {
-        await request(server())
-          .post(LOGIN)
-          .send({ email: user.email, password: 'Wrong12345' })
-          .expect(401);
+        await anon().post(LOGIN).send({ email: user.email, password: 'Wrong12345' }).expect(401);
       }
-      const locked = await request(server())
+      const locked = await anon()
         .post(LOGIN)
         .send({ email: user.email, password: 'Wrong12345' })
         .expect(423);
@@ -177,7 +175,7 @@ describe('staff authentication', () => {
       expect(minutes).toBeLessThanOrEqual(15);
 
       // Even the right password waits for the unlock time.
-      const stillLocked = await request(server())
+      const stillLocked = await anon()
         .post(LOGIN)
         .send({ email: user.email, password: PASSWORD })
         .expect(423);
@@ -196,11 +194,8 @@ describe('staff authentication', () => {
 
     it('refuses a deactivated account, revealing it only after a correct password', async () => {
       const user = await newUser({ status: 'deactivated' });
-      await request(server())
-        .post(LOGIN)
-        .send({ email: user.email, password: 'Wrong12345' })
-        .expect(401);
-      const response = await request(server())
+      await anon().post(LOGIN).send({ email: user.email, password: 'Wrong12345' }).expect(401);
+      const response = await anon()
         .post(LOGIN)
         .send({ email: user.email, password: PASSWORD })
         .expect(403);
@@ -209,7 +204,7 @@ describe('staff authentication', () => {
 
     it('refuses users of a suspended organization', async () => {
       const user = await newUser({}, suspendedOrgId);
-      const response = await request(server())
+      const response = await anon()
         .post(LOGIN)
         .send({ email: user.email, password: PASSWORD })
         .expect(403);
@@ -218,10 +213,7 @@ describe('staff authentication', () => {
 
     it('refuses invited users who have not set a password', async () => {
       const user = await newUser({ status: 'invited', password: undefined });
-      await request(server())
-        .post(LOGIN)
-        .send({ email: user.email, password: PASSWORD })
-        .expect(401);
+      await anon().post(LOGIN).send({ email: user.email, password: PASSWORD }).expect(401);
     });
 
     it('signs in a platform admin with the platform permissions and no organization', async () => {
@@ -236,12 +228,12 @@ describe('staff authentication', () => {
 
     it('allows 10 sign-in attempts per minute per address', async () => {
       for (let i = 0; i < 10; i += 1) {
-        await request(server())
+        await anon()
           .post(LOGIN)
           .send({ email: `x${i}-${uniqueSuffix()}@example.test`, password: 'x' })
           .expect(401);
       }
-      const response = await request(server())
+      const response = await anon()
         .post(LOGIN)
         .send({ email: 'x@example.test', password: 'x' })
         .expect(429);
@@ -251,7 +243,7 @@ describe('staff authentication', () => {
 
   describe('sessions', () => {
     it('rejects requests without a session', async () => {
-      const response = await request(server()).get('/api/v1/me').expect(401);
+      const response = await anon().get('/api/v1/me').expect(401);
       expect(response.body).toMatchObject({ code: 'UNAUTHENTICATED' });
     });
 
@@ -365,10 +357,7 @@ describe('staff authentication', () => {
       await change(PASSWORD, 'Mpya2027Siri').expect(204);
       await agent.get('/api/v1/me').expect(200); // this session continues
       await other.agent.get('/api/v1/me').expect(401); // other sessions end
-      await request(server())
-        .post(LOGIN)
-        .send({ email: user.email, password: PASSWORD })
-        .expect(401);
+      await anon().post(LOGIN).send({ email: user.email, password: PASSWORD }).expect(401);
       await signIn(user.email, 'Mpya2027Siri');
 
       // The previous password is now in the history and cannot come back.

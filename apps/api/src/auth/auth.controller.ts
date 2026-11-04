@@ -74,9 +74,10 @@ export class MeController {
     return this.auth.updateMe(auth, body, req);
   }
 
-  /** POST /api/v1/me/password */
+  /** POST /api/v1/me/password — 5 attempts per 15 minutes; wrong ones also count to the lockout. */
   @Post('password')
   @HttpCode(204)
+  @Throttle({ default: { limit: 5, ttl: 15 * 60_000 } })
   changePassword(
     @CurrentAuth() auth: AuthState,
     @Body() body: ChangePasswordBody,

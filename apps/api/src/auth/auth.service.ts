@@ -7,12 +7,13 @@ import type {
   UpdateMeRequest,
 } from '@vote-kidigit/shared';
 import type { Request } from 'express';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { AuditService } from '../audit/audit.service.js';
 import { AppError } from '../common/app-error.js';
 import type { Env } from '../config/env.schema.js';
 import { RequestContextService } from '../context/request-context.js';
 import { type DbContext, PrismaService } from '../database/prisma.service.js';
+import { RedisService } from '../redis/redis.service.js';
 import { AuthStateService } from './auth-state.service.js';
 import type { AuthState } from './auth.types.js';
 import { hashPassword, verifyAgainstDummy, verifyPassword } from './passwords.js';
@@ -34,6 +35,24 @@ export const PASSWORD_HISTORY_SIZE = 5;
 
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error));
+
+/**
+ * Failure counter for unknown emails, mirroring the account lockout. Returns the remaining lock
+ * in ms (0 when not locked). KEYS: count, lock; ARGV: max attempts, lock ms. Counts are kept
+ * for a day, like a real account's counter which only resets on success or lock.
+ */
+const UNKNOWN_EMAIL_SCRIPT = `
+local lockTtl = redis.call('PTTL', KEYS[2])
+if lockTtl > 0 then return lockTtl end
+local count = redis.call('INCR', KEYS[1])
+redis.call('EXPIRE', KEYS[1], 86400)
+if count >= tonumber(ARGV[1]) then
+  redis.call('DEL', KEYS[1])
+  redis.call('SET', KEYS[2], '1', 'PX', ARGV[2])
+  return tonumber(ARGV[2])
+end
+return 0
+`;
 
 function regenerate(req: Request): Promise<void> {
   return new Promise((resolve, reject) =>
@@ -59,6 +78,7 @@ export class AuthService {
     private readonly authState: AuthStateService,
     private readonly sessions: SessionService,
     private readonly requestContext: RequestContextService,
+    private readonly redis: RedisService,
     config: ConfigService<Env, true>,
   ) {
     this.maxAttempts = config.get('LOGIN_MAX_ATTEMPTS', { infer: true });
@@ -66,8 +86,10 @@ export class AuthService {
   }
 
   /**
-   * POST /auth/login. Every failure that could reveal whether an account exists returns the
-   * same INVALID_CREDENTIALS; the account status is only revealed after a correct password.
+   * POST /auth/login. Unknown emails, wrong passwords and pending invitations get the same
+   * answer with the same timing, and unknown emails are locked after the same number of failures
+   * as real accounts, so neither INVALID_CREDENTIALS nor ACCOUNT_LOCKED reveals whether an
+   * account exists. The account status is only revealed after a correct password.
    */
   async login(body: LoginRequest, req: Request): Promise<MeResponse> {
     const ctx = this.requestContext.getOrThrow();
@@ -83,9 +105,9 @@ export class AuthService {
     );
 
     if (!row?.password_hash) {
-      // Unknown email or invitation not yet accepted: same answer, same timing.
+      // Unknown email or invitation not yet accepted.
       await verifyAgainstDummy(body.password);
-      throw new AppError('INVALID_CREDENTIALS');
+      return this.failUnknownEmail(body.email);
     }
 
     const userContext: DbContext = {
@@ -95,28 +117,16 @@ export class AuthService {
       requestId: ctx.requestId,
     };
     const now = new Date();
+    // The password is always checked, so a locked account answers in the same time.
+    const valid = await verifyPassword(row.password_hash, body.password);
     if (row.locked_until && row.locked_until > now) {
       throw new AppError('ACCOUNT_LOCKED', undefined, {
         lockedUntil: row.locked_until.toISOString(),
       });
     }
 
-    if (!(await verifyPassword(row.password_hash, body.password))) {
-      const attempts = row.failed_login_count + 1;
-      const lockedUntil =
-        attempts >= this.maxAttempts ? new Date(now.getTime() + this.lockMinutes * 60_000) : null;
-      await this.prisma.withContext(userContext, async (tx) => {
-        await tx.user.update({
-          where: { id: row.id },
-          data: lockedUntil ? { failedLoginCount: 0, lockedUntil } : { failedLoginCount: attempts },
-        });
-        await this.audit.record(tx, {
-          action: lockedUntil ? 'auth.login.locked' : 'auth.login.failed',
-          entityType: 'users',
-          entityId: row.id,
-          organizationId: row.organization_id,
-        });
-      });
+    if (!valid) {
+      const lockedUntil = await this.recordFailure(userContext, 'auth.login');
       if (lockedUntil) {
         throw new AppError('ACCOUNT_LOCKED', undefined, { lockedUntil: lockedUntil.toISOString() });
       }
@@ -155,6 +165,7 @@ export class AuthService {
     req.session.isPlatformAdmin = state.isPlatformAdmin;
     req.session.csrf = randomBytes(32).toString('base64url');
     req.session.timeoutMinutes = state.sessionTimeoutMinutes;
+    req.session.issuedAt = Date.now();
     req.session.cookie.maxAge = state.sessionTimeoutMinutes * 60_000;
     await this.sessions.track(state.userId, req.sessionID, state.sessionTimeoutMinutes);
 
@@ -227,17 +238,34 @@ export class AuthService {
    * end; this one continues under a new session id.
    */
   async changePassword(auth: AuthState, body: ChangePasswordRequest, req: Request): Promise<void> {
-    await this.prisma.withContext(this.dbContext(), async (tx) => {
+    const context = this.dbContext();
+    const current = await this.prisma.withContext(context, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: auth.userId }, select: { passwordHash: true } }),
+    );
+    if (
+      !current.passwordHash ||
+      !(await verifyPassword(current.passwordHash, body.currentPassword))
+    ) {
+      // A wrong current password counts towards the account lockout, in its own committed
+      // transaction (this request fails); at the lock every session of the user ends.
+      const lockedUntil = await this.recordFailure(context, 'me.password');
+      if (lockedUntil) {
+        await this.sessions.destroyAllForUser(auth.userId);
+        await destroy(req);
+        throw new AppError('ACCOUNT_LOCKED', undefined, { lockedUntil: lockedUntil.toISOString() });
+      }
+      throw new AppError('VALIDATION_FAILED', 'Current password is incorrect.', {
+        source: 'body',
+        issues: [{ path: 'currentPassword', code: 'incorrect', message: 'is incorrect' }],
+      });
+    }
+
+    await this.prisma.withContext(context, async (tx) => {
       const user = await tx.user.findUniqueOrThrow({
         where: { id: auth.userId },
         select: { passwordHash: true },
       });
-      if (!user.passwordHash || !(await verifyPassword(user.passwordHash, body.currentPassword))) {
-        throw new AppError('VALIDATION_FAILED', 'Current password is incorrect.', {
-          source: 'body',
-          issues: [{ path: 'currentPassword', code: 'incorrect', message: 'is incorrect' }],
-        });
-      }
+      if (!user.passwordHash) throw new AppError('UNAUTHENTICATED');
 
       const history = await tx.passwordHistory.findMany({
         where: { userId: auth.userId },
@@ -271,6 +299,9 @@ export class AuthService {
       });
     });
 
+    // Other sessions end twice over: explicitly here, and through the session epoch, since
+    // AuthGuard rejects any session issued before passwordChangedAt.
+    await this.authState.invalidateUser(auth.userId);
     const { csrf, timeoutMinutes } = req.session;
     await this.sessions.destroyAllForUser(auth.userId, req.sessionID);
     await regenerate(req);
@@ -280,9 +311,64 @@ export class AuthService {
       isPlatformAdmin: auth.isPlatformAdmin,
       csrf,
       timeoutMinutes,
+      issuedAt: Date.now(),
     });
     req.session.cookie.maxAge = auth.sessionTimeoutMinutes * 60_000;
     await this.sessions.track(auth.userId, req.sessionID, auth.sessionTimeoutMinutes);
+  }
+
+  /**
+   * Counts a wrong password against an account and locks it at LOGIN_MAX_ATTEMPTS, in one
+   * statement so concurrent attempts cannot each read the old count. Audited. Returns the
+   * unlock time when the account is now locked.
+   */
+  private async recordFailure(
+    context: DbContext,
+    actionPrefix: 'auth.login' | 'me.password',
+  ): Promise<Date | null> {
+    const userId = context.userId;
+    if (!userId) throw new Error('recordFailure needs a user');
+    return this.prisma.withContext(context, async (tx) => {
+      const [row] = await tx.$queryRaw<{ locked_until: Date | null; locked_now: boolean }[]>`
+        UPDATE public.users SET
+          failed_login_count = CASE WHEN failed_login_count + 1 >= ${this.maxAttempts}
+                                    THEN 0 ELSE failed_login_count + 1 END,
+          locked_until = CASE WHEN failed_login_count + 1 >= ${this.maxAttempts}
+                              THEN now() + make_interval(mins => ${this.lockMinutes})
+                              ELSE locked_until END
+        WHERE id = ${userId}::uuid
+        RETURNING locked_until, (locked_until > now()) AS locked_now`;
+      const lockedUntil = row?.locked_now ? row.locked_until : null;
+      await this.audit.record(tx, {
+        action: `${actionPrefix}.${lockedUntil ? 'locked' : 'failed'}`,
+        entityType: 'users',
+        entityId: userId,
+        organizationId: context.orgId,
+      });
+      return lockedUntil;
+    });
+  }
+
+  /**
+   * Unknown emails get the same lockout as real accounts (counted in Redis per normalized
+   * email), so ACCOUNT_LOCKED does not reveal that an account exists.
+   */
+  private async failUnknownEmail(email: string): Promise<never> {
+    const digest = createHash('sha256').update(email.trim().toLowerCase()).digest('hex');
+    const result = (await this.redis.eval(
+      UNKNOWN_EMAIL_SCRIPT,
+      2,
+      `login-unknown:${digest}:count`,
+      `login-unknown:${digest}:lock`,
+      this.maxAttempts,
+      this.lockMinutes * 60_000,
+    )) as number;
+    if (result > 0) {
+      throw new AppError('ACCOUNT_LOCKED', undefined, {
+        lockedUntil: new Date(Date.now() + result).toISOString(),
+      });
+    }
+    throw new AppError('INVALID_CREDENTIALS');
   }
 
   private dbContext(): DbContext {

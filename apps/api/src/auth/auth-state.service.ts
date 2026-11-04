@@ -95,6 +95,7 @@ export class AuthStateService {
           phone: true,
           language: true,
           themePreference: true,
+          passwordChangedAt: true,
         },
       });
       if (
@@ -164,6 +165,7 @@ export class AuthStateService {
         // Event mappings arrive with the events tables in step 15.
         mappedEventIds: [],
         sessionTimeoutMinutes: organization?.sessionTimeoutMinutes ?? this.platformTimeout,
+        passwordChangedAt: user.passwordChangedAt?.toISOString() ?? null,
       };
     });
   }
