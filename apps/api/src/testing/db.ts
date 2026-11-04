@@ -4,6 +4,7 @@
 import { randomUUID } from 'node:crypto';
 import type { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { hashPassword } from '../auth/passwords.js';
 import '../config/config.module.js'; // loads apps/api/.env into process.env (CI sets real env vars)
 import type { Env } from '../config/env.schema.js';
 import { type DbContext, PrismaService } from '../database/prisma.service.js';
@@ -57,16 +58,23 @@ export async function createOrganization(owner: PrismaClient, name = 'Test org')
 /** Creates a staff user (as owner) and returns its id. */
 export async function createUser(
   owner: PrismaClient,
-  organizationId: string,
-  overrides: { isOrgSuperAdmin?: boolean; status?: 'invited' | 'active' | 'deactivated' } = {},
+  organizationId: string | null,
+  overrides: {
+    isOrgSuperAdmin?: boolean;
+    status?: 'invited' | 'active' | 'deactivated';
+    email?: string;
+    password?: string;
+  } = {},
 ): Promise<string> {
   const user = await owner.user.create({
     data: {
       organizationId,
-      email: `user-${uniqueSuffix()}@example.test`,
+      isPlatformAdmin: organizationId === null,
+      email: overrides.email ?? `user-${uniqueSuffix()}@example.test`,
       fullName: 'Test User',
       status: overrides.status ?? 'active',
       isOrgSuperAdmin: overrides.isOrgSuperAdmin ?? false,
+      passwordHash: overrides.password ? await hashPassword(overrides.password) : null,
     },
     select: { id: true },
   });

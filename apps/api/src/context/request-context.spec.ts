@@ -1,9 +1,11 @@
+import { Public } from '../auth/decorators.js';
 import { Controller, Get } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { createTestHttpApp } from '../testing/http.js';
 import { type RequestContext, RequestContextService, systemContext } from './request-context.js';
 
+@Public()
 @Controller('context-probe')
 class ContextProbeController {
   constructor(private readonly requestContext: RequestContextService) {}

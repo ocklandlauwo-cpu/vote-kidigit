@@ -1,5 +1,6 @@
 // Integration test of the HTTP pipeline (Implementation Plan step 8): error format, Zod
 // validation, database error mapping, rate limiting, security headers and log redaction.
+import { Public } from '../auth/decorators.js';
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
@@ -19,6 +20,7 @@ class ProbeBody extends zodDto(
   z.object({ name: z.string().min(2), count: z.coerce.number().int().positive() }),
 ) {}
 
+@Public()
 @Controller('probe')
 class ProbeController {
   constructor(private readonly prisma: PrismaService) {}

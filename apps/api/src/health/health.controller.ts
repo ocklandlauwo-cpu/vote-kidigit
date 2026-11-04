@@ -4,9 +4,11 @@ import type { Response } from 'express';
 import { RequestContextService } from '../context/request-context.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
+import { Public } from '../auth/decorators.js';
 import { DeploySecretGuard } from './deploy-secret.guard.js';
 
 /** Health endpoints (Backend Schema 12.12). Never rate limited: probes and deploys call them. */
+@Public()
 @SkipThrottle()
 @Controller('health')
 export class HealthController {
