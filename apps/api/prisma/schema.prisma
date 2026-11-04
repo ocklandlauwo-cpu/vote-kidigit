@@ -1,4 +1,4 @@
-// Vote-Kidigit database schema (Backend Schema). Models are added from step 6 on;
+// Vote-Kidigit database schema (Backend Schema). Tables arrive from step 7 on;
 // RLS policies, functions, triggers and grants live as SQL in the same migrations.
 
 generator client {
@@ -10,4 +10,250 @@ generator client {
 datasource db {
   provider = "postgresql"
   schemas  = ["public", "ballot", "audit"]
+}
+
+// -----------------------------------------------------------------------------------------------
+// Enums (Backend Schema 3). PostgreSQL enums in the public schema, mirrored as Zod enums in
+// packages/shared/src/constants/enums.ts; enums.spec.ts checks the three lists stay identical.
+// -----------------------------------------------------------------------------------------------
+
+enum OrgStatus {
+  active
+  suspended
+
+  @@map("org_status")
+  @@schema("public")
+}
+
+enum UserStatus {
+  invited
+  active
+  deactivated
+
+  @@map("user_status")
+  @@schema("public")
+}
+
+enum AssignmentType {
+  moderator
+  observer
+
+  @@map("assignment_type")
+  @@schema("public")
+}
+
+enum EventStatus {
+  draft
+  scheduled
+  open
+  closed
+  results_published
+  cancelled
+  archived
+
+  @@map("event_status")
+  @@schema("public")
+}
+
+enum ResultsVisibility {
+  full
+  winners_only
+
+  @@map("results_visibility")
+  @@schema("public")
+}
+
+/// auto = follow opens_at / closes_at
+enum CategoryManualState {
+  auto
+  open
+  closed
+
+  @@map("category_manual_state")
+  @@schema("public")
+}
+
+enum SelectionMode {
+  exact
+  range
+
+  @@map("selection_mode")
+  @@schema("public")
+}
+
+enum WinnerRule {
+  plurality
+  threshold
+
+  @@map("winner_rule")
+  @@schema("public")
+}
+
+enum EligibilityMode {
+  all
+  selected
+
+  @@map("eligibility_mode")
+  @@schema("public")
+}
+
+enum ContesterStatus {
+  active
+  withdrawn
+
+  @@map("contester_status")
+  @@schema("public")
+}
+
+enum Gender {
+  male
+  female
+
+  @@map("gender")
+  @@schema("public")
+}
+
+enum CodeStatus {
+  not_sent
+  sent
+  delivered
+  failed
+
+  @@map("code_status")
+  @@schema("public")
+}
+
+/// Stored on voter_participation only, never on ballots.
+enum VoteChannel {
+  web
+  ussd
+  kiosk
+
+  @@map("vote_channel")
+  @@schema("public")
+}
+
+enum ChoiceKind {
+  contester
+  yes
+  no
+  skipped
+
+  @@map("choice_kind")
+  @@schema("public")
+}
+
+enum TieOutcome {
+  contester
+  no_winner
+
+  @@map("tie_outcome")
+  @@schema("public")
+}
+
+enum MessageType {
+  code_delivery
+  reminder_before_open
+  voting_open
+  reminder_before_close
+  vote_confirmation
+  results_published
+  event_cancelled
+  event_extended
+
+  @@map("message_type")
+  @@schema("public")
+}
+
+enum MessageChannel {
+  sms
+  email
+
+  @@map("message_channel")
+  @@schema("public")
+}
+
+enum MessageStatus {
+  queued
+  sent
+  delivered
+  failed
+
+  @@map("message_status")
+  @@schema("public")
+}
+
+enum BatchAudience {
+  all
+  not_sent
+  failed
+  not_voted
+  single
+
+  @@map("batch_audience")
+  @@schema("public")
+}
+
+enum BatchStatus {
+  queued
+  sending
+  paused
+  completed
+  cancelled
+
+  @@map("batch_status")
+  @@schema("public")
+}
+
+enum ImportStatus {
+  uploaded
+  validated
+  importing
+  completed
+  failed
+  abandoned
+
+  @@map("import_status")
+  @@schema("public")
+}
+
+enum ReportType {
+  results_pdf
+  voters_pdf
+  voters_xlsx
+  audit_xlsx
+
+  @@map("report_type")
+  @@schema("public")
+}
+
+enum JobStatus {
+  queued
+  running
+  completed
+  failed
+
+  @@map("job_status")
+  @@schema("public")
+}
+
+enum FileKind {
+  org_logo
+  category_picture
+  contester_photo
+  voter_photo
+  csv_import
+  report
+
+  @@map("file_kind")
+  @@schema("public")
+}
+
+enum ActorType {
+  user
+  voter
+  system
+
+  @@map("actor_type")
+  @@schema("public")
 }

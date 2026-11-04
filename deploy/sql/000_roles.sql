@@ -1,5 +1,6 @@
--- Database roles and database (Backend Schema 2.2, 10.1).
--- Run by the postgres superuser, once per server and once per database; safe to re-run.
+-- 000_roles_and_schemas (Backend Schema 2.2, 10.1, 13.2): database roles, the database and the
+-- pg_trgm extension. Run by the postgres superuser, once per server and once per database;
+-- safe to re-run. Everything after this runs as vk_owner through prisma migrate.
 --
 --   psql -U postgres -d postgres \
 --     -v owner_pw=... -v api_pw=... -v ro_pw=... -v db_name=vote_kidigit \
@@ -30,3 +31,7 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name') \gexec
 
 SELECT format('ALTER DATABASE %I OWNER TO vk_owner', :'db_name') \gexec
 SELECT format('ALTER DATABASE %I SET timezone TO %L', :'db_name', 'UTC') \gexec
+
+-- Extensions are per database. pg_trgm backs the trigram search index on voter names.
+\connect :"db_name"
+CREATE EXTENSION IF NOT EXISTS pg_trgm;

@@ -107,6 +107,12 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 5. **PRD section 9 and 10.1** (Laravel, cloud hosting, 15 Nov pilot) are superseded by the Tech Stack and the Implementation Plan dates.
 6. **Theme hook location.** Design System 12 puts `useEffectiveTheme` in `packages/shared/src/design/theme.ts`, but the shared package may depend only on zod. `theme.ts` is a framework-free store (`subscribeTheme`, `getEffectiveTheme`, `toggleTheme`…); each app has a two-line `useEffectiveTheme` hook on `useSyncExternalStore`.
 
+## Database access in code
+
+- Every application query runs inside `PrismaService.withContext(ctx, (tx) => …)` and uses `tx`, never the bare `PrismaService`: it sets `app.org_id`, `app.user_id`, `app.is_platform_admin` and `app.request_id` as transaction-local settings for RLS. Outside withContext, `app.current_org_id()` is NULL, so RLS-protected tables return nothing.
+- The request context lives in `RequestContextService` (AsyncLocalStorage), not a Nest `Scope.REQUEST` provider: the plan's "request-scoped RequestContext" is per-request state without making every dependent service request-scoped. `RequestContextMiddleware` starts it for every HTTP request; authentication fills in `orgId` / `userId`; worker jobs call `requestContext.run(ctx, fn)` with the context carried in the job payload.
+- Migrations: change `schema.prisma`, then `pnpm --filter @vote-kidigit/api exec prisma migrate dev --create-only --name NNN_name`, add the RLS / grants / triggers SQL to the generated file, then `prisma migrate dev`. Enums are mirrored in `packages/shared/src/constants/enums.ts`; `migrations-001-002.spec.ts` fails if PostgreSQL, Prisma and Zod disagree.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.
