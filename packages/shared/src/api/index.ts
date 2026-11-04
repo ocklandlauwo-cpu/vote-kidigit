@@ -1,2 +1,2 @@
-// Zod request and response schemas, one per endpoint (Backend Schema 12). Added from step 8 on.
-export {};
+// Zod request and response schemas, one per endpoint (Backend Schema 12), and the error contract.
+export * from './errors.js';

@@ -450,3 +450,41 @@ enum ActorType {
   @@map("actor_type")
   @@schema("public")
 }
+
+// -----------------------------------------------------------------------------------------------
+// Audit log (Backend Schema 7.8). Append-only: vk_api may only INSERT and SELECT, and triggers
+// reject UPDATE, DELETE and TRUNCATE for everyone (migration 004). No foreign keys, so the
+// history survives deleted users and events. Written only through AuditService.record().
+// -----------------------------------------------------------------------------------------------
+
+model AuditLog {
+  id             String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  /// NULL for platform actions.
+  organizationId String?   @map("organization_id") @db.Uuid
+  actorType      ActorType @map("actor_type")
+  /// No FK, so history survives user deletion.
+  actorUserId    String?   @map("actor_user_id") @db.Uuid
+  /// Name and email at the time, or "System", or "Voter".
+  actorLabel     String    @map("actor_label")
+  eventId        String?   @map("event_id") @db.Uuid
+  /// Dotted key, usually the permission used, e.g. event.publish.
+  action         String
+  /// Table name.
+  entityType     String    @map("entity_type")
+  entityId       String?   @map("entity_id") @db.Uuid
+  /// Changed columns only, after redaction.
+  before         Json?
+  after          Json?
+  reason         String?
+  ip             String?   @db.Inet
+  userAgent      String?   @map("user_agent")
+  requestId      String?   @map("request_id")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([eventId, createdAt(sort: Desc)])
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([action])
+  @@map("audit_log")
+  @@schema("audit")
+}

@@ -61,6 +61,13 @@ const TENANT_TABLES: TenantTableCase[] = [
       tx.$executeRaw`INSERT INTO public.user_roles (user_id, role_id, organization_id)
         VALUES (${f.spareUserId}::uuid, ${f.roleId}::uuid, ${org}::uuid)`,
   },
+  {
+    table: 'audit.audit_log',
+    appendOnly: true,
+    insertFor: (tx, org) =>
+      tx.$executeRaw`INSERT INTO audit.audit_log (organization_id, actor_type, actor_label, action, entity_type)
+        VALUES (${org}::uuid, 'system', 'Intruder', 'probe.write', 'probe')`,
+  },
 ];
 
 /** Seeds one row in every tenant table for `orgId` (as owner). */
@@ -90,6 +97,18 @@ async function seedOrganization(
       purpose: 'password_reset',
       tokenHash: randomBytes(32),
       expiresAt: new Date(Date.now() + 3_600_000),
+    },
+  });
+  // Audit rows are permanent (append-only); the table has no foreign keys, so the
+  // organization can still be deleted in clean-up.
+  await owner.auditLog.create({
+    data: {
+      organizationId: orgId,
+      actorType: 'system',
+      actorLabel: 'System',
+      action: 'test.seed',
+      entityType: 'organizations',
+      entityId: orgId,
     },
   });
   return { userId, spareUserId, roleId: role.id, customRoleId: customRole.id, permissionKey };
@@ -144,7 +163,7 @@ describe('row level security: tenant isolation', () => {
     const rows = await owner.$queryRaw<{ table: string; rls: boolean }[]>`
       SELECT n.nspname || '.' || c.relname AS table, c.relrowsecurity AS rls
       FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
-      WHERE c.relkind = 'r' AND n.nspname = 'public'`;
+      WHERE c.relkind = 'r' AND n.nspname IN ('public', 'audit')`;
     for (const { table } of TENANT_TABLES) {
       expect(rows.find((r) => r.table === table)?.rls).toBe(true);
     }

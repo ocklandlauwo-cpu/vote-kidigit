@@ -1,9 +1,8 @@
-import { Controller, Get, type INestApplication, Module } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
+import { Controller, Get } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import type { App } from 'supertest/types';
-import { ApiModule } from '../api.module.js';
-import { type RequestContext, RequestContextService } from './request-context.js';
+import { createTestHttpApp } from '../testing/http.js';
+import { type RequestContext, RequestContextService, systemContext } from './request-context.js';
 
 @Controller('context-probe')
 class ContextProbeController {
@@ -17,17 +16,9 @@ class ContextProbeController {
   }
 }
 
-@Module({ imports: [ApiModule], controllers: [ContextProbeController] })
-class ProbeModule {}
-
 describe('RequestContextService', () => {
   const service = new RequestContextService();
-  const ctx = (requestId: string): RequestContext => ({
-    requestId,
-    orgId: null,
-    userId: null,
-    isPlatformAdmin: false,
-  });
+  const ctx = (requestId: string): RequestContext => systemContext(requestId);
 
   it('has no context outside run()', () => {
     expect(service.get()).toBeUndefined();
@@ -48,13 +39,10 @@ describe('RequestContextService', () => {
 });
 
 describe('RequestContextMiddleware', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [ProbeModule] }).compile();
-    app = moduleRef.createNestApplication<INestApplication<App>>();
-    app.setGlobalPrefix('api');
-    await app.init();
+    ({ app } = await createTestHttpApp([ContextProbeController]));
   });
 
   afterAll(async () => {
@@ -67,7 +55,15 @@ describe('RequestContextMiddleware', () => {
       request(app.getHttpServer()).get('/api/context-probe').expect(200),
     ]);
     const body = first.body as RequestContext;
-    expect(body).toMatchObject({ orgId: null, userId: null, isPlatformAdmin: false });
+    expect(body).toMatchObject({
+      orgId: null,
+      userId: null,
+      isPlatformAdmin: false,
+      actorType: 'system',
+      actorLabel: 'Anonymous',
+    });
+    expect(body.ip).toMatch(/127\.0\.0\.1|::1/);
+    expect(body.userAgent).toBeNull();
     expect(body.requestId).toMatch(/^[0-9a-f-]{36}$/);
     expect(first.headers['x-request-id']).toBe(body.requestId);
     expect((second.body as RequestContext).requestId).not.toBe(body.requestId);

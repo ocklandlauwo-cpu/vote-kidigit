@@ -2,6 +2,7 @@
 // (Backend Schema 11.3), default roles (11.6, 9.2), generated and checked columns, the
 // organization copy on password history and tokens, and role privileges.
 import { randomBytes } from 'node:crypto';
+import { toAppError } from '../common/all-exceptions.filter.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import {
   apiClient,
@@ -41,11 +42,19 @@ describe('migration 003_tenancy_identity', () => {
     it('refuses to deactivate the only active super admin', async () => {
       const org = await newOrg();
       const admin = await createUser(owner, org, { isOrgSuperAdmin: true });
-      await expect(
-        api.withContext(orgContext(org), (tx) =>
+      const failure = api
+        .withContext(orgContext(org), (tx) =>
           tx.user.update({ where: { id: admin }, data: { status: 'deactivated' } }),
-        ),
-      ).rejects.toThrow('LAST_SUPER_ADMIN');
+        )
+        .then(
+          () => undefined,
+          (error: unknown) => error,
+        );
+      const error = await failure;
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain('LAST_SUPER_ADMIN');
+      // The deferred trigger fails at COMMIT; the HTTP layer still maps it to its code.
+      expect(toAppError(error)).toMatchObject({ code: 'LAST_SUPER_ADMIN', status: 409 });
     });
 
     it('refuses to delete, soft-delete or demote the only active super admin', async () => {

@@ -15,6 +15,8 @@ export interface TenantTableCase {
   orgColumn?: string;
   /** Platform admins read every organization's rows unless false (e.g. voters). */
   platformCanRead?: boolean;
+  /** vk_api may only insert and read (audit log): updates and deletes are permission errors. */
+  appendOnly?: boolean;
   /** Attempts, as vk_api, to insert a row that belongs to `targetOrgId`. */
   insertFor(tx: Tx, targetOrgId: string, fixtures: OrgFixtures): Promise<unknown>;
 }
@@ -46,7 +48,12 @@ export function describeTenantIsolation(
   getSetup: () => IsolationSetup,
 ): void {
   for (const testCase of cases) {
-    const { table, orgColumn = 'organization_id', platformCanRead = true } = testCase;
+    const {
+      table,
+      orgColumn = 'organization_id',
+      platformCanRead = true,
+      appendOnly = false,
+    } = testCase;
     const col = `"${orgColumn}"`;
 
     describe(table, () => {
@@ -89,6 +96,20 @@ export function describeTenantIsolation(
       it("organization A cannot update or delete B's rows", async () => {
         const { api, orgA, orgB } = getSetup();
         const ctxA = orgContext(orgA);
+        if (appendOnly) {
+          await expect(
+            affected(
+              api,
+              ctxA,
+              `UPDATE ${table} SET ${col} = ${col} WHERE ${col} = $1::uuid`,
+              orgB,
+            ),
+          ).rejects.toThrow(/permission denied/);
+          await expect(
+            affected(api, ctxA, `DELETE FROM ${table} WHERE ${col} = $1::uuid`, orgB),
+          ).rejects.toThrow(/permission denied/);
+          return;
+        }
         expect(
           await affected(
             api,
