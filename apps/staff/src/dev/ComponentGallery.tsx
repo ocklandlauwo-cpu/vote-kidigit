@@ -9,6 +9,8 @@ import { Logo, type LogoLockup } from '../components/Logo';
 import { LogoMark } from '../components/LogoMark';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { useEffectiveTheme } from '../hooks/useEffectiveTheme';
+import { LanguageSwitch } from '../layout/LanguageSwitch';
+import { GalleryComponents } from './GalleryComponents';
 
 const swatch: CSSProperties = {
   width: 'var(--vk-space-16)',
@@ -66,6 +68,7 @@ export default function ComponentGallery() {
         <Flex align="center" gap="small">
           <span style={caption}>theme: {theme}</span>
           <ThemeToggle />
+          <LanguageSwitch />
         </Flex>
       </Flex>
 
@@ -225,7 +228,13 @@ export default function ComponentGallery() {
         <Flex gap="large" align="center">
           <ThemeToggle />
           <span style={caption}>ThemeToggle (icon button M)</span>
+          <LanguageSwitch />
+          <span style={caption}>LanguageSwitch</span>
         </Flex>
+      </Section>
+
+      <Section title="Shared components (step 13)">
+        <GalleryComponents />
       </Section>
     </main>
   );

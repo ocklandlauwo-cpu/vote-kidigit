@@ -5,6 +5,8 @@
     "moduleResolution": "nodenext",
     // No DOM types: src/ is compiled by the API too; browser code goes through globalThis.
     "lib": ["ES2023"],
+    // sw.json / en.json UI strings (src/i18n).
+    "resolveJsonModule": true,
     // Node types for vite-plugin-design.ts only; src/ never imports node: modules.
     "types": ["node"]
   },

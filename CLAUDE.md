@@ -159,6 +159,16 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - `packages/shared/vite-plugin-design.ts` copies the Inter fonts into each app's `public/fonts/` (git-ignored), injects the pre-paint theme script and the font preload.
 - Component galleries: `/app/dev/components` (staff) and `/dev/components` (voter), development builds only. Add every new component variant there.
 
+## Staff portal in code
+
+- Strings: `packages/shared/src/i18n/sw.json` and `en.json` (same keys, tested). The apps initialise i18next themselves (`apps/staff/src/i18n.ts`; keys are typed). Never write user-facing text in components; Ant Design's own few built-in texts stay English (it has no Swahili locale).
+- API calls: `api(path, { method, body, schema })` from `apps/staff/src/api/client.ts`. It sends the CSRF header, records `X-Session-Expires` and turns `{ code, message, details }` into `ApiError` (`isApiError(e, 'CODE')`, `e.issues` for field errors). Map codes a screen expects to its own message; use `errorMessage(t, e)` for the rest.
+- Server state only through TanStack Query (`createQueryClient`: no retry on 4xx). The signed-in user is `useMe()` (`['me']`); `null` means signed out. `hasPermission(me, key)` hides menu items and greys buttons (App Flow 3.7).
+- Routes (`router.tsx`, basename /app): sign-in screens under `AuthLayout`; everything else inside `RequireAuth` (portal frame), with sections behind `RequirePermission` (ERR-03 when missing). A route's breadcrumb is `handle: { crumb: 'nav.users' }`. Sections without screens yet render `ComingSoonPage`.
+- Shared components (`apps/staff/src/components`): `StatusBadge` (domains and values from Design System 3.3 in `statusSpecs.ts`; add a row there before a new status), `Banner`, `EmptyState`, `PageHeader`, `ConfirmDialog` (tone, `typeToConfirm`, `requireReason`), `ErrorPage` (ERR-01/03/04/05), `UserAvatar`. Styles that props cannot express live in `src/styles.css`, with token values only.
+- Component files export only components (Fast Refresh lint); helpers and constants go in a sibling `.ts` file.
+- Tests: `renderWithProviders(ui, { path, routes })` and `jsonResponse()` in `src/test/render.tsx`; the test setup stubs `ResizeObserver` and `matchMedia` (narrow screen unless a test stubs a wide one). Stub `fetch` with `vi.stubGlobal`.
+
 ## Local development (Windows)
 
 PostgreSQL 18.6 and Redis 7.2 run in Docker using the same image tags as CI (Implementation Plan 3 allows this). Node 24.22.2 is managed with nvm-windows; pnpm 11.28.10 through Corepack.

@@ -1,0 +1,183 @@
+{
+  "common": {
+    "productName": "Vote-Kidigit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "retry": "Retry",
+    "back": "Back",
+    "continue": "Continue",
+    "loading": "Loading…",
+    "noPermission": "You don’t have permission to do this. Ask your administrator.",
+    "comingSoonTitle": "This section is being prepared",
+    "comingSoonBody": "It will be available in an upcoming release."
+  },
+  "nav": {
+    "groupWork": "Work",
+    "groupAdmin": "Admin",
+    "dashboard": "Dashboard",
+    "organizations": "Organizations",
+    "events": "Events",
+    "users": "Users",
+    "roles": "Roles & permissions",
+    "audit": "Audit log",
+    "settings": "Settings",
+    "profile": "Profile",
+    "openMenu": "Open menu",
+    "collapse": "Collapse menu",
+    "expand": "Expand menu",
+    "breadcrumb": "You are here",
+    "mainNavigation": "Main menu"
+  },
+  "topbar": {
+    "search": "Search events, voters or staff",
+    "searchLabel": "Search",
+    "searchSoon": "Search is coming soon",
+    "theme": "Switch theme",
+    "language": "Language",
+    "profileMenu": "Profile menu",
+    "signOut": "Sign out"
+  },
+  "language": {
+    "sw": "Kiswahili",
+    "en": "English"
+  },
+  "auth": {
+    "email": "Email",
+    "emailPlaceholder": "name@example.co.tz",
+    "emailInvalid": "Enter an email like name@example.co.tz",
+    "password": "Password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordRequired": "Enter your password",
+    "passwordMismatch": "The passwords don’t match",
+    "passwordWeak": "The password doesn’t meet the rules below",
+    "fullName": "Full name",
+    "fullNameInvalid": "Enter a name of 2 to 120 characters",
+    "rules": {
+      "title": "Your password needs:",
+      "length": "At least 10 characters",
+      "upper": "One upper-case letter",
+      "lower": "One lower-case letter",
+      "number": "One number",
+      "history": "Not one of your last 5 passwords",
+      "met": "Done",
+      "notMet": "Not yet"
+    },
+    "signIn": {
+      "title": "Sign in",
+      "subtitle": "Sign in to your staff account",
+      "submit": "Sign in",
+      "forgot": "Forgot password?",
+      "voter": "Are you a voter? Vote here",
+      "invalidCredentials": "Email or password is incorrect.",
+      "locked": "Account locked for 15 minutes. Try again in {{time}}.",
+      "lockedOver": "You can try signing in again now.",
+      "inactive": "Your account is inactive. Contact your administrator.",
+      "orgSuspended": "Your organization’s access is suspended.",
+      "signedOutInactive": "You were signed out due to inactivity.",
+      "signedOut": "You signed out.",
+      "passwordSaved": "Password saved. Sign in with your new password."
+    },
+    "invite": {
+      "title": "Set your password",
+      "welcome": "Welcome to {{organization}}",
+      "welcomePlatform": "Welcome to Vote-Kidigit",
+      "submit": "Create account",
+      "expired": "This invitation has expired. Ask your administrator to send a new one.",
+      "used": "This invitation was already used. Sign in instead.",
+      "signIn": "Sign in",
+      "created": "Account created"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "body": "Enter the email of your account. We will send you a link to set a new password.",
+      "submit": "Send reset link",
+      "sent": "If this email has an account, a reset link has been sent.",
+      "backToSignIn": "Back to sign in"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "submit": "Save password",
+      "expired": "Link expired",
+      "expiredBody": "Password reset links work for 60 minutes.",
+      "requestNew": "Request new link",
+      "reused": "You used this password recently. Choose another.",
+      "used": "This link was already used. Request a new one."
+    },
+    "session": {
+      "title": "Are you still there?",
+      "body": "You will be signed out in {{seconds}} seconds due to inactivity.",
+      "stay": "Stay signed in",
+      "signOut": "Sign out"
+    }
+  },
+  "errorPage": {
+    "offlineTitle": "No internet connection",
+    "offlineBody": "Check your connection, then try again.",
+    "notFoundTitle": "We couldn’t find that page",
+    "notFoundBody": "The link may be wrong, or you may not have access to it.",
+    "backToDashboard": "Back to dashboard",
+    "home": "Home",
+    "expiredTitle": "This link has expired",
+    "expiredBody": "Request a new link to continue.",
+    "serverTitle": "Something went wrong on our side",
+    "serverBody": "Try again.",
+    "serverBodySupport": "Try again, or contact support at {{phone}}."
+  },
+  "errors": {
+    "network": "No internet connection. Check your connection, then try again.",
+    "server": "Something went wrong on our side. Try again.",
+    "rateLimited": "Too many attempts. Wait a minute, then try again.",
+    "forbidden": "You don’t have permission to do this. Ask your administrator.",
+    "validation": "Check the highlighted fields, then try again."
+  },
+  "confirm": {
+    "typeToConfirm": "Type \"{{text}}\" to confirm",
+    "typeMismatch": "The text doesn’t match",
+    "reason": "Reason",
+    "reasonPlaceholder": "For example: The meeting was postponed",
+    "reasonTooShort": "Write at least 10 characters"
+  },
+  "status": {
+    "event": {
+      "draft": "Draft",
+      "scheduled": "Scheduled",
+      "open": "Open",
+      "closed": "Closed",
+      "results_published": "Results published",
+      "cancelled": "Cancelled",
+      "archived": "Archived"
+    },
+    "category": {
+      "not_open": "Opens later",
+      "open": "Open",
+      "closed": "Closed",
+      "inactive": "Inactive"
+    },
+    "code": {
+      "not_sent": "Not sent",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "failed": "Failed"
+    },
+    "voter": {
+      "voted": "Voted",
+      "not_voted": "Not yet"
+    },
+    "result": {
+      "winner": "Winner",
+      "tie": "Tie"
+    },
+    "user": {
+      "invited": "Invited",
+      "active": "Active",
+      "deactivated": "Deactivated"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}",
+    "cardsSoon": "Dashboard cards will appear here once elections are being prepared."
+  }
+}

@@ -1,0 +1,183 @@
+{
+  "common": {
+    "productName": "Vote-Kidigit",
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "close": "Funga",
+    "retry": "Jaribu tena",
+    "back": "Rudi",
+    "continue": "Endelea",
+    "loading": "Inapakia…",
+    "noPermission": "Huna ruhusa ya kufanya hili. Muulize msimamizi wako.",
+    "comingSoonTitle": "Sehemu hii inaandaliwa",
+    "comingSoonBody": "Itapatikana katika toleo lijalo."
+  },
+  "nav": {
+    "groupWork": "Kazi",
+    "groupAdmin": "Usimamizi",
+    "dashboard": "Dashibodi",
+    "organizations": "Mashirika",
+    "events": "Chaguzi",
+    "users": "Watumiaji",
+    "roles": "Majukumu na ruhusa",
+    "audit": "Kumbukumbu za ukaguzi",
+    "settings": "Mipangilio",
+    "profile": "Wasifu",
+    "openMenu": "Fungua menyu",
+    "collapse": "Kunja menyu",
+    "expand": "Panua menyu",
+    "breadcrumb": "Ulipo",
+    "mainNavigation": "Menyu kuu"
+  },
+  "topbar": {
+    "search": "Tafuta chaguzi, wapiga kura au wafanyakazi",
+    "searchLabel": "Tafuta",
+    "searchSoon": "Utafutaji utapatikana hivi karibuni",
+    "theme": "Badili mwonekano",
+    "language": "Lugha",
+    "profileMenu": "Menyu ya wasifu",
+    "signOut": "Toka"
+  },
+  "language": {
+    "sw": "Kiswahili",
+    "en": "English"
+  },
+  "auth": {
+    "email": "Barua pepe",
+    "emailPlaceholder": "jina@mfano.co.tz",
+    "emailInvalid": "Andika barua pepe kama jina@mfano.co.tz",
+    "password": "Nenosiri",
+    "newPassword": "Nenosiri jipya",
+    "confirmPassword": "Rudia nenosiri",
+    "passwordRequired": "Andika nenosiri",
+    "passwordMismatch": "Manenosiri hayafanani",
+    "passwordWeak": "Nenosiri halitimizi masharti yaliyo hapa chini",
+    "fullName": "Jina kamili",
+    "fullNameInvalid": "Andika jina lenye herufi 2 hadi 120",
+    "rules": {
+      "title": "Nenosiri lako linahitaji:",
+      "length": "Angalau herufi 10",
+      "upper": "Herufi kubwa moja",
+      "lower": "Herufi ndogo moja",
+      "number": "Namba moja",
+      "history": "Lisiwe mojawapo ya manenosiri yako 5 ya mwisho",
+      "met": "Imetimizwa",
+      "notMet": "Bado"
+    },
+    "signIn": {
+      "title": "Ingia",
+      "subtitle": "Ingia kwenye akaunti yako ya wafanyakazi",
+      "submit": "Ingia",
+      "forgot": "Umesahau nenosiri?",
+      "voter": "Wewe ni mpiga kura? Piga kura hapa",
+      "invalidCredentials": "Barua pepe au nenosiri si sahihi.",
+      "locked": "Akaunti imefungwa kwa dakika 15. Jaribu tena baada ya {{time}}.",
+      "lockedOver": "Unaweza kujaribu kuingia tena sasa.",
+      "inactive": "Akaunti yako haitumiki. Wasiliana na msimamizi wako.",
+      "orgSuspended": "Huduma ya shirika lako imesimamishwa.",
+      "signedOutInactive": "Umetolewa kwa sababu ya kutotumika.",
+      "signedOut": "Umetoka.",
+      "passwordSaved": "Nenosiri limehifadhiwa. Ingia kwa nenosiri jipya."
+    },
+    "invite": {
+      "title": "Weka nenosiri",
+      "welcome": "Karibu {{organization}}",
+      "welcomePlatform": "Karibu Vote-Kidigit",
+      "submit": "Fungua akaunti",
+      "expired": "Mwaliko huu umeisha muda. Muombe msimamizi wako akutumie mwingine.",
+      "used": "Mwaliko huu umeshatumika. Ingia badala yake.",
+      "signIn": "Ingia",
+      "created": "Akaunti imefunguliwa"
+    },
+    "forgot": {
+      "title": "Umesahau nenosiri",
+      "body": "Andika barua pepe ya akaunti yako. Tutakutumia kiungo cha kuweka nenosiri jipya.",
+      "submit": "Tuma kiungo",
+      "sent": "Kama barua pepe hii ina akaunti, kiungo cha kuweka upya kimetumwa.",
+      "backToSignIn": "Rudi kuingia"
+    },
+    "reset": {
+      "title": "Weka nenosiri jipya",
+      "submit": "Hifadhi nenosiri",
+      "expired": "Kiungo kimeisha muda",
+      "expiredBody": "Viungo vya kuweka nenosiri hufanya kazi kwa dakika 60.",
+      "requestNew": "Omba kiungo kipya",
+      "reused": "Umetumia nenosiri hili hivi karibuni. Chagua jingine.",
+      "used": "Kiungo hiki kimeshatumika. Omba kiungo kipya."
+    },
+    "session": {
+      "title": "Bado upo?",
+      "body": "Utatolewa baada ya sekunde {{seconds}} kwa sababu ya kutotumika.",
+      "stay": "Endelea kuwa ndani",
+      "signOut": "Toka"
+    }
+  },
+  "errorPage": {
+    "offlineTitle": "Hakuna mtandao",
+    "offlineBody": "Angalia muunganisho wako wa intaneti, kisha jaribu tena.",
+    "notFoundTitle": "Hatukuweza kupata ukurasa huo",
+    "notFoundBody": "Huenda kiungo si sahihi au huna ruhusa ya kuuona.",
+    "backToDashboard": "Rudi kwenye dashibodi",
+    "home": "Nyumbani",
+    "expiredTitle": "Kiungo hiki kimeisha muda",
+    "expiredBody": "Omba kiungo kipya ili kuendelea.",
+    "serverTitle": "Kuna hitilafu upande wetu",
+    "serverBody": "Jaribu tena.",
+    "serverBodySupport": "Jaribu tena, au wasiliana na msaada kupitia {{phone}}."
+  },
+  "errors": {
+    "network": "Hakuna mtandao. Angalia muunganisho wako, kisha jaribu tena.",
+    "server": "Kuna hitilafu upande wetu. Jaribu tena.",
+    "rateLimited": "Majaribio ni mengi mno. Subiri dakika moja, kisha jaribu tena.",
+    "forbidden": "Huna ruhusa ya kufanya hili. Muulize msimamizi wako.",
+    "validation": "Angalia sehemu zilizoonyeshwa, kisha jaribu tena."
+  },
+  "confirm": {
+    "typeToConfirm": "Andika \"{{text}}\" kuthibitisha",
+    "typeMismatch": "Maandishi hayalingani",
+    "reason": "Sababu",
+    "reasonPlaceholder": "Kwa mfano: Kikao kimeahirishwa",
+    "reasonTooShort": "Andika angalau herufi 10"
+  },
+  "status": {
+    "event": {
+      "draft": "Rasimu",
+      "scheduled": "Imepangwa",
+      "open": "Wazi",
+      "closed": "Imefungwa",
+      "results_published": "Matokeo yametangazwa",
+      "cancelled": "Imesitishwa",
+      "archived": "Kumbukumbu"
+    },
+    "category": {
+      "not_open": "Itafunguliwa",
+      "open": "Wazi",
+      "closed": "Imefungwa",
+      "inactive": "Haitumiki"
+    },
+    "code": {
+      "not_sent": "Haijatumwa",
+      "sent": "Imetumwa",
+      "delivered": "Imefika",
+      "failed": "Imeshindikana"
+    },
+    "voter": {
+      "voted": "Amepiga kura",
+      "not_voted": "Bado"
+    },
+    "result": {
+      "winner": "Mshindi",
+      "tie": "Sare"
+    },
+    "user": {
+      "invited": "Amealikwa",
+      "active": "Hai",
+      "deactivated": "Amezimwa"
+    }
+  },
+  "dashboard": {
+    "title": "Dashibodi",
+    "welcome": "Karibu, {{name}}",
+    "cardsSoon": "Kadi za dashibodi zitaonekana hapa uchaguzi utakapoanza kuandaliwa."
+  }
+}
