@@ -136,43 +136,29 @@ describe('migration 003_tenancy_identity', () => {
       ).rejects.toThrow('FORBIDDEN');
     });
 
-    it('grants the default permissions of Backend Schema 9.2 that exist in the catalogue', async () => {
+    it('grants the default permissions of Backend Schema 9.2', async () => {
+      // A sample; permission.guard.spec.ts checks every role against the whole catalogue.
       const keys = ['roles.manage', 'staff.manage', 'event.publish', 'event.view'];
-      const existing = await owner.permission.findMany({ where: { key: { in: keys } } });
-      const missing = keys.filter((k) => !existing.some((p) => p.key === k));
-      await owner.permission.createMany({
-        data: missing.map((key) => ({
-          key,
-          module: 'Test',
-          descriptionEn: key,
-          descriptionSw: key,
-          scope: 'org',
-        })),
+      const org = await newOrg();
+      await api.withContext(
+        platformContext(),
+        (tx) => tx.$executeRaw`SELECT app.create_default_roles(${org}::uuid)`,
+      );
+      const grants = await owner.rolePermission.findMany({
+        where: { organizationId: org, permissionKey: { in: keys } },
+        select: { permissionKey: true, role: { select: { systemKey: true } } },
       });
-      try {
-        const org = await newOrg();
-        await api.withContext(
-          platformContext(),
-          (tx) => tx.$executeRaw`SELECT app.create_default_roles(${org}::uuid)`,
-        );
-        const grants = await owner.rolePermission.findMany({
-          where: { organizationId: org, permissionKey: { in: keys } },
-          select: { permissionKey: true, role: { select: { systemKey: true } } },
-        });
-        const byRole = (role: string) =>
-          grants
-            .filter((g) => g.role.systemKey === role)
-            .map((g) => g.permissionKey)
-            .sort();
-        expect(byRole('org_super_admin')).toEqual([...keys].sort());
-        expect(byRole('admin')).toEqual(['event.publish', 'event.view', 'staff.manage']);
-        expect(byRole('moderator')).toEqual(['event.publish', 'event.view']);
-        expect(byRole('observer')).toEqual(['event.view']);
-        await deleteOrganizations(owner, [org]);
-        orgIds.splice(orgIds.indexOf(org), 1);
-      } finally {
-        await owner.permission.deleteMany({ where: { key: { in: missing } } });
-      }
+      const byRole = (role: string) =>
+        grants
+          .filter((g) => g.role.systemKey === role)
+          .map((g) => g.permissionKey)
+          .sort();
+      expect(byRole('org_super_admin')).toEqual([...keys].sort());
+      expect(byRole('admin')).toEqual(['event.publish', 'event.view', 'staff.manage']);
+      expect(byRole('moderator')).toEqual(['event.publish', 'event.view']);
+      expect(byRole('observer')).toEqual(['event.view']);
+      await deleteOrganizations(owner, [org]);
+      orgIds.splice(orgIds.indexOf(org), 1);
     });
   });
 

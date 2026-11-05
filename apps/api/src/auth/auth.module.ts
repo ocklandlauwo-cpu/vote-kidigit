@@ -5,6 +5,8 @@ import { AuthGuard } from './auth.guard.js';
 import { AuthStateService } from './auth-state.service.js';
 import { AuthService } from './auth.service.js';
 import { CsrfGuard } from './csrf.guard.js';
+import { EVENT_ACCESS, NoEventsYet } from './event-access.js';
+import { PermissionGuard } from './permission.guard.js';
 import { SessionService } from './session.service.js';
 import { SessionThrottlerGuard } from './session-throttler.guard.js';
 import { TokensController } from './tokens.controller.js';
@@ -23,7 +25,9 @@ import { UserTokensService } from './user-tokens.service.js';
     SessionService,
     AuthGuard,
     CsrfGuard,
+    PermissionGuard,
     SessionThrottlerGuard,
+    { provide: EVENT_ACCESS, useClass: NoEventsYet },
   ],
   exports: [
     TokensService,
@@ -31,6 +35,7 @@ import { UserTokensService } from './user-tokens.service.js';
     SessionService,
     AuthGuard,
     CsrfGuard,
+    PermissionGuard,
     SessionThrottlerGuard,
   ],
 })

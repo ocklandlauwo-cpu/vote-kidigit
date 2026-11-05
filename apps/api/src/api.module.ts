@@ -5,12 +5,14 @@ import { AppModule } from './app.module.js';
 import { AuthGuard } from './auth/auth.guard.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CsrfGuard } from './auth/csrf.guard.js';
+import { PermissionGuard } from './auth/permission.guard.js';
 import { SessionThrottlerGuard } from './auth/session-throttler.guard.js';
 import { SessionService } from './auth/session.service.js';
 import { AllExceptionsFilter } from './common/all-exceptions.filter.js';
 import { ZodValidationPipe } from './common/zod-validation.pipe.js';
 import { RequestContextMiddleware } from './context/request-context.middleware.js';
 import { HealthModule } from './health/health.module.js';
+import { PermissionsModule } from './modules/permissions/permissions.module.js';
 import { AccessLogMiddleware } from './logging/access-log.middleware.js';
 import { ThrottlingModule } from './throttling/throttling.module.js';
 
@@ -20,16 +22,18 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
  * validation, rate limits, staff sessions, CSRF, request context and access logs.
  *
  * Global guards run in this order: rate limit (per session or IP) → staff session (unless
- * @Public) → CSRF on state-changing requests with a session.
+ * @Public) → CSRF on state-changing requests with a session → permission and event mapping
+ * (@SignedIn / @RequirePermission; routes with neither are refused).
  */
 @Module({
-  imports: [AppModule, ThrottlingModule, AuthModule, HealthModule],
+  imports: [AppModule, ThrottlingModule, AuthModule, HealthModule, PermissionsModule],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_GUARD, useExisting: SessionThrottlerGuard },
     { provide: APP_GUARD, useExisting: AuthGuard },
     { provide: APP_GUARD, useExisting: CsrfGuard },
+    { provide: APP_GUARD, useExisting: PermissionGuard },
   ],
 })
 export class ApiModule implements NestModule {

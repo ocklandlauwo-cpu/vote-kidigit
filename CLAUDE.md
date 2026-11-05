@@ -130,6 +130,13 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Passwords are set only through `auth/password-store.ts`: `assertNotReused` and `savePassword` (hash, last-5 history, unused links of the user deleted) inside the transaction, then `advancePasswordEpoch` after it commits. The epoch (`password_changed_at`) ends older sessions; a session started in the same request needs `issuedAt` strictly after the returned time.
 - Invitation and reset links: `UserTokensService` (only the SHA-256 is stored; `find` → NOT_FOUND / TOKEN_USED / TOKEN_EXPIRED; `consume` is conditional inside the acting transaction). To invite a user call `TokensService.sendInvitation(userId, orgId)` after the user row is committed.
 
+## Permissions in code
+
+- Every route has exactly one access decorator: `@Public()`, `@SignedIn()` (any staff user: Backend Schema 12 "Session") or `@RequirePermission('event.publish')`. The global `PermissionGuard` (after AuthGuard and CsrfGuard) refuses undecorated routes with a 500, and `auth/access-decorators.spec.ts` lists them.
+- The catalogue is `PERMISSION_CATALOGUE` in `packages/shared/src/api/permissions.ts` (key, scope, module), seeded into `permissions` by migration 008; a test fails if they differ. A new permission needs both, plus app.create_default_roles if a default role gets it.
+- Scope rules (Backend Schema 9.3): platform → platform admins only, everyone else 404; missing permission → 403; event scope → the route needs `:eventId`, and an event of another organization or one the user is not assigned to (without `event.access_all`) is 404. Platform admins hold only the three platform permissions.
+- Event lookups go through the `EVENT_ACCESS` provider (`auth/event-access.ts`). Until step 15 creates the events tables it is `NoEventsYet` (every event route is 404); step 15 replaces it with queries on voting_events and event_assignments. Tests swap it with `createTestHttpApp(controllers, [{ provide: EVENT_ACCESS, useValue: fake }])`.
+
 ## Email and queues in code
 
 - BullMQ through `QueueModule` (`queue/`); the API only adds jobs, the worker (`WorkerModule`) runs processors inside `requestContext.run(systemContext(job.requestId, orgId))`. Job payloads never carry secrets: the worker creates link tokens when it sends the email. Jobs are removed when done or finally failed.

@@ -11,7 +11,7 @@ import type { Request, Response } from 'express';
 import { zodDto } from '../common/zod-validation.pipe.js';
 import { AuthService } from './auth.service.js';
 import type { AuthState } from './auth.types.js';
-import { CurrentAuth, Public, SkipCsrf } from './decorators.js';
+import { CurrentAuth, Public, SignedIn, SkipCsrf } from './decorators.js';
 import { SESSION_COOKIE } from './session.service.js';
 
 class LoginBody extends zodDto(LoginRequestSchema) {}
@@ -42,6 +42,7 @@ export class AuthController {
 
   /** POST /api/v1/auth/logout */
   @Post('logout')
+  @SignedIn()
   @HttpCode(204)
   async logout(
     @CurrentAuth() auth: AuthState,
@@ -55,6 +56,7 @@ export class AuthController {
 
 /** The signed-in user's own profile (Backend Schema 12.2). */
 @Controller('v1/me')
+@SignedIn()
 export class MeController {
   constructor(private readonly auth: AuthService) {}
 

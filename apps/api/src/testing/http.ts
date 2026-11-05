@@ -13,14 +13,25 @@ export interface TestHttpApp {
   logs: string[];
 }
 
-export async function createTestHttpApp(controllers: Type[] = []): Promise<TestHttpApp> {
+/** A provider replaced in the test app (e.g. a fake EventAccess). */
+export interface ProviderOverride {
+  provide: unknown;
+  useValue: unknown;
+}
+
+export async function createTestHttpApp(
+  controllers: Type[] = [],
+  overrides: ProviderOverride[] = [],
+): Promise<TestHttpApp> {
   @Module({ imports: [ApiModule], controllers })
   class TestRootModule {}
 
   const logs: string[] = [];
-  const moduleRef = await Test.createTestingModule({
-    imports: [TestRootModule],
-  }).compile();
+  let builder = Test.createTestingModule({ imports: [TestRootModule] });
+  for (const { provide, useValue } of overrides) {
+    builder = builder.overrideProvider(provide).useValue(useValue);
+  }
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestExpressApplication>({
     logger: new JsonLogger('debug', (line) => logs.push(line)),
   });

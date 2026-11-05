@@ -2,7 +2,7 @@
 // sign-in, wrong password, lockout, inactive accounts, suspended organizations, CSRF, idle
 // expiry, deactivation during a session, sign-out, profile and password change.
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { MeResponseSchema, type MeResponse } from '@vote-kidigit/shared';
+import { MeResponseSchema, type MeResponse, PLATFORM_PERMISSIONS } from '@vote-kidigit/shared';
 import request from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
 import type { PrismaClient } from '../generated/prisma/client.js';
@@ -15,11 +15,7 @@ import {
   uniqueSuffix,
 } from '../testing/db.js';
 import { createTestHttpApp, testIp } from '../testing/http.js';
-import {
-  AUTH_CACHE_SECONDS,
-  AuthStateService,
-  PLATFORM_PERMISSIONS,
-} from './auth-state.service.js';
+import { AUTH_CACHE_SECONDS, AuthStateService } from './auth-state.service.js';
 import { SESSION_PREFIX } from './session.service.js';
 
 const PASSWORD = 'Uchaguzi2027';

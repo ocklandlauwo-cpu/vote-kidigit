@@ -1,17 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PLATFORM_PERMISSIONS } from '@vote-kidigit/shared';
 import type { Env } from '../config/env.schema.js';
 import { RequestContextService } from '../context/request-context.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import type { AuthState } from './auth.types.js';
-
-/** Platform permissions are not stored in roles: every platform admin holds all three (9.2). */
-export const PLATFORM_PERMISSIONS = [
-  'platform.orgs.manage',
-  'platform.settings.manage',
-  'platform.audit.view',
-] as const;
 
 /** Backend Schema 8.1: permissions are re-read at most every 30 s. */
 export const AUTH_CACHE_SECONDS = 30;

@@ -1,16 +1,33 @@
 import { createParamDecorator, type ExecutionContext, SetMetadata } from '@nestjs/common';
+import type { PermissionKey } from '@vote-kidigit/shared';
 import type { Request } from 'express';
 import { AppError } from '../common/app-error.js';
 import type { AuthState } from './auth.types.js';
 
 export const IS_PUBLIC = 'vk:isPublic';
 export const SKIP_CSRF = 'vk:skipCsrf';
+export const SIGNED_IN = 'vk:signedIn';
+export const REQUIRED_PERMISSION = 'vk:requiredPermission';
 
 /**
  * Route needs no staff session (sign-in, health, voter API, USSD, webhooks, public results).
  * Every other route requires a signed-in, active staff user (AuthGuard is global).
  */
 export const Public = () => SetMetadata(IS_PUBLIC, true);
+
+/**
+ * Any signed-in staff user may call the route (their own profile, sign-out): Backend Schema 12.2
+ * "Session". Every route is @Public, @SignedIn or @RequirePermission; PermissionGuard refuses
+ * the others.
+ */
+export const SignedIn = () => SetMetadata(SIGNED_IN, true);
+
+/**
+ * The route needs this permission (Backend Schema 9.3). For event-scoped permissions the route
+ * must have an :eventId parameter, and the user must be assigned to that event or hold
+ * event.access_all.
+ */
+export const RequirePermission = (key: PermissionKey) => SetMetadata(REQUIRED_PERMISSION, key);
 
 /** State-changing route that cannot carry the CSRF token yet (sign-in creates it). */
 export const SkipCsrf = () => SetMetadata(SKIP_CSRF, true);
