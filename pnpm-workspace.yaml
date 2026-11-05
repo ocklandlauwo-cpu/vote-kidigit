@@ -14,6 +14,10 @@ allowBuilds:
   # Denied (pnpm 11 fails the install on unreviewed scripts). Jest's file watcher ships
   # prebuilt binaries as optional dependencies; its script only builds from source as a fallback.
   '@parcel/watcher': false
+  # esbuild (via @nestjs/cli and ts-jest) and BullMQ's msgpackr-extract also ship prebuilt binaries as optional
+  # dependencies; their scripts only verify or build from source (msgpackr falls back to JS).
+  esbuild: false
+  msgpackr-extract: false
 minimumReleaseAgeExclude:
   - '@tailwindcss/node@4.3.4'
   - '@tailwindcss/oxide-android-arm64@4.3.4'

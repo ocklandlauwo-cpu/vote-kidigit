@@ -93,3 +93,43 @@ export type MeResponse = z.infer<typeof MeResponseSchema>;
 
 export const SESSION_EXPIRES_HEADER = 'X-Session-Expires';
 export const CSRF_HEADER = 'X-CSRF-Token';
+
+// Invitations and password reset (Backend Schema 8.2).
+
+/** 32 random bytes, base64url: the token in /app/invite/{token} and /app/reset/{token}. */
+export const UserTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'is not a valid link token');
+
+export const userTokenPurposes = ['invite', 'password_reset'] as const;
+export type UserTokenPurpose = (typeof userTokenPurposes)[number];
+
+/** Invitation links last 48 hours, reset links 60 minutes (PRD USR-02, App Flow AUTH-04). */
+export const TOKEN_LIFETIME_MINUTES: Record<UserTokenPurpose, number> = {
+  invite: 48 * 60,
+  password_reset: 60,
+};
+
+export const ForgotPasswordRequestSchema = z.object({ email: EmailSchema });
+export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
+
+/** GET /auth/tokens/{token}: what the set-password screens show. */
+export const TokenInfoResponseSchema = z.object({
+  purpose: z.enum(userTokenPurposes),
+  fullName: z.string(),
+  email: z.string(),
+  organizationName: z.string().nullable(),
+  expiresAt: z.iso.datetime(),
+});
+export type TokenInfoResponse = z.infer<typeof TokenInfoResponseSchema>;
+
+export const AcceptInviteRequestSchema = z.object({
+  token: UserTokenSchema,
+  fullName: z.string().trim().min(2).max(120),
+  password: PasswordSchema,
+});
+export type AcceptInviteRequest = z.infer<typeof AcceptInviteRequestSchema>;
+
+export const ResetPasswordRequestSchema = z.object({
+  token: UserTokenSchema,
+  password: PasswordSchema,
+});
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordRequestSchema>;

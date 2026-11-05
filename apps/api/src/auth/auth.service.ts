@@ -16,7 +16,8 @@ import { type DbContext, PrismaService } from '../database/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import { AuthStateService } from './auth-state.service.js';
 import type { AuthState } from './auth.types.js';
-import { hashPassword, verifyAgainstDummy, verifyPassword } from './passwords.js';
+import { assertNotReused, savePassword } from './password-store.js';
+import { verifyAgainstDummy, verifyPassword } from './passwords.js';
 import { SessionService } from './session.service.js';
 
 /** Row returned by app.find_user_for_login (migration 005). */
@@ -29,9 +30,6 @@ interface LoginRow {
   failed_login_count: number;
   is_platform_admin: boolean;
 }
-
-/** PRD USR-06: the last 5 passwords cannot be reused. */
-export const PASSWORD_HISTORY_SIZE = 5;
 
 const asError = (error: unknown): Error =>
   error instanceof Error ? error : new Error(String(error));
@@ -181,7 +179,19 @@ export class AuthService {
     });
     if (!state) throw new AppError('INVALID_CREDENTIALS');
 
-    // New session id on sign-in (no session fixation).
+    await this.startSession(state, req, issuedAt);
+    this.actAsUser(state);
+    await this.prisma.withContext(userContext, (tx) =>
+      this.audit.record(tx, { action: 'auth.login', entityType: 'users', entityId: state.userId }),
+    );
+    return this.toMe(state, req);
+  }
+
+  /**
+   * Starts a staff session for the user under a new session id (no session fixation).
+   * `issuedAt` must not be later than the moment the password hash was verified or set.
+   */
+  async startSession(state: AuthState, req: Request, issuedAt: number): Promise<void> {
     await regenerate(req);
     req.session.userId = state.userId;
     req.session.orgId = state.orgId;
@@ -191,12 +201,6 @@ export class AuthService {
     req.session.issuedAt = issuedAt;
     req.session.cookie.maxAge = state.sessionTimeoutMinutes * 60_000;
     await this.sessions.track(state.userId, req.sessionID, state.sessionTimeoutMinutes);
-
-    this.actAs(state);
-    await this.prisma.withContext(userContext, (tx) =>
-      this.audit.record(tx, { action: 'auth.login', entityType: 'users', entityId: state.userId }),
-    );
-    return this.toMe(state, req);
   }
 
   /** POST /auth/logout: ends this session only. */
@@ -285,37 +289,8 @@ export class AuthService {
 
     const changedAt = new Date();
     await this.prisma.withContext(context, async (tx) => {
-      const user = await tx.user.findUniqueOrThrow({
-        where: { id: auth.userId },
-        select: { passwordHash: true },
-      });
-      if (!user.passwordHash) throw new AppError('UNAUTHENTICATED');
-
-      const history = await tx.passwordHistory.findMany({
-        where: { userId: auth.userId },
-        orderBy: { createdAt: 'desc' },
-        take: PASSWORD_HISTORY_SIZE,
-        select: { passwordHash: true },
-      });
-      for (const hash of [user.passwordHash, ...history.map((h) => h.passwordHash)]) {
-        if (await verifyPassword(hash, body.newPassword)) throw new AppError('PASSWORD_REUSED');
-      }
-
-      const passwordHash = await hashPassword(body.newPassword);
-      await tx.user.update({
-        where: { id: auth.userId },
-        data: { passwordHash, passwordChangedAt: changedAt },
-      });
-      await tx.passwordHistory.create({ data: { userId: auth.userId, passwordHash } });
-      const keep = await tx.passwordHistory.findMany({
-        where: { userId: auth.userId },
-        orderBy: { createdAt: 'desc' },
-        take: PASSWORD_HISTORY_SIZE,
-        select: { id: true },
-      });
-      await tx.passwordHistory.deleteMany({
-        where: { userId: auth.userId, id: { notIn: keep.map((k) => k.id) } },
-      });
+      await assertNotReused(tx, auth.userId, body.newPassword);
+      await savePassword(tx, auth.userId, body.newPassword, changedAt);
       await this.audit.record(tx, {
         action: 'me.password.change',
         entityType: 'users',
@@ -410,8 +385,13 @@ export class AuthService {
     return { orgId, userId, isPlatformAdmin, requestId };
   }
 
-  /** After sign-in the request acts as the user (the guard did not run on the public route). */
-  private actAs(state: AuthState): void {
+  /**
+   * On a public route (sign-in, invitation, reset) the request acts as the user from here on,
+   * for the audit log: AuthGuard did not run.
+   */
+  actAsUser(
+    state: Pick<AuthState, 'userId' | 'orgId' | 'isPlatformAdmin' | 'fullName' | 'email'>,
+  ): void {
     const ctx = this.requestContext.getOrThrow();
     ctx.orgId = state.orgId;
     ctx.userId = state.userId;

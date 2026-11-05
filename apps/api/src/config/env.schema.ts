@@ -49,6 +49,11 @@ export const envSchema = z
 
     // Redis
     REDIS_URL: redisUrl,
+    /** BullMQ key prefix (Backend Schema 7.9: bull:*); tests use one per Jest worker. */
+    QUEUE_PREFIX: z
+      .string()
+      .regex(/^[a-z0-9-]{1,40}$/)
+      .default('bull'),
 
     // Security
     SESSION_SECRET: secret(32),

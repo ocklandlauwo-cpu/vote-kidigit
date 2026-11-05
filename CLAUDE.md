@@ -127,6 +127,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Authentication is default-deny: the global `AuthGuard` requires a staff session on every route unless it is marked `@Public()` (sign-in, health, voter API, USSD, webhooks, public results). Read the signed-in user with `@CurrentAuth() auth: AuthState`. After the guard, the request context holds the user's organization and actor, so `withContext(this.requestContext …)` and audit entries are correct automatically.
 - Staff sessions live in Redis (`sess:{sid}`, cookie `vk.sid`); state-changing requests with a session must send `X-CSRF-Token` (from sign-in / `GET /api/v1/me`); `@SkipCsrf()` only for sign-in-like routes. Staff REST routes live under `/api/v1/…` (controller path `v1/…`); health stays at `/api/health`.
 - After changing a user's status, role assignment or profile call `AuthStateService.invalidateUser(userId)`; after changing a role's permissions or the organization (suspension, timeout) call `invalidateOrg(orgId)`. Otherwise changes take effect within 30 s. `SessionService.destroyAllForUser(userId, exceptSid?)` ends sessions (password reset, deactivation).
+- Passwords are set only through `auth/password-store.ts` (`assertNotReused`, `savePassword`: hash, `password_changed_at`, last-5 history). Setting `password_changed_at` ends older sessions, so a session started in the same request needs `issuedAt` strictly after it.
+- Invitation and reset links: `UserTokensService` (only the SHA-256 is stored; `find` → NOT_FOUND / TOKEN_USED / TOKEN_EXPIRED; `consume` is conditional inside the acting transaction). To invite a user call `TokensService.sendInvitation(userId, orgId)` after the user row is committed.
+
+## Email and queues in code
+
+- BullMQ through `QueueModule` (`queue/`); the API only adds jobs, the worker (`WorkerModule`) runs processors inside `requestContext.run(systemContext(job.requestId, orgId))`. Job payloads never carry secrets: the worker creates link tokens when it sends the email. Jobs are removed when done or finally failed.
+- Email goes through `MailService` from the worker only: SMTP in production, printed to stdout in development, kept in `MailService.outbox` in tests. Templates (`mail/templates.ts`) take a `language` ('sw' default, 'en') from the recipient.
+- Tests: `QUEUE_PREFIX` is per Jest worker (`testing/jest-setup.ts`); start the worker with `Test.createTestingModule({ imports: [WorkerModule] })` and wait for mail in `outbox` (see `auth/tokens.spec.ts`).
+- First platform admin: `pnpm --filter @vote-kidigit/api create-platform-admin --email … --name "…"` (built `dist/`; `create-platform-admin:dev` builds first). The password is asked without echo or read with `--password-stdin`.
 
 ## Design system in code
 
