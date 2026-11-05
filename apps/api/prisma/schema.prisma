@@ -137,6 +137,21 @@ model UserToken {
 }
 
 /// Global permission catalogue (Backend Schema 9.1), seeded by migration; read-only for vk_api.
+/// Platform-wide settings (Backend Schema 4.10): exactly one row, id = 1. Who changed what is
+/// in the audit log.
+model PlatformSetting {
+  id                           Int      @id @default(1) @db.SmallInt
+  defaultSessionTimeoutMinutes Int      @default(15) @map("default_session_timeout_minutes") @db.SmallInt
+  ussdShortCode                String?  @map("ussd_short_code")
+  supportPhone                 String?  @map("support_phone")
+  supportEmail                 String?  @map("support_email")
+  createdAt                    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("platform_settings")
+  @@schema("public")
+}
+
 model Permission {
   key                  String  @id
   module               String

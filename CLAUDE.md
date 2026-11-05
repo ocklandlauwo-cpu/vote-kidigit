@@ -137,6 +137,13 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Scope rules (Backend Schema 9.3): platform → platform admins only, everyone else 404; missing permission → 403; event scope → the route needs `:eventId`, and an event of another organization or one the user is not assigned to (without `event.access_all`) is 404. Platform admins hold only the three platform permissions.
 - Event lookups go through the `EVENT_ACCESS` provider (`auth/event-access.ts`). Until step 15 creates the events tables it is `NoEventsYet` (every event route is 404); step 15 replaces it with queries on voting_events and event_assignments. Tests swap it with `createTestHttpApp(controllers, [{ provide: EVENT_ACCESS, useValue: fake }])`.
 
+## Platform context in code
+
+- Platform admin requests run with `isPlatformAdmin: true` and `orgId: null` for platform-wide lists, or `orgId` set to the organization being acted on (Backend Schema 2.3). `enterOrganization(tx, orgId)` (database/prisma.service.ts) moves a transaction into an organization it just created, so its users and user_roles pass RLS in the same transaction.
+- Platform admins hold only the platform permissions: organization routes answer 403, platform routes answer 404 to everyone else. They edit only organization details and status, never organization data such as voters.
+- Path IDs use `@Param('orgId', IdParamPipe)`: a malformed UUID is 404 like a missing record. `isUuid` is in common/id-param.pipe.ts.
+- Lists follow Backend Schema 12.1: `PaginationQuerySchema` (page, pageSize 25/50/100) and `pageSchema(item)` in packages/shared/src/api/common.ts. The audit screens read through `AuditQueryService` (audit module).
+
 ## Email and queues in code
 
 - BullMQ through `QueueModule` (`queue/`); the API only adds jobs, the worker (`WorkerModule`) runs processors inside `requestContext.run(systemContext(job.requestId, orgId))`. Job payloads never carry secrets: the worker creates link tokens when it sends the email. Jobs are removed when done or finally failed.

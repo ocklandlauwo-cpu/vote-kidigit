@@ -7,7 +7,9 @@ import {
   createOrganization,
   createUser,
   deleteOrganizations,
+  orgContext,
   ownerClient,
+  platformContext,
   uniqueSuffix,
 } from '../testing/db.js';
 import {
@@ -167,5 +169,49 @@ describe('row level security: tenant isolation', () => {
     for (const { table } of TENANT_TABLES) {
       expect(rows.find((r) => r.table === table)?.rls).toBe(true);
     }
+  });
+});
+
+describe('row level security: platform_settings', () => {
+  let owner: PrismaClient;
+  let api: PrismaService;
+  let orgId: string;
+
+  beforeAll(async () => {
+    owner = ownerClient();
+    api = apiClient();
+    orgId = await createOrganization(owner);
+  });
+
+  afterAll(async () => {
+    await owner.platformSetting.update({ where: { id: 1 }, data: { supportEmail: null } });
+    await deleteOrganizations(owner, [orgId]);
+    await owner.$disconnect();
+    await api.$disconnect();
+  });
+
+  it('is readable by everyone and has exactly one row', async () => {
+    const rows = await api.withContext(orgContext(orgId), (tx) => tx.platformSetting.findMany());
+    expect(rows.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('can be changed only by platform admins', async () => {
+    const asOrg = await api.withContext(orgContext(orgId), (tx) =>
+      tx.platformSetting.updateMany({ data: { supportEmail: 'org@example.test' } }),
+    );
+    expect(asOrg.count).toBe(0);
+    const asPlatform = await api.withContext(platformContext(), (tx) =>
+      tx.platformSetting.updateMany({ data: { supportEmail: 'platform@example.test' } }),
+    );
+    expect(asPlatform.count).toBe(1);
+  });
+
+  it('never gains or loses its row through the API', async () => {
+    await expect(
+      api.withContext(platformContext(), (tx) => tx.platformSetting.deleteMany()),
+    ).rejects.toThrow(/permission denied/i);
+    await expect(
+      api.withContext(platformContext(), (tx) => tx.platformSetting.create({ data: { id: 2 } })),
+    ).rejects.toThrow(/permission denied/i);
   });
 });

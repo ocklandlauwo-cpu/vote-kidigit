@@ -85,6 +85,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 }
 
+/**
+ * Moves the current withContext transaction into an organization: a platform administrator
+ * acting inside an organization created earlier in the same transaction (Backend Schema 2.3:
+ * "opening an organization sets app.org_id to it"). Statements after this see that
+ * organization under RLS.
+ */
+export async function enterOrganization(tx: Tx, orgId: string): Promise<void> {
+  assertUuidOrNull('orgId', orgId);
+  await tx.$executeRaw`SELECT set_config('app.org_id', ${orgId}, true)`;
+}
+
 function assertUuidOrNull(name: string, value: string | null): void {
   if (value !== null && !UUID.test(value)) {
     throw new Error(`withContext: ${name} must be a UUID or null`);

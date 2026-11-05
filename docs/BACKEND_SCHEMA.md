@@ -2,6 +2,12 @@
 
 Nov 3, 2026 · @Smartone
 
+**Change log**
+
+| Date | Change |
+|---|---|
+| 5 Nov 2026 | Added 4.10 platform_settings (PLT-04 needed storage for the default session timeout, USSD short code and support contact; migration 009_platform_settings, Implementation Plan step 12). |
+
 ## 1. Overview
 
 This document defines the complete backend data model for Vote-Kidigit V1: every PostgreSQL table, relationship, enum, Row Level Security (RLS) policy, database function and trigger, the authentication and authorization flows, and the API endpoints. It implements the PRD (V1.1) and App Flow Document (V1) on the stack in the Tech Stack document (V1): PostgreSQL 18.6, Prisma ORM 7.10.1, NestJS 11.2.8, Redis 7.2. Place it in the repository as docs/BACKEND_SCHEMA.md.
@@ -289,6 +295,21 @@ PK (user_id, role_id).
 | created_by | uuid | yes | FK users.id (set null) |
 
 Unique (event_id, user_id). A moderator who creates an event is assigned automatically by the API in the same transaction.
+
+### 4.10 platform_settings
+
+One row (id = 1) of platform-wide settings, edited on PLT-04. A platform table: no organization_id. Who changed what is in the audit log (platform.settings.update).
+
+| Column | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| id | smallint | no | 1 | PK; CHECK (id = 1) |
+| default_session_timeout_minutes | smallint | no | 15 | CHECK (BETWEEN 5 AND 60); copied to organizations.session_timeout_minutes when an organization is created |
+| ussd_short_code | text | yes |  | Shown on voter screens; NULL falls back to USSD_SHORT_CODE |
+| support_phone | text | yes |  | E.164; support contact shown on voter screens |
+| support_email | text | yes |  |  |
+| created_at, updated_at | timestamptz | no | now() |  |
+
+RLS: SELECT for every vk_api context; UPDATE only when app.is_platform_admin(). Grants: vk_api SELECT, UPDATE (no INSERT or DELETE: the row is seeded by the migration); vk_readonly SELECT. Default SMS templates of PLT-04 live in sms_templates (7.1).
 
 ## 5. Tables: events, categories, contesters, voters
 

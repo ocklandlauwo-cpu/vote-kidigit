@@ -13,6 +13,7 @@ import { ZodValidationPipe } from './common/zod-validation.pipe.js';
 import { RequestContextMiddleware } from './context/request-context.middleware.js';
 import { HealthModule } from './health/health.module.js';
 import { PermissionsModule } from './modules/permissions/permissions.module.js';
+import { PlatformModule } from './modules/platform/platform.module.js';
 import { AccessLogMiddleware } from './logging/access-log.middleware.js';
 import { ThrottlingModule } from './throttling/throttling.module.js';
 
@@ -26,7 +27,14 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
  * (@SignedIn / @RequirePermission; routes with neither are refused).
  */
 @Module({
-  imports: [AppModule, ThrottlingModule, AuthModule, HealthModule, PermissionsModule],
+  imports: [
+    AppModule,
+    ThrottlingModule,
+    AuthModule,
+    HealthModule,
+    PermissionsModule,
+    PlatformModule,
+  ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_PIPE, useClass: ZodValidationPipe },

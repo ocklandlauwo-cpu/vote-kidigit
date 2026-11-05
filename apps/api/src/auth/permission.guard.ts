@@ -3,12 +3,11 @@ import { Reflector } from '@nestjs/core';
 import { type PermissionKey, permissionScope } from '@vote-kidigit/shared';
 import type { Request } from 'express';
 import { AppError } from '../common/app-error.js';
+import { isUuid } from '../common/id-param.pipe.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { RequestContextService } from '../context/request-context.js';
 import { IS_PUBLIC, REQUIRED_PERMISSION, SIGNED_IN } from './decorators.js';
 import { EVENT_ACCESS, type EventAccess } from './event-access.js';
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Global guard after AuthGuard (Backend Schema 9.3 steps 3–6). Steps 1–2 (session, active user
@@ -59,7 +58,7 @@ export class PermissionGuard implements CanActivate {
     if (typeof eventId !== 'string') {
       throw new Error(`${name} requires event permission ${key} but has no :eventId parameter`);
     }
-    if (!UUID.test(eventId)) throw new AppError('NOT_FOUND');
+    if (!isUuid(eventId)) throw new AppError('NOT_FOUND');
     const { orgId, userId, isPlatformAdmin, requestId } = this.requestContext.getOrThrow();
     const allowed = await this.prisma.withContext(
       { orgId, userId, isPlatformAdmin, requestId },
