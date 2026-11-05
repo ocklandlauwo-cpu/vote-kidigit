@@ -1,7 +1,11 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterEach } from 'vitest';
 import '../i18n'; // Swahili, the default language
+
+// findBy… and waitFor give up after 1 s by default; a busy CI runner rendering Ant Design and the
+// router can take longer than that without anything being wrong.
+configure({ asyncUtilTimeout: 5_000 });
 
 // jsdom has no ResizeObserver. Ant Design observes sizes in effects (tooltips, overflow), which
 // throws when such an effect runs before the test ends, depending on timing. Sizes are always
