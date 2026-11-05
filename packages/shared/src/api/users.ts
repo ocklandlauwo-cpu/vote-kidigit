@@ -10,9 +10,10 @@ import { type PermissionKey, permissionKeys, permissionScope } from './permissio
 export const FullNameSchema = z.string().trim().min(2).max(120);
 
 /**
- * Permissions that make a role admin-level: managing a user who holds (or would get) such a
- * role needs admins.manage, so an Admin cannot hand out more than staff work (Backend Schema
- * 12.4: "+ admins.manage to invite an Admin").
+ * Permissions that make a role admin-level: the organization-wide ones beyond the Moderator and
+ * Observer defaults (Backend Schema 9.2). Managing a user who holds (or would get) such a role
+ * needs admins.manage, so an Admin cannot hand out more than staff work (Backend Schema 12.4:
+ * "+ admins.manage to invite an Admin").
  */
 export const ADMIN_LEVEL_PERMISSIONS: readonly PermissionKey[] = [
   'staff.manage',
@@ -20,6 +21,11 @@ export const ADMIN_LEVEL_PERMISSIONS: readonly PermissionKey[] = [
   'roles.manage',
   'assignments.manage',
   'org.settings.manage',
+  'audit.view.org',
+  'event.access_all',
+  'event.activate',
+  'event.reopen',
+  'event.archive',
 ];
 
 export function isAdminLevel(permissions: readonly string[]): boolean {
@@ -57,11 +63,23 @@ export type UserListQuery = z.infer<typeof UserListQuerySchema>;
 export const UserPageSchema = pageSchema(UserSummarySchema);
 export type UserPage = z.infer<typeof UserPageSchema>;
 
+/**
+ * One line of a user's recent activity: who did what and when. The values changed, reasons and
+ * IP addresses stay in the audit log, for audit.view.org (security review of step 14).
+ */
+export const ActivityItemSchema = AuditEntrySchema.pick({
+  id: true,
+  action: true,
+  actorLabel: true,
+  createdAt: true,
+});
+export type ActivityItem = z.infer<typeof ActivityItemSchema>;
+
 /** USR-03 side panel. */
 export const UserDetailSchema = UserSummarySchema.extend({
   /** The pending invitation of an invited user. */
   invitation: z.object({ sentAt: z.iso.datetime(), expiresAt: z.iso.datetime() }).nullable(),
-  recentActivity: z.array(AuditEntrySchema),
+  recentActivity: z.array(ActivityItemSchema),
 });
 export type UserDetail = z.infer<typeof UserDetailSchema>;
 

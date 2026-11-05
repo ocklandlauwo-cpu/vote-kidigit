@@ -10,10 +10,12 @@ import {
 } from '@vote-kidigit/shared';
 import { AuditService } from '../../audit/audit.service.js';
 import { AuthStateService } from '../../auth/auth-state.service.js';
+import type { AuthState } from '../../auth/auth.types.js';
 import { AppError } from '../../common/app-error.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
+import { assertMayEditRole, mayGrant } from './role-rules.js';
 
 const roleSelect = {
   id: true,
@@ -84,8 +86,9 @@ export class RolesService {
   }
 
   /** POST /roles (also "Duplicate", with the copied permissions). */
-  async create(body: CreateRoleRequest): Promise<Role> {
+  async create(actor: AuthState, body: CreateRoleRequest): Promise<Role> {
     const ctx = this.requestContext.getOrThrow();
+    assertMayEditRole(actor, { id: '', systemKey: null, permissions: [] }, body.permissions);
     const role = await this.prisma.withContext(ctx, async (tx) => {
       await this.assertNameFree(tx, body.name);
       const { id } = await tx.role.create({
@@ -118,10 +121,16 @@ export class RolesService {
   }
 
   /** PATCH /roles/:roleId */
-  async update(roleId: string, body: UpdateRoleRequest): Promise<Role> {
+  async update(actor: AuthState, roleId: string, body: UpdateRoleRequest): Promise<Role> {
     const ctx = this.requestContext.getOrThrow();
     const role = await this.prisma.withContext(ctx, async (tx) => {
       const before = await this.load(tx, roleId);
+      const current = toRole(before).permissions;
+      assertMayEditRole(
+        actor,
+        { id: roleId, systemKey: before.systemKey, permissions: current },
+        body.permissions ?? current,
+      );
       if (before.isSystem && (body.name !== undefined || body.description !== undefined)) {
         throw new AppError('FORBIDDEN', 'Default roles cannot be renamed.');
       }
@@ -177,11 +186,16 @@ export class RolesService {
    * DELETE /roles/:roleId: custom roles only. A role in use needs moveToRoleId; its users move
    * there in the same transaction.
    */
-  async remove(roleId: string, moveToRoleId: string | undefined): Promise<void> {
+  async remove(actor: AuthState, roleId: string, moveToRoleId: string | undefined): Promise<void> {
     const ctx = this.requestContext.getOrThrow();
     await this.prisma.withContext(ctx, async (tx) => {
       const role = await this.load(tx, roleId);
       if (role.isSystem) throw new AppError('FORBIDDEN', 'Default roles cannot be deleted.');
+      assertMayEditRole(
+        actor,
+        { id: roleId, systemKey: role.systemKey, permissions: toRole(role).permissions },
+        [],
+      );
       const users = role._count.userRoles;
       let target: RoleRow | null = null;
       if (users > 0) {
@@ -192,6 +206,15 @@ export class RolesService {
           });
         }
         target = await this.load(tx, moveToRoleId);
+        // Moving users gives them the target role: the same rule as a role change.
+        const targetFacts = {
+          id: target.id,
+          systemKey: target.systemKey,
+          permissions: toRole(target).permissions,
+        };
+        if (!mayGrant(actor, targetFacts)) {
+          throw new AppError('FORBIDDEN', 'You cannot give this role.');
+        }
         if (target.id === roleId || target.systemKey === 'org_super_admin') {
           throw new AppError('VALIDATION_FAILED', 'Choose another role for these users.', {
             source: 'query',

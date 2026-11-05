@@ -6,7 +6,8 @@ import {
   type RoleListResponse,
   UpdateRoleRequestSchema,
 } from '@vote-kidigit/shared';
-import { RequirePermission } from '../../auth/decorators.js';
+import type { AuthState } from '../../auth/auth.types.js';
+import { CurrentAuth, RequirePermission } from '../../auth/decorators.js';
 import { IdParamPipe } from '../../common/id-param.pipe.js';
 import { zodDto } from '../../common/zod-validation.pipe.js';
 import { RolesService } from './roles.service.js';
@@ -29,8 +30,8 @@ export class RolesController {
 
   /** POST /api/v1/roles */
   @Post()
-  create(@Body() body: CreateRoleBody): Promise<Role> {
-    return this.roles.create(body);
+  create(@CurrentAuth() auth: AuthState, @Body() body: CreateRoleBody): Promise<Role> {
+    return this.roles.create(auth, body);
   }
 
   /** GET /api/v1/roles/:roleId */
@@ -42,19 +43,21 @@ export class RolesController {
   /** PATCH /api/v1/roles/:roleId */
   @Patch(':roleId')
   update(
+    @CurrentAuth() auth: AuthState,
     @Param('roleId', IdParamPipe) roleId: string,
     @Body() body: UpdateRoleBody,
   ): Promise<Role> {
-    return this.roles.update(roleId, body);
+    return this.roles.update(auth, roleId, body);
   }
 
   /** DELETE /api/v1/roles/:roleId?moveToRoleId= */
   @Delete(':roleId')
   @HttpCode(204)
   remove(
+    @CurrentAuth() auth: AuthState,
     @Param('roleId', IdParamPipe) roleId: string,
     @Query() query: DeleteRoleQuery,
   ): Promise<void> {
-    return this.roles.remove(roleId, query.moveToRoleId);
+    return this.roles.remove(auth, roleId, query.moveToRoleId);
   }
 }

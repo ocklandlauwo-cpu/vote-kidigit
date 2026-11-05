@@ -20,6 +20,7 @@ import { AppError } from '../../common/app-error.js';
 import { errorReason } from '../../common/connection-errors.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
+import { mayGrant } from '../roles/role-rules.js';
 import { byRoleOrder } from '../roles/roles.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 
@@ -152,9 +153,8 @@ export class UsersService {
           name: role.name,
           systemKey: role.systemKey,
           isSystem: role.isSystem,
-          assignable: this.mayGrant(actor, {
+          assignable: mayGrant(actor, {
             id: role.id,
-            name: role.name,
             systemKey: role.systemKey,
             permissions: role.rolePermissions.map((p) => p.permissionKey),
           }),
@@ -352,14 +352,8 @@ export class UsersService {
     }
   }
 
-  /** May the actor give this role to someone? */
-  private mayGrant(actor: AuthState, role: RoleRow): boolean {
-    if (role.systemKey === 'org_super_admin' && !actor.isOrgSuperAdmin) return false;
-    return !isAdminLevel(role.permissions) || actor.permissions.includes('admins.manage');
-  }
-
   private assertMayGrant(actor: AuthState, role: RoleRow): void {
-    if (!this.mayGrant(actor, role)) throw new AppError('FORBIDDEN', 'You cannot give this role.');
+    if (!mayGrant(actor, role)) throw new AppError('FORBIDDEN', 'You cannot give this role.');
   }
 
   private async loadUser(tx: Tx, userId: string): Promise<UserRow> {
@@ -405,11 +399,18 @@ export class UsersService {
             select: { createdAt: true, expiresAt: true },
           })
         : null;
-    const { items: recentActivity } = await this.auditQuery.list(tx, {
+    const { items } = await this.auditQuery.list(tx, {
       page: 1,
       pageSize: 10,
       aboutUserId: userId,
     });
+    // Who did what and when only: values, reasons and IPs need audit.view.org (SYS-01).
+    const recentActivity = items.map(({ id, action, actorLabel, createdAt }) => ({
+      id,
+      action,
+      actorLabel,
+      createdAt,
+    }));
     return {
       ...toSummary(user),
       invitation: invite

@@ -133,6 +133,7 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 ## Users and roles in code
 
 - Who may act on whom (users.service.ts): staff.manage for moderators and observers; admins.manage as well when the user's current or new role is admin-level (`ADMIN_LEVEL_PERMISSIONS` in packages/shared/src/api/users.ts); only an Org Super Admin acts on an Org Super Admin or gives that role; nobody changes their own role or deactivates or deletes themselves. `GET /users/roles` tells the UI which roles the caller may give (`assignable`).
+- Role rules live in `modules/roles/role-rules.ts` (`mayGrant`, `assertMayEditRole`), used by both services: nobody gives a permission they do not hold; admin-level roles need admins.manage; only an Org Super Admin edits the Org Super Admin role or their own role; deleting a role moves its users only to a role the actor may give. User detail returns recent activity as id, action, actor and time only.
 - A user's role is in user_roles (one per user); `users.is_org_super_admin` follows the role (`org_super_admin`). The deferred trigger keeps one active Org Super Admin (LAST_SUPER_ADMIN at commit).
 - Role changes call `invalidateOrg`; user changes call `invalidateUser` and, for deactivation and deletion, `destroyAllForUser`.
 - Onboarding checklist items are computed in organization.service.ts; saving the Regional section records `org.settings.timezone.confirm`, which ticks "Confirm time zone".

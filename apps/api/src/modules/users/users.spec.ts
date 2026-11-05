@@ -503,6 +503,115 @@ describe('users, roles, organization and audit', () => {
     });
   });
 
+  describe('role and grant rules (security review)', () => {
+    /** A user whose custom role holds roles.manage and event.view, but not admins.manage. */
+    async function roleLead(): Promise<Staff & { roleId: string }> {
+      const role = (
+        await send(staff.superAdmin, 'post', '/roles', {
+          name: `Lead ${uniqueSuffix()}`,
+          permissions: ['roles.manage', 'event.view'],
+        }).expect(201)
+      ).body as Role;
+      const user = await newStaff('observer');
+      await send(staff.superAdmin, 'patch', `/users/${user.id}`, { roleId: role.id }).expect(200);
+      const { agent, csrf } = await signIn(user.email);
+      return { ...user, agent, csrf, roleId: role.id };
+    }
+
+    it('does not let a role manager widen their own role or the Org Super Admin role', async () => {
+      const lead = await roleLead();
+      await send(lead, 'patch', `/roles/${lead.roleId}`, {
+        permissions: ['roles.manage', 'event.view', 'admins.manage'],
+      }).expect(403);
+      const sa = (
+        await staff.superAdmin.agent.get(`/api/v1/roles/${roleIds.org_super_admin}`).expect(200)
+      ).body as Role;
+      await send(lead, 'patch', `/roles/${roleIds.org_super_admin}`, {
+        permissions: sa.permissions,
+      }).expect(403);
+      const me = (await lead.agent.get('/api/v1/me').expect(200)).body as MeResponse;
+      expect(me.permissions).not.toContain('admins.manage');
+    });
+
+    it('only lets a role manager give permissions they hold, never admin-level ones', async () => {
+      const lead = await roleLead();
+      await send(lead, 'post', '/roles', {
+        name: `Wide ${uniqueSuffix()}`,
+        permissions: ['event.view', 'voter.manage'],
+      }).expect(403);
+      await send(lead, 'post', '/roles', {
+        name: `Admin-like ${uniqueSuffix()}`,
+        permissions: ['roles.manage'],
+      }).expect(403);
+      const observer = (
+        await staff.superAdmin.agent.get(`/api/v1/roles/${roleIds.observer}`).expect(200)
+      ).body as Role;
+      await send(lead, 'patch', `/roles/${roleIds.observer}`, {
+        permissions: [...observer.permissions, 'kiosk.operate'],
+      }).expect(403);
+      await send(lead, 'patch', `/roles/${roleIds.admin}`, { permissions: ['event.view'] }).expect(
+        403,
+      );
+      await send(lead, 'post', '/roles', {
+        name: `Narrow ${uniqueSuffix()}`,
+        permissions: ['event.view'],
+      }).expect(201);
+    });
+
+    it('applies the grant rules when deleting a role moves its users', async () => {
+      const lead = await roleLead();
+      const doomed = (
+        await send(lead, 'post', '/roles', {
+          name: `Doomed ${uniqueSuffix()}`,
+          permissions: ['event.view'],
+        }).expect(201)
+      ).body as Role;
+      const safe = (
+        await send(lead, 'post', '/roles', {
+          name: `Safe ${uniqueSuffix()}`,
+          permissions: ['event.view'],
+        }).expect(201)
+      ).body as Role;
+      const member = await newStaff('observer');
+      await send(staff.superAdmin, 'patch', `/users/${member.id}`, { roleId: doomed.id }).expect(
+        200,
+      );
+
+      for (const target of [roleIds.admin, roleIds.observer]) {
+        await send(lead, 'delete', `/roles/${doomed.id}?moveToRoleId=${target}`).expect(403);
+      }
+      await send(lead, 'delete', `/roles/${doomed.id}?moveToRoleId=${safe.id}`).expect(204);
+      const moved = (await staff.superAdmin.agent.get(`/api/v1/users/${member.id}`).expect(200))
+        .body as UserDetail;
+      expect(moved.role?.id).toBe(safe.id);
+    });
+
+    it('treats organization-wide event permissions as admin-level', async () => {
+      const wide = (
+        await send(staff.superAdmin, 'post', '/roles', {
+          name: `All events ${uniqueSuffix()}`,
+          permissions: ['event.view', 'event.access_all'],
+        }).expect(201)
+      ).body as Role;
+      await send(staff.admin, 'post', '/users', {
+        fullName: 'Juma Ali',
+        email: `x-${uniqueSuffix()}@example.test`,
+        roleId: wide.id,
+      }).expect(403);
+    });
+
+    it('shows recent activity without changed values, reasons or IP addresses', async () => {
+      const user = await newStaff('moderator');
+      await send(staff.admin, 'patch', `/users/${user.id}`, { fullName: 'Jina Jipya' }).expect(200);
+      const detail = (await staff.admin.agent.get(`/api/v1/users/${user.id}`).expect(200))
+        .body as UserDetail;
+      expect(detail.recentActivity.length).toBeGreaterThan(0);
+      for (const entry of detail.recentActivity) {
+        expect(Object.keys(entry).sort()).toEqual(['action', 'actorLabel', 'createdAt', 'id']);
+      }
+    });
+  });
+
   describe('organization settings and onboarding', () => {
     it('is readable by every staff member and editable with org.settings.manage', async () => {
       const read = (await staff.moderator.agent.get('/api/v1/organization').expect(200))
