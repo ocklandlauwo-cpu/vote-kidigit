@@ -105,19 +105,19 @@ export class OrganizationService {
       select: settingsSelect,
     });
     if (!org) throw new AppError('NOT_FOUND');
-    const [confirmed, moderators] = await Promise.all([
+    const [confirmed, moderators, events] = await Promise.all([
       tx.auditLog.count({ where: { organizationId: org.id, action: TIME_ZONE_CONFIRMED } }),
       tx.userRole.count({
         where: { role: { systemKey: 'moderator' }, user: { deletedAt: null } },
       }),
+      tx.votingEvent.count({ where: { deletedAt: null } }),
     ]);
     const done: Record<OnboardingItem, boolean> = {
       timeZone: confirmed > 0,
       branding: org.primaryColor !== null && org.logoFileId !== null,
       smsSender: org.smsSenderId !== null,
       moderator: moderators > 0,
-      // Events arrive in step 15.
-      firstEvent: false,
+      firstEvent: events > 0,
     };
     return {
       id: org.id,

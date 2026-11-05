@@ -5,7 +5,7 @@ import { AuthGuard } from './auth.guard.js';
 import { AuthStateService } from './auth-state.service.js';
 import { AuthService } from './auth.service.js';
 import { CsrfGuard } from './csrf.guard.js';
-import { EVENT_ACCESS, NoEventsYet } from './event-access.js';
+import { EVENT_ACCESS, PrismaEventAccess } from './event-access.js';
 import { PermissionGuard } from './permission.guard.js';
 import { SessionService } from './session.service.js';
 import { SessionThrottlerGuard } from './session-throttler.guard.js';
@@ -27,7 +27,7 @@ import { UserTokensService } from './user-tokens.service.js';
     CsrfGuard,
     PermissionGuard,
     SessionThrottlerGuard,
-    { provide: EVENT_ACCESS, useClass: NoEventsYet },
+    { provide: EVENT_ACCESS, useClass: PrismaEventAccess },
   ],
   exports: [
     TokensService,

@@ -307,6 +307,17 @@ export class OrganizationsService {
     reason: string | null,
   ): Promise<OrganizationDetail> {
     const detail = await this.prisma.withContext(this.context(orgId), async (tx) => {
+      // Backend Schema 12.3: suspension is blocked while an event is Open.
+      if (status === 'suspended') {
+        const open = await tx.votingEvent.count({
+          where: { organizationId: orgId, status: 'open', deletedAt: null },
+        });
+        if (open > 0) {
+          throw new AppError('INVALID_TRANSITION', 'An event of this organization is open.', {
+            reason: 'EVENT_OPEN',
+          });
+        }
+      }
       // Conditional, so two concurrent requests cannot both change it.
       const changed = await tx.organization.updateMany({
         where: { id: orgId, deletedAt: null, status: status === 'active' ? 'suspended' : 'active' },

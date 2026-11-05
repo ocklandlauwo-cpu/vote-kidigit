@@ -663,6 +663,19 @@ describe('users, roles, organization and audit', () => {
       });
       expect(entry.after).toMatchObject({ smsSenderId: 'USHIRIKA', sessionTimeoutMinutes: 30 });
 
+      // The first event ticks the last item.
+      await owner.votingEvent.create({
+        data: {
+          organizationId: orgId,
+          name: 'AGM 2027',
+          startAt: new Date(Date.now() + 86_400_000),
+          endAt: new Date(Date.now() + 2 * 86_400_000),
+        },
+      });
+      const withEvent = (await staff.admin.agent.get('/api/v1/organization').expect(200))
+        .body as OrganizationSettings;
+      expect(item(withEvent, 'firstEvent')).toBe(true);
+
       const dismissed = (
         await send(staff.admin, 'patch', '/organization', { onboardingDismissed: true }).expect(200)
       ).body as OrganizationSettings;
@@ -680,6 +693,26 @@ describe('users, roles, organization and audit', () => {
       ]) {
         await send(staff.admin, 'patch', '/organization', body).expect(400);
       }
+    });
+  });
+
+  describe('event mappings in /me', () => {
+    it('lists the events the user is assigned to', async () => {
+      const user = await newStaff('moderator');
+      const event = await owner.votingEvent.create({
+        data: {
+          organizationId: orgId,
+          name: 'Uchaguzi wa Bodi',
+          startAt: new Date(Date.now() + 86_400_000),
+          endAt: new Date(Date.now() + 2 * 86_400_000),
+        },
+      });
+      await owner.eventAssignment.create({
+        data: { organizationId: orgId, eventId: event.id, userId: user.id, type: 'moderator' },
+      });
+      const { agent } = await signIn(user.email);
+      const me = (await agent.get('/api/v1/me').expect(200)).body as MeResponse;
+      expect(me.mappedEventIds).toEqual([event.id]);
     });
   });
 

@@ -166,9 +166,13 @@ describe('staff authentication', () => {
         .expect(423);
       const body = locked.body as { code: string; details: { lockedUntil: string } };
       expect(body.code).toBe('ACCOUNT_LOCKED');
-      const minutes = (Date.parse(body.details.lockedUntil) - Date.now()) / 60_000;
-      expect(minutes).toBeGreaterThan(14);
-      expect(minutes).toBeLessThanOrEqual(15);
+      // Both times come from the database clock (Docker's may differ slightly from Node's).
+      const lockedRow = await owner.user.findUniqueOrThrow({ where: { id: user.id } });
+      expect(lockedRow.lockedUntil?.toISOString()).toBe(body.details.lockedUntil);
+      const minutes =
+        ((lockedRow.lockedUntil?.getTime() ?? 0) - (lockedRow.lastFailedLoginAt?.getTime() ?? 0)) /
+        60_000;
+      expect(minutes).toBeCloseTo(15, 5);
 
       // Even the right password waits for the unlock time.
       const stillLocked = await anon()

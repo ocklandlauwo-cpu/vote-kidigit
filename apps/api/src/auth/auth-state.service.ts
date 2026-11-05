@@ -130,6 +130,13 @@ export class AuthStateService {
           },
         },
       });
+      const assignments = user.isPlatformAdmin
+        ? []
+        : await tx.eventAssignment.findMany({
+            where: { userId: user.id, event: { deletedAt: null } },
+            select: { eventId: true },
+            orderBy: { createdAt: 'asc' },
+          });
       const permissions = user.isPlatformAdmin
         ? [...PLATFORM_PERMISSIONS]
         : (assignment?.role.rolePermissions.map((p) => p.permissionKey).sort() ?? []);
@@ -156,8 +163,7 @@ export class AuthStateService {
             }
           : null,
         permissions,
-        // Event mappings arrive with the events tables in step 15.
-        mappedEventIds: [],
+        mappedEventIds: assignments.map((a) => a.eventId),
         sessionTimeoutMinutes: organization?.sessionTimeoutMinutes ?? this.platformTimeout,
         passwordChangedAt: user.passwordChangedAt?.toISOString() ?? null,
       };

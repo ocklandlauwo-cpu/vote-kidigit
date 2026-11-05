@@ -8,6 +8,7 @@ Nov 3, 2026 · @Smartone
 |---|---|
 | 5 Nov 2026 | Added 4.10 platform_settings (PLT-04 needed storage for the default session timeout, USSD short code and support contact; migration 009_platform_settings, Implementation Plan step 12). |
 | 5 Nov 2026 | Added GET /users/roles (12.4): the invite and edit forms of USR-02/03 need the role list, which GET /roles keeps for roles.manage; each role says whether the caller may give it (Implementation Plan step 14). |
+| 5 Nov 2026 | Step 15 clarifications (migrations 011, 012): app.category_is_votable() is also false once now() >= the event's end_at (hard close, PRD 4.3 rule 4), before the scheduler closes the event; app.transition_event() refuses to open an event whose end_at has passed, refuses any move of a deactivated event (PRD 4.3 rule 3), raises VALIDATION_FAILED for a missing or short cancel reason and NOT_FOUND for another organization's event; outside Draft results_visibility may also change (12.5); a category_voters row must link a voter and a category of the same event (NOT_FOUND otherwise); the guard triggers do not restrict vk_owner. |
 
 ## 1. Overview
 

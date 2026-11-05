@@ -7,26 +7,25 @@ import type { Tx } from '../database/prisma.service.js';
  * organizations and they count as missing.
  */
 export interface EventAccess {
-  /** Whether the event exists for the current organization. */
-  eventExists(tx: Tx, eventId: string): Promise<boolean>;
+  /** The event of the current organization, or null when missing (or deleted). */
+  findEvent(tx: Tx, eventId: string): Promise<{ isActive: boolean } | null>;
   /** Whether the user is assigned to the event (event_assignments, any type). */
   isAssigned(tx: Tx, eventId: string, userId: string): Promise<boolean>;
 }
 
 export const EVENT_ACCESS = Symbol('EVENT_ACCESS');
 
-/**
- * Until voting_events and event_assignments exist (migration 009_events, Implementation Plan
- * step 15) there are no events: every event-scoped route answers 404. Step 15 replaces this
- * provider with queries on those tables.
- */
+/** voting_events and event_assignments (migration 011). */
 @Injectable()
-export class NoEventsYet implements EventAccess {
-  eventExists(): Promise<boolean> {
-    return Promise.resolve(false);
+export class PrismaEventAccess implements EventAccess {
+  findEvent(tx: Tx, eventId: string): Promise<{ isActive: boolean } | null> {
+    return tx.votingEvent.findFirst({
+      where: { id: eventId, deletedAt: null },
+      select: { isActive: true },
+    });
   }
 
-  isAssigned(): Promise<boolean> {
-    return Promise.resolve(false);
+  async isAssigned(tx: Tx, eventId: string, userId: string): Promise<boolean> {
+    return (await tx.eventAssignment.count({ where: { eventId, userId } })) > 0;
   }
 }

@@ -46,6 +46,7 @@ model Organization {
   roles           Role[]
   passwordHistory PasswordHistory[]
   userTokens      UserToken[]
+  votingEvents    VotingEvent[]
 
   @@unique([slug], map: "organizations_slug_key", where: raw("deleted_at IS NULL"))
   @@map("organizations")
@@ -77,12 +78,15 @@ model User {
   updatedAt         DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt         DateTime?  @map("deleted_at") @db.Timestamptz(6)
 
-  organization    Organization?     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  passwordHistory PasswordHistory[]
-  tokens          UserToken[]       @relation("UserTokenOwner")
-  tokensCreated   UserToken[]       @relation("UserTokenCreator")
+  organization       Organization?     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  passwordHistory    PasswordHistory[]
+  tokens             UserToken[]       @relation("UserTokenOwner")
+  tokensCreated      UserToken[]       @relation("UserTokenCreator")
   /// At most one in V1: user_roles.user_id is unique.
-  userRoles       UserRole[]
+  userRoles          UserRole[]
+  eventsCreated      VotingEvent[]     @relation("EventCreator")
+  eventAssignments   EventAssignment[] @relation("AssignedUser")
+  assignmentsCreated EventAssignment[] @relation("AssignmentCreator")
 
   @@unique([emailNormalized], map: "users_email_normalized_key", where: raw("deleted_at IS NULL"))
   /// Target of composite foreign keys from organization-owned child tables.
@@ -137,6 +141,200 @@ model UserToken {
 }
 
 /// Global permission catalogue (Backend Schema 9.1), seeded by migration; read-only for vk_api.
+// -----------------------------------------------------------------------------------------------
+// Events, categories, contesters and voters (Backend Schema 4.9, 5). Not expressible here and
+// added as SQL in migration 011: CHECK constraints, the generated
+// voters.membership_id_normalized column, the deferrable unique display order, the setup-lock
+// and window triggers (11.2), app.transition_event() (11.5), app.publish_checklist(),
+// app.category_is_votable(), app.voter_is_eligible(), RLS and grants.
+// -----------------------------------------------------------------------------------------------
+
+model VotingEvent {
+  id                         String            @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId             String            @map("organization_id") @db.Uuid
+  name                       String
+  startAt                    DateTime          @map("start_at") @db.Timestamptz(6)
+  endAt                      DateTime          @map("end_at") @db.Timestamptz(6)
+  /// Changes only through app.transition_event() (Backend Schema 11.5).
+  status                     EventStatus       @default(draft)
+  isActive                   Boolean           @default(true) @map("is_active")
+  showParty                  Boolean           @default(false) @map("show_party")
+  resultsVisibility          ResultsVisibility @default(full) @map("results_visibility")
+  reminderBeforeOpenHours    Int?              @default(24) @map("reminder_before_open_hours") @db.SmallInt
+  reminderBeforeCloseMinutes Int?              @default(60) @map("reminder_before_close_minutes") @db.SmallInt
+  publicResultsToken         String?           @map("public_results_token")
+  publicResultsEnabled       Boolean           @default(true) @map("public_results_enabled")
+  firstCodeSentAt            DateTime?         @map("first_code_sent_at") @db.Timestamptz(6)
+  openedAt                   DateTime?         @map("opened_at") @db.Timestamptz(6)
+  closedAt                   DateTime?         @map("closed_at") @db.Timestamptz(6)
+  resultsPublishedAt         DateTime?         @map("results_published_at") @db.Timestamptz(6)
+  cancelledAt                DateTime?         @map("cancelled_at") @db.Timestamptz(6)
+  archivedAt                 DateTime?         @map("archived_at") @db.Timestamptz(6)
+  cancelReason               String?           @map("cancel_reason")
+  reopenCount                Int               @default(0) @map("reopen_count") @db.SmallInt
+  createdBy                  String?           @map("created_by") @db.Uuid
+  createdAt                  DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt                  DateTime?         @map("deleted_at") @db.Timestamptz(6)
+
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  creator      User?             @relation("EventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  assignments  EventAssignment[]
+  categories   Category[]
+  voters       Voter[]
+
+  @@unique([publicResultsToken], map: "voting_events_public_results_token_key")
+  /// Target of composite foreign keys from the event's children.
+  @@unique([id, organizationId], map: "voting_events_id_organization_id_key")
+  @@index([organizationId, status])
+  @@index([createdBy])
+  @@map("voting_events")
+  @@schema("public")
+}
+
+model EventAssignment {
+  id             String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  eventId        String         @map("event_id") @db.Uuid
+  userId         String         @map("user_id") @db.Uuid
+  type           AssignmentType
+  createdBy      String?        @map("created_by") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  event   VotingEvent @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  user    User        @relation("AssignedUser", fields: [userId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  creator User?       @relation("AssignmentCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, userId], map: "event_assignments_event_id_user_id_key")
+  @@index([userId])
+  @@index([organizationId])
+  @@index([createdBy])
+  @@map("event_assignments")
+  @@schema("public")
+}
+
+model Category {
+  id             String              @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String              @map("organization_id") @db.Uuid
+  eventId        String              @map("event_id") @db.Uuid
+  name           String
+  /// FK to files.id (set null) is added with the files table in step 17.
+  pictureFileId  String?             @map("picture_file_id") @db.Uuid
+  /// Unique per event; the constraint is DEFERRABLE (migration 011) so reordering can swap.
+  displayOrder   Int                 @map("display_order")
+  isActive       Boolean             @default(true) @map("is_active")
+  opensAt        DateTime?           @map("opens_at") @db.Timestamptz(6)
+  closesAt       DateTime?           @map("closes_at") @db.Timestamptz(6)
+  manualState    CategoryManualState @default(auto) @map("manual_state")
+  closedAt       DateTime?           @map("closed_at") @db.Timestamptz(6)
+  selectionMode  SelectionMode       @default(exact) @map("selection_mode")
+  exactCount     Int?                @default(1) @map("exact_count") @db.SmallInt
+  minCount       Int?                @map("min_count") @db.SmallInt
+  maxCount       Int?                @map("max_count") @db.SmallInt
+  seats          Int                 @default(1) @db.SmallInt
+  allowSkip      Boolean             @default(false) @map("allow_skip")
+  winnerRule     WinnerRule          @default(plurality) @map("winner_rule")
+  thresholdPct   Decimal?            @map("threshold_pct") @db.Decimal(5, 2)
+  quorumPct      Decimal?            @map("quorum_pct") @db.Decimal(5, 2)
+  eligibility    EligibilityMode     @default(all)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  event      VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  contesters Contester[]
+  voters     CategoryVoter[]
+
+  @@unique([eventId, name], map: "categories_event_id_name_key")
+  @@unique([eventId, displayOrder], map: "categories_event_id_display_order_key")
+  /// Targets of composite foreign keys from contesters and category_voters.
+  @@unique([id, eventId, organizationId], map: "categories_id_event_id_organization_id_key")
+  @@unique([id, organizationId], map: "categories_id_organization_id_key")
+  @@index([organizationId])
+  @@map("categories")
+  @@schema("public")
+}
+
+model Contester {
+  id             String          @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String          @map("organization_id") @db.Uuid
+  /// Equal to the category's event (composite foreign key).
+  eventId        String          @map("event_id") @db.Uuid
+  categoryId     String          @map("category_id") @db.Uuid
+  fullName       String          @map("full_name")
+  party          String?
+  /// FK to files.id (set null) is added with the files table in step 17.
+  photoFileId    String?         @map("photo_file_id") @db.Uuid
+  ussdShortName  String?         @map("ussd_short_name")
+  status         ContesterStatus @default(active)
+  withdrawnAt    DateTime?       @map("withdrawn_at") @db.Timestamptz(6)
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  category Category @relation(fields: [categoryId, eventId, organizationId], references: [id, eventId, organizationId], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([eventId])
+  @@index([organizationId])
+  @@map("contesters")
+  @@schema("public")
+}
+
+model Voter {
+  id                     String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId         String     @map("organization_id") @db.Uuid
+  eventId                String     @map("event_id") @db.Uuid
+  fullName               String     @map("full_name")
+  membershipId           String     @map("membership_id")
+  /// Generated column upper(regexp_replace(membership_id, '\s', '', 'g')); never written.
+  membershipIdNormalized String     @default(dbgenerated()) @map("membership_id_normalized")
+  phone                  String
+  email                  String?
+  gender                 Gender
+  /// FK to files.id (set null) is added with the files table in step 17.
+  photoFileId            String?    @map("photo_file_id") @db.Uuid
+  /// HMAC-SHA256 of the normalized code (Backend Schema 5.4); hidden from vk_readonly.
+  codeHmac               Bytes?     @map("code_hmac")
+  /// AES-256-GCM copy of the code for re-sending; only the SMS worker decrypts it.
+  codeCiphertext         Bytes?     @map("code_ciphertext")
+  codeStatus             CodeStatus @default(not_sent) @map("code_status")
+  codeGeneratedAt        DateTime?  @map("code_generated_at") @db.Timestamptz(6)
+  codeLastSentAt         DateTime?  @map("code_last_sent_at") @db.Timestamptz(6)
+  failedAttempts         Int        @default(0) @map("failed_attempts") @db.SmallInt
+  lockedUntil            DateTime?  @map("locked_until") @db.Timestamptz(6)
+  createdAt              DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+  deletedAt              DateTime?  @map("deleted_at") @db.Timestamptz(6)
+
+  event      VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  categories CategoryVoter[]
+
+  @@unique([eventId, membershipIdNormalized], map: "voters_event_id_membership_id_normalized_key", where: raw("deleted_at IS NULL"))
+  @@unique([eventId, codeHmac], map: "voters_event_id_code_hmac_key", where: raw("code_hmac IS NOT NULL AND deleted_at IS NULL"))
+  /// Target of the composite foreign key from category_voters.
+  @@unique([id, organizationId], map: "voters_id_organization_id_key")
+  @@index([eventId, codeStatus])
+  @@index([organizationId, phone])
+  @@map("voters")
+  @@schema("public")
+}
+
+model CategoryVoter {
+  categoryId     String   @map("category_id") @db.Uuid
+  voterId        String   @map("voter_id") @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  category Category @relation(fields: [categoryId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  voter    Voter    @relation(fields: [voterId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@id([categoryId, voterId])
+  @@index([voterId])
+  @@index([organizationId])
+  @@map("category_voters")
+  @@schema("public")
+}
+
 /// Platform-wide settings (Backend Schema 4.10): exactly one row, id = 1. Who changed what is
 /// in the audit log.
 model PlatformSetting {

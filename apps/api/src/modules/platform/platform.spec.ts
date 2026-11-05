@@ -314,6 +314,25 @@ describe('Platform Super Admin', () => {
       expect((await signIn(email)).res.status).toBe(200);
       await post(`${ORGS}/${orgId}/reactivate`).expect(409);
     });
+
+    it('is blocked while an event of the organization is open', async () => {
+      const orgId = await createOrganization(owner, 'Uchaguzi Unaendelea');
+      orgIds.push(orgId);
+      await owner.votingEvent.create({
+        data: {
+          organizationId: orgId,
+          name: 'AGM 2027',
+          status: 'open',
+          startAt: new Date(Date.now() - 3_600_000),
+          endAt: new Date(Date.now() + 3_600_000),
+        },
+      });
+      const res = await post(`${ORGS}/${orgId}/suspend`, { reason: 'Unpaid invoice' }).expect(409);
+      expect(res.body).toMatchObject({
+        code: 'INVALID_TRANSITION',
+        details: { reason: 'EVENT_OPEN' },
+      });
+    });
   });
 
   describe('resend invitation', () => {

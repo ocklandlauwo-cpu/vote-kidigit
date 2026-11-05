@@ -17,6 +17,11 @@ export interface TenantTableCase {
   platformCanRead?: boolean;
   /** vk_api may only insert and read (audit log): updates and deletes are permission errors. */
   appendOnly?: boolean;
+  /**
+   * How a cross-organization insert is refused, when a BEFORE trigger refuses it before RLS
+   * does (it cannot see the other organization's rows either). Default: the RLS error.
+   */
+  insertRefusal?: RegExp;
   /** Attempts, as vk_api, to insert a row that belongs to `targetOrgId`. */
   insertFor(tx: Tx, targetOrgId: string, fixtures: OrgFixtures): Promise<unknown>;
 }
@@ -90,7 +95,9 @@ export function describeTenantIsolation(
         const { api, orgA, orgB, fixturesB } = getSetup();
         await expect(
           api.withContext(orgContext(orgA), (tx) => testCase.insertFor(tx, orgB, fixturesB)),
-        ).rejects.toThrow(/row-level security|violates row level security/i);
+        ).rejects.toThrow(
+          testCase.insertRefusal ?? /row-level security|violates row level security/i,
+        );
       });
 
       it("organization A cannot update or delete B's rows", async () => {

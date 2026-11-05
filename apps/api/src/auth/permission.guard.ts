@@ -62,10 +62,13 @@ export class PermissionGuard implements CanActivate {
     const { orgId, userId, isPlatformAdmin, requestId } = this.requestContext.getOrThrow();
     const allowed = await this.prisma.withContext(
       { orgId, userId, isPlatformAdmin, requestId },
-      async (tx) =>
-        (await this.events.eventExists(tx, eventId)) &&
-        (auth.permissions.includes('event.access_all') ||
-          (await this.events.isAssigned(tx, eventId, auth.userId))),
+      async (tx) => {
+        const event = await this.events.findEvent(tx, eventId);
+        if (!event) return false;
+        if (auth.permissions.includes('event.access_all')) return true;
+        // A deactivated event is hidden from moderators and observers (PRD 4.3 rule 3).
+        return event.isActive && (await this.events.isAssigned(tx, eventId, auth.userId));
+      },
     );
     if (!allowed) throw new AppError('NOT_FOUND');
     return true;

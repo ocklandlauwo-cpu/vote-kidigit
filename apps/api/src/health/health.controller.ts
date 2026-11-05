@@ -37,15 +37,9 @@ export class HealthController {
   async liveEvents(): Promise<{ openEvents: number }> {
     const { requestId } = this.requestContext.getOrThrow();
     const context = { orgId: null, userId: null, isPlatformAdmin: true, requestId };
-    const openEvents = await this.prisma.withContext(context, async (tx) => {
-      // voting_events arrives in step 15; until then there can be no open event.
-      const [table] = await tx.$queryRaw<{ exists: boolean }[]>`
-        SELECT to_regclass('public.voting_events') IS NOT NULL AS exists`;
-      if (!table?.exists) return 0;
-      const [row] = await tx.$queryRaw<{ n: bigint }[]>`
-        SELECT count(*) AS n FROM public.voting_events WHERE status = 'open'`;
-      return Number(row?.n ?? 0);
-    });
+    const openEvents = await this.prisma.withContext(context, (tx) =>
+      tx.votingEvent.count({ where: { status: 'open', deletedAt: null } }),
+    );
     return { openEvents };
   }
 }

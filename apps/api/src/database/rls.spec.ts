@@ -64,6 +64,46 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${f.spareUserId}::uuid, ${f.roleId}::uuid, ${org}::uuid)`,
   },
   {
+    table: 'public.voting_events',
+    insertFor: (tx, org) =>
+      tx.$executeRaw`INSERT INTO public.voting_events (organization_id, name, start_at, end_at)
+        VALUES (${org}::uuid, 'Intruder', now() + interval '1 day', now() + interval '2 days')`,
+  },
+  {
+    table: 'public.event_assignments',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.event_assignments (organization_id, event_id, user_id, type)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, ${f.spareUserId}::uuid, 'observer')`,
+  },
+  {
+    table: 'public.categories',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.categories (organization_id, event_id, name, display_order)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, ${`Intruder ${uniqueSuffix()}`}, 99)`,
+  },
+  {
+    table: 'public.contesters',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.contesters (organization_id, event_id, category_id, full_name)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, ${f.categoryId}::uuid, 'Intruder')`,
+  },
+  {
+    table: 'public.voters',
+    // Backend Schema 10.2: platform admins never read individual voters.
+    platformCanRead: false,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.voters (organization_id, event_id, full_name, membership_id, phone, gender)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, 'Intruder', ${`M-${uniqueSuffix()}`}, '+255700000000', 'female')`,
+  },
+  {
+    table: 'public.category_voters',
+    // The setup trigger runs first and cannot see B's voter: refused as not found.
+    insertRefusal: /row-level security|NOT_FOUND/,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.category_voters (category_id, voter_id, organization_id)
+        VALUES (${f.categoryId}::uuid, ${f.spareVoterId}::uuid, ${org}::uuid)`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -113,7 +153,61 @@ async function seedOrganization(
       entityId: orgId,
     },
   });
-  return { userId, spareUserId, roleId: role.id, customRoleId: customRole.id, permissionKey };
+  // A Draft event with one of each setup row; a spare voter not yet linked to the category.
+  const event = await owner.votingEvent.create({
+    data: {
+      organizationId: orgId,
+      name: 'Seeded event',
+      startAt: new Date(Date.now() + 86_400_000),
+      endAt: new Date(Date.now() + 2 * 86_400_000),
+    },
+    select: { id: true },
+  });
+  await owner.eventAssignment.create({
+    data: { organizationId: orgId, eventId: event.id, userId, type: 'moderator' },
+  });
+  const category = await owner.category.create({
+    data: { organizationId: orgId, eventId: event.id, name: 'Chair', displayOrder: 1 },
+    select: { id: true },
+  });
+  await owner.contester.create({
+    data: { organizationId: orgId, eventId: event.id, categoryId: category.id, fullName: 'Asha' },
+  });
+  const voter = await owner.voter.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      fullName: 'Juma',
+      membershipId: `M-${uniqueSuffix()}`,
+      phone: '+255712000001',
+      gender: 'male',
+    },
+    select: { id: true },
+  });
+  const spareVoter = await owner.voter.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      fullName: 'Neema',
+      membershipId: `M-${uniqueSuffix()}`,
+      phone: '+255712000002',
+      gender: 'female',
+    },
+    select: { id: true },
+  });
+  await owner.categoryVoter.create({
+    data: { categoryId: category.id, voterId: voter.id, organizationId: orgId },
+  });
+  return {
+    userId,
+    spareUserId,
+    roleId: role.id,
+    customRoleId: customRole.id,
+    permissionKey,
+    eventId: event.id,
+    categoryId: category.id,
+    spareVoterId: spareVoter.id,
+  };
 }
 
 describe('row level security: tenant isolation', () => {

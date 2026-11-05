@@ -92,6 +92,9 @@ export async function deleteOrganizations(owner: PrismaClient, ids: string[]): P
       where: { id: { in: ids } },
       data: { deletedAt: new Date() },
     });
+    // Voters restrict their event and events restrict their organization; the rest cascades.
+    await tx.voter.deleteMany({ where: { organizationId: { in: ids } } });
+    await tx.votingEvent.deleteMany({ where: { organizationId: { in: ids } } });
     await tx.user.deleteMany({ where: { organizationId: { in: ids } } });
     await tx.organization.deleteMany({ where: { id: { in: ids } } });
   });

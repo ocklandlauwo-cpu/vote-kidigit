@@ -1,6 +1,7 @@
 // Integration test: boots the HTTP API against the local PostgreSQL and Redis.
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
+import { createOrganization, deleteOrganizations, ownerClient } from '../testing/db.js';
 import { PrismaService } from '../database/prisma.service.js';
 import { createTestHttpApp } from '../testing/http.js';
 
@@ -42,11 +43,29 @@ describe('GET /api/health/live-events', () => {
   });
 
   it('returns the number of open events with the deploy secret', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/health/live-events')
-      .set('X-Deploy-Secret', process.env.DEPLOY_HEALTH_SECRET ?? '')
-      .expect(200);
-    expect(response.body).toEqual({ openEvents: 0 });
+    // Other test files open events in parallel, so the count is checked against this one.
+    const owner = ownerClient();
+    const orgId = await createOrganization(owner, 'Uchaguzi wa Afya');
+    try {
+      await owner.votingEvent.create({
+        data: {
+          organizationId: orgId,
+          name: 'AGM 2027',
+          status: 'open',
+          startAt: new Date(Date.now() - 3_600_000),
+          endAt: new Date(Date.now() + 3_600_000),
+        },
+      });
+      const response = await request(app.getHttpServer())
+        .get('/api/health/live-events')
+        .set('X-Deploy-Secret', process.env.DEPLOY_HEALTH_SECRET ?? '')
+        .expect(200);
+      const { openEvents } = response.body as { openEvents: number };
+      expect(Number.isInteger(openEvents) && openEvents >= 1).toBe(true);
+    } finally {
+      await deleteOrganizations(owner, [orgId]);
+      await owner.$disconnect();
+    }
   });
 
   it.each([

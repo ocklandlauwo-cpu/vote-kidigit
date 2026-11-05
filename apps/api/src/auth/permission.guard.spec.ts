@@ -80,6 +80,8 @@ const EXPECTED: Record<SystemRoleKey, PermissionKey[]> = {
 const ASSIGNED_EVENT = randomUUID();
 const UNASSIGNED_EVENT = randomUUID();
 const OTHER_ORG_EVENT = randomUUID();
+/** Assigned to the role users, but deactivated. */
+const INACTIVE_EVENT = randomUUID();
 
 const probePath = (key: string) => `probe/${key}`;
 const eventProbePath = (key: string) => `probe/events/:eventId/${key}`;
@@ -137,12 +139,17 @@ describe('permissions and guards', () => {
   const assignedUsers = new Set<string>();
   const eventAccess: EventAccess & { calls: { eventId: string; tx: Tx }[] } = {
     calls: [],
-    eventExists(tx, eventId) {
+    findEvent(tx, eventId) {
       this.calls.push({ eventId, tx });
-      return Promise.resolve(eventId === ASSIGNED_EVENT || eventId === UNASSIGNED_EVENT);
+      if (eventId === INACTIVE_EVENT) return Promise.resolve({ isActive: false });
+      return Promise.resolve(
+        eventId === ASSIGNED_EVENT || eventId === UNASSIGNED_EVENT ? { isActive: true } : null,
+      );
     },
     isAssigned(_tx, eventId, userId) {
-      return Promise.resolve(eventId === ASSIGNED_EVENT && assignedUsers.has(userId));
+      return Promise.resolve(
+        (eventId === ASSIGNED_EVENT || eventId === INACTIVE_EVENT) && assignedUsers.has(userId),
+      );
     },
   };
 
@@ -277,6 +284,13 @@ describe('permissions and guards', () => {
         .expect(200);
       expect(eventAccess.calls).toHaveLength(1);
       expect(eventAccess.calls[0]?.eventId).toBe(ASSIGNED_EVENT);
+    });
+
+    it('hides a deactivated event from assigned moderators and observers, not from Admins', async () => {
+      const path = `/api/${eventProbePath('event.view').replace(':eventId', INACTIVE_EVENT)}`;
+      await agent('moderator').get(path).expect(404);
+      await agent('observer').get(path).expect(404);
+      await agent('admin').get(path).expect(200);
     });
 
     it('lets every signed-in user call @SignedIn routes', async () => {

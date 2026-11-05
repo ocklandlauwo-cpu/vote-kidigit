@@ -143,7 +143,7 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Every route has exactly one access decorator: `@Public()`, `@SignedIn()` (any staff user: Backend Schema 12 "Session") or `@RequirePermission('event.publish')`. The global `PermissionGuard` (after AuthGuard and CsrfGuard) refuses undecorated routes with a 500, and `auth/access-decorators.spec.ts` lists them.
 - The catalogue is `PERMISSION_CATALOGUE` in `packages/shared/src/api/permissions.ts` (key, scope, module), seeded into `permissions` by migration 008; a test fails if they differ. A new permission needs both, plus app.create_default_roles if a default role gets it.
 - Scope rules (Backend Schema 9.3): platform → platform admins only, everyone else 404; missing permission → 403; event scope → the route needs `:eventId`, and an event of another organization or one the user is not assigned to (without `event.access_all`) is 404. Platform admins hold only the three platform permissions.
-- Event lookups go through the `EVENT_ACCESS` provider (`auth/event-access.ts`). Until step 15 creates the events tables it is `NoEventsYet` (every event route is 404); step 15 replaces it with queries on voting_events and event_assignments. Tests swap it with `createTestHttpApp(controllers, [{ provide: EVENT_ACCESS, useValue: fake }])`.
+- Event lookups go through the `EVENT_ACCESS` provider (`auth/event-access.ts`, `PrismaEventAccess` on voting_events and event_assignments). A deactivated event is 404 for users without `event.access_all`. Tests swap it with `createTestHttpApp(controllers, [{ provide: EVENT_ACCESS, useValue: fake }])`.
 
 ## Platform context in code
 
@@ -151,6 +151,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Platform admins hold only the platform permissions: organization routes answer 403, platform routes answer 404 to everyone else. They edit only organization details and status, never organization data such as voters.
 - Path IDs use `@Param('orgId', IdParamPipe)`: a malformed UUID is 404 like a missing record. `isUuid` is in common/id-param.pipe.ts.
 - Lists follow Backend Schema 12.1: `PaginationQuerySchema` (page, pageSize 25/50/100) and `pageSchema(item)` in packages/shared/src/api/common.ts. The audit screens read through `AuditQueryService` (audit module).
+
+## Events in code
+
+- Tables of migration 011: voting_events, event_assignments, categories, contesters, voters, category_voters. Children reference their event with composite keys (`(event_id, organization_id)`; contesters `(category_id, event_id, organization_id)`), so a row cannot point across events or organizations.
+- Status changes only through `SELECT * FROM app.transition_event(event_id, 'open'::event_status, reason)`: it checks the move (INVALID_TRANSITION, CHECKLIST_FAILED, VALIDATION_FAILED) and the caller's organization. Never update `status` or the lifecycle columns directly; the guard trigger raises INVALID_TRANSITION. Close, reopen and results publication arrive in step 27.
+- After publish the setup is locked by `app.guard_event_setup()` (EVENT_LOCKED): only the columns of Backend Schema 11.2 may change. The guards run as the caller and do not restrict vk_owner, so tests that need a published event can set `status` as the owner; tests of the rules must write as vk_api (`api.withContext(orgContext(org), …)`).
+- PostgreSQL computes stored generated columns after BEFORE triggers: a trigger comparing rows must leave them out (voters.membership_id_normalized).
+- `app.publish_checklist(event_id)` returns the six App Flow 6.3 items (details, categories, contesters, rules, voters, eligibility) with details naming failing categories; `app.category_is_votable()` and `app.voter_is_eligible()` are the only definitions of those rules.
+- Test clean-up: `deleteOrganizations` deletes voters and events first (they restrict their parents).
 
 ## Email and queues in code
 
