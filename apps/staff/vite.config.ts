@@ -23,5 +23,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Ant Design is large: the first test of a file also pays its import, which takes several
+    // seconds on a busy CI runner.
+    testTimeout: 20_000,
   },
 });
