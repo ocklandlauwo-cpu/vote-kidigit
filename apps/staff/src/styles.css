@@ -233,3 +233,17 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* A list of rows with dividers (Ant Design's List is deprecated in 6.6) */
+.vk-plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.vk-plain-list > li {
+  padding: var(--vk-space-2) 0;
+  border-bottom: 1px solid var(--vk-border);
+}
+.vk-plain-list > li:last-child {
+  border-bottom: none;
+}

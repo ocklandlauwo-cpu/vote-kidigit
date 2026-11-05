@@ -34,7 +34,8 @@ export function AcceptInvitePage() {
       }),
     onSuccess: (me) => {
       setSignedIn(me);
-      void navigate('/', { replace: true });
+      // SYS-05 once, then the dashboard (App Flow 7.4).
+      void navigate('/welcome', { replace: true });
     },
     onError: (error) => {
       if (isApiError(error, 'TOKEN_EXPIRED') || isApiError(error, 'TOKEN_USED'))

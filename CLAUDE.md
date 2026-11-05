@@ -130,6 +130,13 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Passwords are set only through `auth/password-store.ts`: `assertNotReused` and `savePassword` (hash, last-5 history, unused links of the user deleted) inside the transaction, then `advancePasswordEpoch` after it commits. The epoch (`password_changed_at`) ends older sessions; a session started in the same request needs `issuedAt` strictly after the returned time.
 - Invitation and reset links: `UserTokensService` (only the SHA-256 is stored; `find` → NOT_FOUND / TOKEN_USED / TOKEN_EXPIRED; `consume` is conditional inside the acting transaction). To invite a user call `TokensService.sendInvitation(userId, orgId)` after the user row is committed.
 
+## Users and roles in code
+
+- Who may act on whom (users.service.ts): staff.manage for moderators and observers; admins.manage as well when the user's current or new role is admin-level (`ADMIN_LEVEL_PERMISSIONS` in packages/shared/src/api/users.ts); only an Org Super Admin acts on an Org Super Admin or gives that role; nobody changes their own role or deactivates or deletes themselves. `GET /users/roles` tells the UI which roles the caller may give (`assignable`).
+- A user's role is in user_roles (one per user); `users.is_org_super_admin` follows the role (`org_super_admin`). The deferred trigger keeps one active Org Super Admin (LAST_SUPER_ADMIN at commit).
+- Role changes call `invalidateOrg`; user changes call `invalidateUser` and, for deactivation and deletion, `destroyAllForUser`.
+- Onboarding checklist items are computed in organization.service.ts; saving the Regional section records `org.settings.timezone.confirm`, which ticks "Confirm time zone".
+
 ## Permissions in code
 
 - Every route has exactly one access decorator: `@Public()`, `@SignedIn()` (any staff user: Backend Schema 12 "Session") or `@RequirePermission('event.publish')`. The global `PermissionGuard` (after AuthGuard and CsrfGuard) refuses undecorated routes with a 500, and `auth/access-decorators.spec.ts` lists them.
@@ -167,6 +174,11 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Routes (`router.tsx`, basename /app): sign-in screens under `AuthLayout`; everything else inside `RequireAuth` (portal frame), with sections behind `RequirePermission` (ERR-03 when missing). A route's breadcrumb is `handle: { crumb: 'nav.users' }`. Sections without screens yet render `ComingSoonPage`.
 - Shared components (`apps/staff/src/components`): `StatusBadge` (domains and values from Design System 3.3 in `statusSpecs.ts`; add a row there before a new status), `Banner`, `EmptyState`, `PageHeader`, `ConfirmDialog` (tone, `typeToConfirm`, `requireReason`), `ErrorPage` (ERR-01/03/04/05), `UserAvatar`. Styles that props cannot express live in `src/styles.css`, with token values only.
 - Component files export only components (Fast Refresh lint); helpers and constants go in a sibling `.ts` file.
+- Dates and times: `useFormat()` (`date`, `dateTime`) in the organization time zone and current language (Design System 11.5: "3 Nov 2026, saa 14:00"); `format.ts` holds the pure functions.
+- Default role names and descriptions are product text: show them with `useRoleLabel()` (by `systemKey`, strings in `roles.system.*`); custom roles show their stored name.
+- Server field errors: `applyFieldErrors(form, error, { 'email:taken': t(...), phone: t(...) })` puts VALIDATION_FAILED issues on the form fields.
+- Forms that can lose input use `<UnsavedChangesPrompt dirty={…} />` (route blocker + beforeunload).
+- Ant Design 6.6 deprecates `List`: use a `<ul className="vk-plain-list">`. Check the console for other deprecation warnings when adding components.
 - Tests: `renderWithProviders(ui, { path, routes })` and `jsonResponse()` in `src/test/render.tsx`; the test setup stubs `ResizeObserver` and `matchMedia` (narrow screen unless a test stubs a wide one). Stub `fetch` with `vi.stubGlobal`.
 
 ## Local development (Windows)

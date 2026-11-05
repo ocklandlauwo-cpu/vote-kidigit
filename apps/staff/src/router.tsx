@@ -15,7 +15,14 @@ import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { SignInPage } from './pages/auth/SignInPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
+import { AuditPage } from './pages/audit/AuditPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
+import { RoleEditorPage } from './pages/roles/RoleEditorPage';
+import { RolesPage } from './pages/roles/RolesPage';
+import { SettingsPage } from './pages/settings/SettingsPage';
+import { UsersPage } from './pages/users/UsersPage';
+import { WelcomePage } from './pages/WelcomePage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
 
 /** A menu section whose screens arrive later, behind its permissions (App Flow 2.1, 3.3). */
@@ -67,15 +74,40 @@ export const routes: RouteObject[] = [
         element: <RequireAuth />,
         children: [
           { index: true, element: <DashboardPage />, handle: { crumb: 'nav.dashboard' } },
-          section('profile', 'nav.profile', []),
+          { path: 'welcome', element: <WelcomePage /> },
+          { path: 'profile', element: <ProfilePage />, handle: { crumb: 'nav.profile' } },
           section('platform/orgs', 'nav.organizations', ['platform.orgs.manage']),
           section('platform/audit', 'nav.audit', ['platform.audit.view']),
           section('platform/settings', 'nav.settings', ['platform.settings.manage']),
           section('events', 'nav.events', ['event.view', 'event.create']),
-          section('users', 'nav.users', ['staff.manage', 'admins.manage']),
-          section('roles', 'nav.roles', ['roles.manage']),
-          section('audit', 'nav.audit', ['audit.view.org']),
-          section('settings', 'nav.settings', ['org.settings.manage']),
+          {
+            path: 'users',
+            handle: { crumb: 'nav.users' },
+            element: <RequirePermission anyOf={['staff.manage']} />,
+            children: [{ index: true, element: <UsersPage /> }],
+          },
+          {
+            path: 'roles',
+            handle: { crumb: 'nav.roles' },
+            element: <RequirePermission anyOf={['roles.manage']} />,
+            children: [
+              { index: true, element: <RolesPage /> },
+              { path: 'new', element: <RoleEditorPage />, handle: { crumb: 'roles.editorNew' } },
+              { path: ':roleId', element: <RoleEditorPage /> },
+            ],
+          },
+          {
+            path: 'audit',
+            handle: { crumb: 'nav.audit' },
+            element: <RequirePermission anyOf={['audit.view.org']} />,
+            children: [{ index: true, element: <AuditPage /> }],
+          },
+          {
+            path: 'settings',
+            handle: { crumb: 'nav.settings' },
+            element: <RequirePermission anyOf={['org.settings.manage']} />,
+            children: [{ index: true, element: <SettingsPage /> }],
+          },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

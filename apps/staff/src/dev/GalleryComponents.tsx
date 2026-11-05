@@ -1,12 +1,14 @@
 // Gallery sections for the shared components of step 13: every variant and state, in the
 // current theme and language (switch both from the gallery header). Developer tool: the sample
 // texts are fixed Swahili examples, not product strings.
+import { onboardingItems } from '@vote-kidigit/shared';
 import { Button, Flex, Typography } from 'antd';
 import { type ReactNode, useState } from 'react';
 import { PasswordRules } from '../auth/PasswordRules';
 import { Banner } from '../components/Banner';
 import { ConfirmDialog, type ConfirmDialogProps } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
+import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { ErrorPage } from '../components/ErrorPage';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
@@ -163,6 +165,31 @@ export function GalleryComponents() {
             <UserAvatar key={id} userId={`user-${id}`} name="Juma Ali" />
           ))}
         </Flex>
+      </Variant>
+
+      <Variant name="OnboardingChecklist — partly done (dismissible)">
+        <OnboardingChecklist
+          canDismiss
+          onDismiss={noop}
+          settings={{
+            id: 'demo',
+            name: 'Chama',
+            slug: 'chama',
+            logoUrl: null,
+            primaryColor: null,
+            timeZone: 'Africa/Dar_es_Salaam',
+            contactEmail: null,
+            contactPhone: null,
+            smsSenderId: null,
+            helpPhone: null,
+            sessionTimeoutMinutes: 15,
+            archiveAfterDays: 90,
+            onboarding: {
+              dismissed: false,
+              items: onboardingItems.map((key, index) => ({ key, done: index < 2 })),
+            },
+          }}
+        />
       </Variant>
 
       <Variant name="PasswordRules — empty, partly met, all met, reused">

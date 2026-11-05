@@ -1,0 +1,239 @@
+// SYS-01 Audit log (App Flow 7.3): filters by date range, user and action type; rows show time,
+// user, action, item and IP, and expand to the before/after values. Filters live in the URL.
+// Excel export arrives with report jobs (step 39); the event filter with events (step 15).
+import { DownloadOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { type AuditEntry, AuditPageSchema } from '@vote-kidigit/shared';
+import { Button, DatePicker, Descriptions, Flex, Select, Skeleton, Table, Tooltip } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router';
+import { api } from '../../api/client';
+import { errorMessage } from '../../api/errorMessage';
+import { hasPermission, useMe } from '../../auth/useAuth';
+import { Banner } from '../../components/Banner';
+import { EmptyState } from '../../components/EmptyState';
+import { PageHeader } from '../../components/PageHeader';
+import { useFormat } from '../../hooks/useFormat';
+import { useUsers } from '../users/usersApi';
+
+const ACTION_GROUPS = ['auth', 'user', 'role', 'org', 'me'] as const;
+const PAGE_SIZES = [25, 50, 100] as const;
+
+/** A stored audit value as text: objects as JSON, empty as a dash. */
+function display(value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'object') return JSON.stringify(value);
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return value.toString();
+  return '—';
+}
+
+function ValueList({ value }: { value: unknown }) {
+  if (value === null || value === undefined || typeof value !== 'object') {
+    return <span>{display(value)}</span>;
+  }
+  const entries = Object.entries(value as Record<string, unknown>);
+  if (entries.length === 0) return <span>—</span>;
+  return (
+    <Descriptions
+      size="small"
+      column={1}
+      items={entries.map(([key, inner]) => ({
+        key,
+        label: key,
+        children: display(inner),
+      }))}
+    />
+  );
+}
+
+export function AuditPage() {
+  const { t } = useTranslation();
+  const format = useFormat();
+  const me = useMe().data;
+  const [params, setParams] = useSearchParams();
+  const action = params.get('action') ?? undefined;
+  const actorUserId = params.get('user') ?? undefined;
+  const from = params.get('from') ?? undefined;
+  const to = params.get('to') ?? undefined;
+  const page = Number(params.get('page') ?? '1') || 1;
+  const sizeParam = Number(params.get('pageSize') ?? '50');
+  const pageSize = (PAGE_SIZES as readonly number[]).includes(sizeParam) ? sizeParam : 50;
+  const filtered = Boolean(action || actorUserId || from || to);
+
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries({ action, actorUserId, from, to })) {
+    if (value) query.set(key, value);
+  }
+  query.set('page', String(page));
+  query.set('pageSize', String(pageSize));
+  const audit = useQuery({
+    queryKey: ['audit', query.toString()],
+    queryFn: () => api(`/v1/audit?${query.toString()}`, { schema: AuditPageSchema }),
+    placeholderData: (previous) => previous,
+  });
+  // The user filter lists the organization's staff when the viewer may see them.
+  const canListUsers = hasPermission(me, 'staff.manage');
+  const staff = useUsers({ pageSize: 100 }, canListUsers);
+
+  function update(changes: Record<string, string | undefined>) {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    setParams(next);
+  }
+
+  function body() {
+    if (audit.isPending) return <Skeleton active paragraph={{ rows: 10 }} />;
+    if (audit.isError) {
+      return (
+        <Banner
+          tone="danger"
+          message={errorMessage(t, audit.error)}
+          action={
+            <Button size="small" type="text" onClick={() => void audit.refetch()}>
+              {t('common.retry')}
+            </Button>
+          }
+        />
+      );
+    }
+    if (audit.data.total === 0) {
+      return filtered ? (
+        <EmptyState
+          kind="noMatch"
+          title={t('audit.emptyFilters')}
+          onClearFilters={() =>
+            update({
+              action: undefined,
+              user: undefined,
+              from: undefined,
+              to: undefined,
+              page: undefined,
+            })
+          }
+          clearFiltersLabel={t('common.clearFilters')}
+        />
+      ) : (
+        <EmptyState kind="list" title={t('audit.empty')} />
+      );
+    }
+    return (
+      <Table<AuditEntry>
+        rowKey="id"
+        dataSource={audit.data.items}
+        loading={audit.isFetching}
+        scroll={{ x: true }}
+        expandable={{
+          rowExpandable: (row) => row.before !== null || row.after !== null || row.reason !== null,
+          expandedRowRender: (row) => (
+            <Flex wrap gap="large">
+              {row.reason && (
+                <div>
+                  <strong>{t('audit.reason')}</strong>
+                  <p>{row.reason}</p>
+                </div>
+              )}
+              <div style={{ minWidth: '16rem' }}>
+                <strong>{t('audit.before')}</strong>
+                <ValueList value={row.before} />
+              </div>
+              <div style={{ minWidth: '16rem' }}>
+                <strong>{t('audit.after')}</strong>
+                <ValueList value={row.after} />
+              </div>
+            </Flex>
+          ),
+        }}
+        pagination={{
+          current: audit.data.page,
+          pageSize: audit.data.pageSize,
+          total: audit.data.total,
+          showSizeChanger: true,
+          pageSizeOptions: PAGE_SIZES.map(String),
+          onChange: (next, size) => update({ page: String(next), pageSize: String(size) }),
+        }}
+        columns={[
+          {
+            title: t('audit.colTime'),
+            dataIndex: 'createdAt',
+            render: (value: string) => (
+              <span style={{ whiteSpace: 'nowrap' }}>{format.dateTime(value)}</span>
+            ),
+          },
+          { title: t('audit.colUser'), dataIndex: 'actorLabel' },
+          {
+            title: t('audit.colAction'),
+            dataIndex: 'action',
+            render: (value: string) => <code>{value}</code>,
+          },
+          { title: t('audit.colItem'), dataIndex: 'entityType' },
+          { title: t('audit.colIp'), dataIndex: 'ip', render: (ip: string | null) => ip ?? '—' },
+        ]}
+      />
+    );
+  }
+
+  return (
+    <>
+      {/* SYS-01 */}
+      <PageHeader
+        title={t('audit.title')}
+        actions={
+          <Tooltip title={t('common.exportSoon')}>
+            <Button icon={<DownloadOutlined />} disabled>
+              {t('audit.export')}
+            </Button>
+          </Tooltip>
+        }
+      />
+      <Flex wrap gap="middle" style={{ marginBottom: 'var(--vk-space-4)' }}>
+        <DatePicker.RangePicker
+          aria-label={t('audit.dateRange')}
+          placeholder={[t('audit.from'), t('audit.to')]}
+          allowEmpty={[true, true]}
+          onChange={(dates) =>
+            update({
+              from: dates?.[0]?.startOf('day').toISOString(),
+              to: dates?.[1]?.add(1, 'day').startOf('day').toISOString(),
+              page: undefined,
+            })
+          }
+        />
+        {canListUsers && (
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('audit.user')}
+            aria-label={t('audit.user')}
+            value={actorUserId}
+            style={{ minWidth: '14rem' }}
+            options={(staff.data?.items ?? []).map((user) => ({
+              value: user.id,
+              label: user.fullName,
+            }))}
+            onChange={(value?: string) => update({ user: value, page: undefined })}
+          />
+        )}
+        <Select
+          allowClear
+          placeholder={t('audit.action')}
+          aria-label={t('audit.action')}
+          value={action?.replace(/\.$/, '')}
+          style={{ minWidth: '14rem' }}
+          options={ACTION_GROUPS.map((group) => ({
+            value: group,
+            label: t(`audit.groups.${group}`),
+          }))}
+          onChange={(value?: string) =>
+            update({ action: value ? `${value}.` : undefined, page: undefined })
+          }
+        />
+      </Flex>
+      {body()}
+    </>
+  );
+}

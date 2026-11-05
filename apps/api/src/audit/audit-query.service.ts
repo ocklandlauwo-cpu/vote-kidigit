@@ -7,6 +7,8 @@ export interface AuditFilter extends AuditQuery {
   /** undefined: every entry RLS shows; null: platform actions only. */
   organizationId?: string | null;
   eventId?: string;
+  /** Entries the user made or that were about the user (USR-03 recent activity). */
+  aboutUserId?: string;
 }
 
 /**
@@ -20,6 +22,9 @@ export class AuditQueryService {
       ...(filter.organizationId !== undefined && { organizationId: filter.organizationId }),
       ...(filter.eventId && { eventId: filter.eventId }),
       ...(filter.actorUserId && { actorUserId: filter.actorUserId }),
+      ...(filter.aboutUserId && {
+        OR: [{ actorUserId: filter.aboutUserId }, { entityId: filter.aboutUserId }],
+      }),
       ...(filter.action && { action: { startsWith: filter.action } }),
       ...((filter.from || filter.to) && {
         createdAt: {

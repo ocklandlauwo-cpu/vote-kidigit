@@ -52,7 +52,7 @@ const RULES: NavRule[] = [
     label: 'nav.users',
     icon: 'users',
     group: 'admin',
-    anyOf: ['staff.manage', 'admins.manage'],
+    anyOf: ['staff.manage'],
   },
   {
     key: 'roles',

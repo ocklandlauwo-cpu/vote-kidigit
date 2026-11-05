@@ -7,6 +7,7 @@ Nov 3, 2026 · @Smartone
 | Date | Change |
 |---|---|
 | 5 Nov 2026 | Added 4.10 platform_settings (PLT-04 needed storage for the default session timeout, USSD short code and support contact; migration 009_platform_settings, Implementation Plan step 12). |
+| 5 Nov 2026 | Added GET /users/roles (12.4): the invite and edit forms of USR-02/03 need the role list, which GET /roles keeps for roles.manage; each role says whether the caller may give it (Implementation Plan step 14). |
 
 ## 1. Overview
 
@@ -1187,6 +1188,7 @@ REST over JSON at /api/v1, plus the USSD and webhook callbacks. Request and resp
 | POST | /organization/logo | org.settings.manage | Upload logo |
 | GET | /users | staff.manage | List users |
 | POST | /users | staff.manage (+ admins.manage to invite an Admin) | Invite user |
+| GET | /users/roles | staff.manage | Roles for the invite and edit forms, with `assignable` for the caller |
 | GET / PATCH / DELETE | /users/:userId | staff.manage | Detail / edit / soft delete |
 | POST | /users/:userId/deactivate, /reactivate, /resend-invite | staff.manage | Account actions |
 | PUT | /users/:userId/assignments | assignments.manage | Replace the user's event mappings |
