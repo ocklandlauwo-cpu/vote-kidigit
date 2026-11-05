@@ -48,7 +48,7 @@ export async function createPlatformAdmin(
           },
           select: { id: true },
         });
-        await savePassword(tx, user.id, input.password, new Date());
+        await savePassword(tx, user.id, input.password);
         await audit.record(tx, {
           action: 'platform_admin.create',
           entityType: 'users',

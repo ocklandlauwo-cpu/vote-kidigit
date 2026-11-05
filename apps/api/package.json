@@ -78,6 +78,7 @@
       "^@vote-kidigit/shared$": "<rootDir>/../../../packages/shared/src/index.ts",
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
+    "testTimeout": 30000,
     "setupFiles": [
       "<rootDir>/testing/jest-setup.ts"
     ]

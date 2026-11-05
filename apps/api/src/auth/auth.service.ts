@@ -16,7 +16,7 @@ import { type DbContext, PrismaService } from '../database/prisma.service.js';
 import { RedisService } from '../redis/redis.service.js';
 import { AuthStateService } from './auth-state.service.js';
 import type { AuthState } from './auth.types.js';
-import { assertNotReused, savePassword } from './password-store.js';
+import { advancePasswordEpoch, assertNotReused, savePassword } from './password-store.js';
 import { verifyAgainstDummy, verifyPassword } from './passwords.js';
 import { SessionService } from './session.service.js';
 
@@ -287,10 +287,9 @@ export class AuthService {
       });
     }
 
-    const changedAt = new Date();
     await this.prisma.withContext(context, async (tx) => {
       await assertNotReused(tx, auth.userId, body.newPassword);
-      await savePassword(tx, auth.userId, body.newPassword, changedAt);
+      await savePassword(tx, auth.userId, body.newPassword);
       await this.audit.record(tx, {
         action: 'me.password.change',
         entityType: 'users',
@@ -300,6 +299,7 @@ export class AuthService {
 
     // Other sessions end twice over: explicitly here, and through the session epoch, since
     // AuthGuard rejects any session issued before passwordChangedAt.
+    const changedAt = await advancePasswordEpoch(this.prisma, context, auth.userId);
     await this.authState.invalidateUser(auth.userId);
     const { csrf, timeoutMinutes } = req.session;
     await this.sessions.destroyAllForUser(auth.userId, req.sessionID);

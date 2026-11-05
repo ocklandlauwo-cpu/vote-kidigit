@@ -17,7 +17,7 @@ import { EMAIL_JOB, type InvitationJob, type PasswordResetJob } from '../queue/e
 import { EMAIL_QUEUE } from '../queue/queue.module.js';
 import { AuthStateService } from './auth-state.service.js';
 import { AuthService } from './auth.service.js';
-import { assertNotReused, savePassword } from './password-store.js';
+import { advancePasswordEpoch, assertNotReused, savePassword } from './password-store.js';
 import { SessionService } from './session.service.js';
 import { UserTokensService, userContext } from './user-tokens.service.js';
 
@@ -79,7 +79,6 @@ export class TokensService {
     const ctx = this.requestContext.getOrThrow();
     const row = await this.tokens.find(body.token, ctx.requestId, 'invite');
     const context = userContext(row, ctx.requestId);
-    const changedAt = new Date();
     this.auth.actAsUser({
       userId: row.user_id,
       orgId: row.organization_id,
@@ -101,7 +100,7 @@ export class TokensService {
         data: { status: 'active', fullName: body.fullName },
       });
       if (activated.count === 0) throw new AppError('TOKEN_USED');
-      await savePassword(tx, row.user_id, body.password, changedAt);
+      await savePassword(tx, row.user_id, body.password);
       await this.audit.record(tx, {
         action: 'auth.invite.accept',
         entityType: 'users',
@@ -111,6 +110,7 @@ export class TokensService {
       });
     });
 
+    const changedAt = await advancePasswordEpoch(this.prisma, context, row.user_id);
     await this.authState.invalidateUser(row.user_id);
     const state = await this.authState.get({
       userId: row.user_id,
@@ -144,7 +144,7 @@ export class TokensService {
     await this.prisma.withContext(context, async (tx) => {
       await this.tokens.consume(tx, row.token_id);
       await assertNotReused(tx, row.user_id, body.password);
-      await savePassword(tx, row.user_id, body.password, new Date());
+      await savePassword(tx, row.user_id, body.password);
       await tx.user.update({
         where: { id: row.user_id },
         data: { failedLoginCount: 0, lockedUntil: null, lastFailedLoginAt: null },
@@ -156,6 +156,7 @@ export class TokensService {
       });
     });
     // Sessions end explicitly here and through the session epoch (password_changed_at).
+    await advancePasswordEpoch(this.prisma, context, row.user_id);
     await this.authState.invalidateUser(row.user_id);
     await this.sessions.destroyAllForUser(row.user_id);
   }

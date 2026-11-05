@@ -31,10 +31,6 @@ const ACCEPT = '/api/v1/auth/invite/accept';
 /** The error code of an API error response. */
 const codeOf = (res: request.Response) => (res.body as { code?: string }).code;
 
-// Argon2id (64 MiB per hash) and the worker round trip are slow next to the default 5 s when
-// test files run in parallel.
-jest.setTimeout(30_000);
-
 describe('invitations and password reset', () => {
   let app: NestExpressApplication;
   let logs: string[];
@@ -230,12 +226,33 @@ describe('invitations and password reset', () => {
       await signIn(user.email, 'Mpya2027Kabisa');
       const row = await owner.user.findUniqueOrThrow({ where: { id: user.id } });
       expect(row.failedLoginCount).toBe(0);
+      // The session epoch moves after the password transaction, so a sign-in that read the old
+      // hash while it was committing is rejected too.
+      const saved = await owner.passwordHistory.findFirstOrThrow({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(row.passwordChangedAt?.getTime()).toBeGreaterThan(saved.createdAt.getTime());
       expect(row.passwordHash && (await verifyPassword(row.passwordHash, 'Mpya2027Kabisa'))).toBe(
         true,
       );
       expect(
         await owner.auditLog.count({ where: { entityId: user.id, action: 'auth.password.reset' } }),
       ).toBe(1);
+    });
+
+    it('stops working once the password is changed another way', async () => {
+      const user = await newUser();
+      const token = await requestReset(user.email);
+      const agent = await signIn(user.email);
+      const me = await agent.get('/api/v1/me').expect(200);
+      await agent
+        .post('/api/v1/me/password')
+        .set('X-CSRF-Token', (me.body as { csrfToken: string }).csrfToken)
+        .send({ currentPassword: PASSWORD, newPassword: 'Imebadilika2027' })
+        .expect(204);
+      const res = await anon().post(RESET).send({ token, password: 'Mpya2027Kabisa' }).expect(404);
+      expect(codeOf(res)).toBe('NOT_FOUND');
     });
 
     it('works once', async () => {
