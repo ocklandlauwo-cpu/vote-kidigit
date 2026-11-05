@@ -308,7 +308,25 @@ describe('permissions and guards', () => {
 
   describe('GET /permissions', () => {
     it('returns the catalogue to users who manage roles', async () => {
-      const res = await agent('org_super_admin').get('/api/v1/permissions').expect(200);
+      // A key this build does not know (another test's, or one added ahead of a deployment) is
+      // left out instead of failing the response.
+      const unknownKey = `test.unknown.${uniqueSuffix()}`;
+      await owner.permission.create({
+        data: {
+          key: unknownKey,
+          module: 'Test',
+          descriptionEn: 'x',
+          descriptionSw: 'x',
+          scope: 'org',
+        },
+      });
+      let res: request.Response;
+      try {
+        res = await agent('org_super_admin').get('/api/v1/permissions');
+      } finally {
+        await owner.permission.delete({ where: { key: unknownKey } });
+      }
+      expect(res.status).toBe(200);
       const items = (res.body as { items: { key: string; descriptionSw: string }[] }).items;
       expect(items.map((p) => p.key).sort()).toEqual(PERMISSION_CATALOGUE.map((p) => p.key).sort());
       expect(items.every((p) => p.descriptionSw.length > 0)).toBe(true);

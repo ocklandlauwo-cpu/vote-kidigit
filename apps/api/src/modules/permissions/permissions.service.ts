@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { type Permission, PermissionSchema } from '@vote-kidigit/shared';
+import { type Permission, permissionKeys, PermissionSchema } from '@vote-kidigit/shared';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService } from '../../database/prisma.service.js';
 
@@ -30,6 +30,9 @@ export class PermissionsService {
       { orgId, userId, isPlatformAdmin, requestId },
       (tx) =>
         tx.permission.findMany({
+          // Only keys this build knows: a row added ahead of a deployment (or by a test) must
+          // not break the role editor.
+          where: { key: { in: permissionKeys } },
           orderBy: { key: 'asc' },
           select: {
             key: true,
