@@ -13,6 +13,7 @@ import { ZodValidationPipe } from './common/zod-validation.pipe.js';
 import { RequestContextMiddleware } from './context/request-context.middleware.js';
 import { HealthModule } from './health/health.module.js';
 import { PermissionsModule } from './modules/permissions/permissions.module.js';
+import { EventsModule } from './modules/events/events.module.js';
 import { OrganizationModule } from './modules/organization/organization.module.js';
 import { PlatformModule } from './modules/platform/platform.module.js';
 import { RolesModule } from './modules/roles/roles.module.js';
@@ -40,6 +41,7 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
     OrganizationModule,
     UsersModule,
     RolesModule,
+    EventsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

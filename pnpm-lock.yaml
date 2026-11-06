@@ -156,6 +156,9 @@ importers:
       antd:
         specifier: 6.6.8
         version: 6.6.8(luxon@3.7.2)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      dayjs:
+        specifier: 1.11.23
+        version: 1.11.23
       i18next:
         specifier: 26.7.1
         version: 26.7.1(typescript@5.9.3)

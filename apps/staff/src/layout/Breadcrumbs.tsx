@@ -3,12 +3,13 @@
 import { RightOutlined } from '@ant-design/icons';
 import { Breadcrumb } from 'antd';
 import type { ParseKeys } from 'i18next';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, type UIMatch, useMatches } from 'react-router';
 
 export interface RouteHandle {
-  /** i18n key, or a function of the route data for dynamic names (event names). */
-  crumb?: ParseKeys | ((match: UIMatch) => string);
+  /** i18n key, or a function of the match for dynamic names (the event's name). */
+  crumb?: ParseKeys | ((match: UIMatch) => ReactNode);
 }
 
 export function Breadcrumbs() {

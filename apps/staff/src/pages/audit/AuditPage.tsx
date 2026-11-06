@@ -1,6 +1,7 @@
 // SYS-01 Audit log (App Flow 7.3): filters by date range, user and action type; rows show time,
 // user, action, item and IP, and expand to the before/after values. Filters live in the URL.
-// Excel export arrives with report jobs (step 39); the event filter with events (step 15).
+// The event Activity tab (App Flow 6.9) shows the same view for one event. Excel export arrives
+// with report jobs (step 39).
 import { DownloadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { type AuditEntry, AuditPageSchema } from '@vote-kidigit/shared';
@@ -16,7 +17,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { useFormat } from '../../hooks/useFormat';
 import { useUsers } from '../users/usersApi';
 
-const ACTION_GROUPS = ['auth', 'user', 'role', 'org', 'me'] as const;
+const ACTION_GROUPS = ['event', 'auth', 'user', 'role', 'org', 'me'] as const;
 const PAGE_SIZES = [25, 50, 100] as const;
 
 /** A stored audit value as text: objects as JSON, empty as a dash. */
@@ -48,6 +49,17 @@ function ValueList({ value }: { value: unknown }) {
 }
 
 export function AuditPage() {
+  return <AuditView endpoint="/v1/audit" withHeader />;
+}
+
+/** The filters and table of the audit log, read from `endpoint`. */
+export function AuditView({
+  endpoint,
+  withHeader = false,
+}: {
+  endpoint: string;
+  withHeader?: boolean;
+}) {
   const { t } = useTranslation();
   const format = useFormat();
   const me = useMe().data;
@@ -68,8 +80,8 @@ export function AuditPage() {
   query.set('page', String(page));
   query.set('pageSize', String(pageSize));
   const audit = useQuery({
-    queryKey: ['audit', query.toString()],
-    queryFn: () => api(`/v1/audit?${query.toString()}`, { schema: AuditPageSchema }),
+    queryKey: ['audit', endpoint, query.toString()],
+    queryFn: () => api(`${endpoint}?${query.toString()}`, { schema: AuditPageSchema }),
     placeholderData: (previous) => previous,
   });
   // The user filter lists the organization's staff when the viewer may see them.
@@ -179,16 +191,18 @@ export function AuditPage() {
   return (
     <>
       {/* SYS-01 */}
-      <PageHeader
-        title={t('audit.title')}
-        actions={
-          <Tooltip title={t('common.exportSoon')}>
-            <Button icon={<DownloadOutlined />} disabled>
-              {t('audit.export')}
-            </Button>
-          </Tooltip>
-        }
-      />
+      {withHeader && (
+        <PageHeader
+          title={t('audit.title')}
+          actions={
+            <Tooltip title={t('common.exportSoon')}>
+              <Button icon={<DownloadOutlined />} disabled>
+                {t('audit.export')}
+              </Button>
+            </Tooltip>
+          }
+        />
+      )}
       <Flex wrap gap="middle" style={{ marginBottom: 'var(--vk-space-4)' }}>
         <DatePicker.RangePicker
           aria-label={t('audit.dateRange')}

@@ -1,6 +1,19 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import {
   type AssignableRoleListResponse,
+  ReplaceUserAssignmentsRequestSchema,
+  type UserAssignmentsResponse,
   InviteUserRequestSchema,
   type InviteUserResponse,
   UpdateUserRequestSchema,
@@ -12,16 +25,21 @@ import type { AuthState } from '../../auth/auth.types.js';
 import { CurrentAuth, RequirePermission } from '../../auth/decorators.js';
 import { IdParamPipe } from '../../common/id-param.pipe.js';
 import { zodDto } from '../../common/zod-validation.pipe.js';
+import { AssignmentsService } from '../events/assignments.service.js';
 import { UsersService } from './users.service.js';
 
 class UserListQuery extends zodDto(UserListQuerySchema) {}
 class InviteUserBody extends zodDto(InviteUserRequestSchema) {}
 class UpdateUserBody extends zodDto(UpdateUserRequestSchema) {}
+class ReplaceUserAssignmentsBody extends zodDto(ReplaceUserAssignmentsRequestSchema) {}
 
 /** Staff accounts (Backend Schema 12.4). admins.manage is checked per user by the service. */
 @Controller('v1/users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly assignments: AssignmentsService,
+  ) {}
 
   /** GET /api/v1/users */
   @Get()
@@ -74,6 +92,23 @@ export class UsersController {
     @Param('userId', IdParamPipe) userId: string,
   ): Promise<void> {
     return this.users.remove(auth, userId);
+  }
+
+  /** GET /api/v1/users/:userId/assignments — the events the user is mapped to (USR-03). */
+  @Get(':userId/assignments')
+  @RequirePermission('assignments.manage')
+  getAssignments(@Param('userId', IdParamPipe) userId: string): Promise<UserAssignmentsResponse> {
+    return this.assignments.forUser(userId);
+  }
+
+  /** PUT /api/v1/users/:userId/assignments — replaces the user's event mappings. */
+  @Put(':userId/assignments')
+  @RequirePermission('assignments.manage')
+  replaceAssignments(
+    @Param('userId', IdParamPipe) userId: string,
+    @Body() body: ReplaceUserAssignmentsBody,
+  ): Promise<UserAssignmentsResponse> {
+    return this.assignments.replaceForUser(userId, body);
   }
 
   /** POST /api/v1/users/:userId/deactivate */

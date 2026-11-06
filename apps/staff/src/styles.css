@@ -247,3 +247,8 @@ body {
 .vk-plain-list > li:last-child {
   border-bottom: none;
 }
+
+/* Deactivated rows in lists (App Flow 6.1: shown greyed) */
+.vk-row-inactive {
+  color: var(--vk-text-tertiary);
+}

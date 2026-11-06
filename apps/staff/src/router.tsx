@@ -1,6 +1,6 @@
 import type { PermissionKey } from '@vote-kidigit/shared';
 import type { ParseKeys } from 'i18next';
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import { createBrowserRouter, type RouteObject, type UIMatch } from 'react-router';
 import {
   FullPageLoading,
   GuestOnly,
@@ -17,6 +17,12 @@ import { SignInPage } from './pages/auth/SignInPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { AuditPage } from './pages/audit/AuditPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { EventCrumb } from './pages/events/EventCrumb';
+import { EventOverview } from './pages/events/EventOverview';
+import { EventSettings } from './pages/events/EventSettings';
+import { EventsPage } from './pages/events/EventsPage';
+import { EventActivity, EventTabSoon } from './pages/events/EventTabs';
+import { EventWorkspace } from './pages/events/EventWorkspace';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { RoleEditorPage } from './pages/roles/RoleEditorPage';
 import { RolesPage } from './pages/roles/RolesPage';
@@ -79,7 +85,41 @@ export const routes: RouteObject[] = [
           section('platform/orgs', 'nav.organizations', ['platform.orgs.manage']),
           section('platform/audit', 'nav.audit', ['platform.audit.view']),
           section('platform/settings', 'nav.settings', ['platform.settings.manage']),
-          section('events', 'nav.events', ['event.view', 'event.create']),
+          {
+            path: 'events',
+            handle: { crumb: 'nav.events' },
+            element: <RequirePermission anyOf={['event.view', 'event.create']} />,
+            children: [
+              { index: true, element: <EventsPage /> },
+              {
+                path: ':eventId',
+                element: <EventWorkspace />,
+                handle: {
+                  crumb: (match: UIMatch) => <EventCrumb eventId={match.params.eventId} />,
+                } satisfies RouteHandle,
+                children: [
+                  { index: true, element: <EventOverview /> },
+                  {
+                    path: 'settings',
+                    element: <EventSettings />,
+                    handle: { crumb: 'events.tabs.settings' },
+                  },
+                  {
+                    path: 'audit',
+                    element: <EventActivity />,
+                    handle: { crumb: 'events.tabs.activity' },
+                  },
+                  ...(['live', 'categories', 'voters', 'messages', 'results'] as const).map(
+                    (tab) => ({
+                      path: tab,
+                      element: <EventTabSoon />,
+                      handle: { crumb: `events.tabs.${tab}` as const },
+                    }),
+                  ),
+                ],
+              },
+            ],
+          },
           {
             path: 'users',
             handle: { crumb: 'nav.users' },

@@ -160,6 +160,9 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - PostgreSQL computes stored generated columns after BEFORE triggers: a trigger comparing rows must leave them out (voters.membership_id_normalized).
 - `app.publish_checklist(event_id)` returns the six App Flow 6.3 items (details, categories, contesters, rules, voters, eligibility) with details naming failing categories; `app.category_is_votable()` and `app.voter_is_eligible()` are the only definitions of those rules.
 - Test clean-up: `deleteOrganizations` deletes voters and events first (they restrict their parents).
+- API (`modules/events/`): the list is `@SignedIn` and filtered to the user's assignments unless they hold `event.access_all`; deactivated events appear only with `includeInactive=true` and `event.access_all`. Creating an event without `event.access_all` assigns the creator as moderator. Assignments are edited from both sides through `AssignmentsService` (`PUT /events/:eventId/assignments`, `PUT /users/:userId/assignments`); both call `invalidateUser`.
+- Staff workspace (`pages/events/`): `EventWorkspace` loads the event and passes it to tabs through the `Outlet` context. The header's main action and the More menu come from `eventActions.ts` (App Flow 3.4); actions whose steps have not arrived yet show greyed out. Event activity reuses `AuditView` from the audit page with the event endpoint.
+- Date pickers work in the organization time zone through `zonedTime.ts` (`toPicker`, `fromPicker`, `nowInPicker`), never the browser's.
 
 ## Email and queues in code
 

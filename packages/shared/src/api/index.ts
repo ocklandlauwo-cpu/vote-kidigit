@@ -7,3 +7,4 @@ export * from './common.js';
 export * from './platform.js';
 export * from './organization.js';
 export * from './users.js';
+export * from './events.js';
