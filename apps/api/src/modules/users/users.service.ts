@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   type AssignableRoleListResponse,
-  isAdminLevel,
   type InviteUserRequest,
   type InviteUserResponse,
   type UpdateUserRequest,
@@ -20,7 +19,7 @@ import { AppError } from '../../common/app-error.js';
 import { errorReason } from '../../common/connection-errors.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
-import { mayGrant } from '../roles/role-rules.js';
+import { assertMayManageUser, mayGrant } from '../roles/role-rules.js';
 import { byRoleOrder } from '../roles/roles.service.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 
@@ -343,13 +342,10 @@ export class UsersService {
 
   /** May the actor act on this user at all? */
   private assertMayManage(actor: AuthState, user: UserRow): void {
-    if (user.isOrgSuperAdmin && !actor.isOrgSuperAdmin) {
-      throw new AppError('FORBIDDEN', 'Only an Org Super Admin can change an Org Super Admin.');
-    }
-    const role = roleOf(user);
-    if (role && isAdminLevel(role.permissions) && !actor.permissions.includes('admins.manage')) {
-      throw new AppError('FORBIDDEN', 'You cannot manage users with this role.');
-    }
+    assertMayManageUser(actor, {
+      isOrgSuperAdmin: user.isOrgSuperAdmin,
+      permissions: roleOf(user)?.permissions ?? null,
+    });
   }
 
   private assertMayGrant(actor: AuthState, role: RoleRow): void {

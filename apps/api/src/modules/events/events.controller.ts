@@ -106,10 +106,11 @@ export class EventsController {
   @Put(':eventId/assignments')
   @RequirePermission('assignments.manage')
   replaceAssignments(
+    @CurrentAuth() auth: AuthState,
     @Param('eventId', IdParamPipe) eventId: string,
     @Body() body: ReplaceAssignmentsBody,
   ): Promise<EventAssignmentsResponse> {
-    return this.assignments.replaceForEvent(eventId, body);
+    return this.assignments.replaceForEvent(auth, eventId, body);
   }
 
   /** POST /api/v1/events/:eventId/activate */

@@ -424,6 +424,56 @@ describe('events API', () => {
       ).toBe(1);
       await get(staff.moderator, `/users/${user.id}/assignments`).expect(403);
     });
+
+    it('never lets assignments.manage alone open an event to its holder', async () => {
+      const role = await owner.role.create({
+        data: { organizationId: orgId, name: `Mapper ${uniqueSuffix()}` },
+      });
+      await owner.rolePermission.createMany({
+        data: ['assignments.manage', 'event.view'].map((permissionKey) => ({
+          roleId: role.id,
+          permissionKey,
+          organizationId: orgId,
+        })),
+      });
+      const email = `mapper-${uniqueSuffix()}@example.test`;
+      const id = await createUser(owner, orgId, { email, password: PASSWORD });
+      await owner.userRole.create({ data: { userId: id, roleId: role.id, organizationId: orgId } });
+      const agent = request.agent(server()).set('X-Forwarded-For', testIp());
+      const login = await agent.post('/api/v1/auth/login').send({ email, password: PASSWORD });
+      const mapper: Staff = { id, email, agent, csrf: (login.body as MeResponse).csrfToken };
+
+      const event = await seedEvent();
+      const res = await send(mapper, 'put', `/events/${event}/assignments`, {
+        assignments: [{ userId: id, type: 'moderator' }],
+      }).expect(403);
+      expect(codeOf(res)).toBe('FORBIDDEN');
+      await send(mapper, 'put', `/users/${id}/assignments`, {
+        assignments: [{ eventId: event, type: 'moderator' }],
+      }).expect(403);
+      expect(await owner.eventAssignment.count({ where: { userId: id } })).toBe(0);
+      await get(mapper, `/events/${event}`).expect(404);
+      // Mapping someone else is what the permission is for.
+      await send(mapper, 'put', `/events/${event}/assignments`, {
+        assignments: [{ userId: staff.observer.id, type: 'observer' }],
+      }).expect(200);
+    });
+
+    it('applies the user-management hierarchy to the people being mapped', async () => {
+      const event = await seedEvent();
+      const superAdmin = await newStaff('org_super_admin');
+      const otherAdmin = await newStaff('admin');
+      await send(staff.admin, 'put', `/users/${superAdmin.id}/assignments`, {
+        assignments: [{ eventId: event, type: 'moderator' }],
+      }).expect(403);
+      await send(staff.admin, 'put', `/events/${event}/assignments`, {
+        assignments: [{ userId: otherAdmin.id, type: 'moderator' }],
+      }).expect(403);
+      expect(await owner.eventAssignment.count({ where: { eventId: event } })).toBe(0);
+      await send(superAdmin, 'put', `/events/${event}/assignments`, {
+        assignments: [{ userId: otherAdmin.id, type: 'moderator' }],
+      }).expect(200);
+    });
   });
 
   describe('activate and deactivate', () => {

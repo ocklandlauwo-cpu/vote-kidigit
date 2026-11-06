@@ -8,9 +8,11 @@ import type {
 } from '@vote-kidigit/shared';
 import { AuditService } from '../../audit/audit.service.js';
 import { AuthStateService } from '../../auth/auth-state.service.js';
+import type { AuthState } from '../../auth/auth.types.js';
 import { AppError } from '../../common/app-error.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
+import { assertMayManageUser } from '../roles/role-rules.js';
 
 interface Pair {
   eventId: string;
@@ -27,7 +29,9 @@ const notFound = (path: string) =>
 /**
  * Staff mapped to events (App Flow 7.2): one mapping, edited from the event (EVT-09) or from the
  * person (USR-03). Both replace a whole list in one transaction and refresh the cached
- * permissions of everyone whose mapping changed.
+ * permissions of everyone whose mapping changed. The actor must be allowed to manage every user
+ * whose mapping changes, and changes their own only with event.access_all (which makes mappings
+ * unnecessary): otherwise assignments.manage alone would open any event to its holder.
  */
 @Injectable()
 export class AssignmentsService {
@@ -48,6 +52,7 @@ export class AssignmentsService {
 
   /** PUT /events/:eventId/assignments */
   async replaceForEvent(
+    actor: AuthState,
     eventId: string,
     body: ReplaceEventAssignmentsRequest,
   ): Promise<EventAssignmentsResponse> {
@@ -69,6 +74,7 @@ export class AssignmentsService {
         });
         const next = body.assignments.map((a) => ({ eventId, userId: a.userId, type: a.type }));
         const changed = await this.apply(tx, current, next, (p) => p.userId);
+        await this.assertMayMap(tx, actor, changed);
         await this.audit.record(tx, {
           action: 'event.assignments.update',
           entityType: 'voting_events',
@@ -94,6 +100,7 @@ export class AssignmentsService {
 
   /** PUT /users/:userId/assignments */
   async replaceForUser(
+    actor: AuthState,
     userId: string,
     body: ReplaceUserAssignmentsRequest,
   ): Promise<UserAssignmentsResponse> {
@@ -112,7 +119,7 @@ export class AssignmentsService {
         select: { eventId: true, userId: true, type: true },
       });
       const next = body.assignments.map((a) => ({ eventId: a.eventId, userId, type: a.type }));
-      await this.apply(tx, current, next, (p) => p.eventId);
+      await this.assertMayMap(tx, actor, await this.apply(tx, current, next, (p) => p.eventId));
       await this.audit.record(tx, {
         action: 'user.assignments.update',
         entityType: 'users',
@@ -170,6 +177,28 @@ export class AssignmentsService {
       }
     }
     return [...changed];
+  }
+
+  /** Runs inside the changing transaction, so a refusal rolls the changes back. */
+  private async assertMayMap(tx: Tx, actor: AuthState, userIds: string[]): Promise<void> {
+    if (userIds.includes(actor.userId) && !actor.permissions.includes('event.access_all')) {
+      throw new AppError('FORBIDDEN', 'You cannot change your own event mappings.');
+    }
+    const users = await tx.user.findMany({
+      where: { id: { in: userIds } },
+      select: {
+        isOrgSuperAdmin: true,
+        userRoles: {
+          select: { role: { select: { rolePermissions: { select: { permissionKey: true } } } } },
+        },
+      },
+    });
+    for (const user of users) {
+      assertMayManageUser(actor, {
+        isOrgSuperAdmin: user.isOrgSuperAdmin,
+        permissions: user.userRoles[0]?.role.rolePermissions.map((p) => p.permissionKey) ?? null,
+      });
+    }
   }
 
   private async loadForEvent(tx: Tx, eventId: string) {

@@ -66,8 +66,15 @@ function Staff({ event }: { event: EventDetail }) {
     );
   }
   const asPairs = current.map(({ userId, type }) => ({ userId, type }));
+  // Admins see every event without a mapping, and the API refuses mapping oneself or anyone
+  // above one's own level, so only moderators, observers and custom roles are offered.
   const candidates = (users.data?.items ?? []).filter(
-    (user) => user.status !== 'deactivated' && !current.some((a) => a.userId === user.id),
+    (user) =>
+      user.status !== 'deactivated' &&
+      user.id !== me?.id &&
+      !user.isOrgSuperAdmin &&
+      user.role?.systemKey !== 'admin' &&
+      !current.some((a) => a.userId === user.id),
   );
 
   return (

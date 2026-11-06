@@ -51,3 +51,26 @@ export function assertMayEditRole(actor: Actor, role: RoleFacts, next: readonly 
     throw new AppError('FORBIDDEN', 'You can only give permissions you hold yourself.');
   }
 }
+
+export interface UserFacts {
+  isOrgSuperAdmin: boolean;
+  /** Permissions of the user's role, or null without one. */
+  permissions: readonly string[] | null;
+}
+
+/**
+ * May the actor act on this user at all? Only an Org Super Admin acts on an Org Super Admin;
+ * users with an admin-level role need admins.manage.
+ */
+export function assertMayManageUser(actor: Actor, user: UserFacts): void {
+  if (user.isOrgSuperAdmin && !actor.isOrgSuperAdmin) {
+    throw new AppError('FORBIDDEN', 'Only an Org Super Admin can change an Org Super Admin.');
+  }
+  if (
+    user.permissions &&
+    isAdminLevel(user.permissions) &&
+    !actor.permissions.includes('admins.manage')
+  ) {
+    throw new AppError('FORBIDDEN', 'You cannot manage users with this role.');
+  }
+}

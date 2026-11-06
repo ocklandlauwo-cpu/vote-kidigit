@@ -105,10 +105,11 @@ export class UsersController {
   @Put(':userId/assignments')
   @RequirePermission('assignments.manage')
   replaceAssignments(
+    @CurrentAuth() auth: AuthState,
     @Param('userId', IdParamPipe) userId: string,
     @Body() body: ReplaceUserAssignmentsBody,
   ): Promise<UserAssignmentsResponse> {
-    return this.assignments.replaceForUser(userId, body);
+    return this.assignments.replaceForUser(auth, userId, body);
   }
 
   /** POST /api/v1/users/:userId/deactivate */
