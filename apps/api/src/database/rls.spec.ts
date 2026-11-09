@@ -104,6 +104,13 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${f.categoryId}::uuid, ${f.spareVoterId}::uuid, ${org}::uuid)`,
   },
   {
+    table: 'public.files',
+    immutable: true,
+    insertFor: (tx, org) =>
+      tx.$executeRaw`INSERT INTO public.files (organization_id, kind, storage_path, mime_type, size_bytes, sha256)
+        VALUES (${org}::uuid, 'org_logo', ${`org/${org}/org_logo/${uniqueSuffix()}.png`}, 'image/png', 1, ${'0'.repeat(64)})`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -194,6 +201,16 @@ async function seedOrganization(
       gender: 'female',
     },
     select: { id: true },
+  });
+  await owner.file.create({
+    data: {
+      organizationId: orgId,
+      kind: 'contester_photo',
+      storagePath: `org/${orgId}/contester_photo/${uniqueSuffix()}.jpg`,
+      mimeType: 'image/jpeg',
+      sizeBytes: 1,
+      sha256: '0'.repeat(64),
+    },
   });
   await owner.categoryVoter.create({
     data: { categoryId: category.id, voterId: voter.id, organizationId: orgId },

@@ -1,18 +1,31 @@
-import { Body, Controller, Get, Patch, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   type AuditPage,
   OrgAuditQuerySchema,
   type OrganizationSettings,
   UpdateOrganizationSettingsRequestSchema,
+  UPLOAD_FIELD,
 } from '@vote-kidigit/shared';
 import { RequirePermission, SignedIn } from '../../auth/decorators.js';
 import { zodDto } from '../../common/zod-validation.pipe.js';
+import type { Upload } from '../files/files.service.js';
 import { OrganizationService } from './organization.service.js';
 
 class UpdateOrganizationBody extends zodDto(UpdateOrganizationSettingsRequestSchema) {}
 class OrgAuditQuery extends zodDto(OrgAuditQuerySchema) {}
 
-/** The caller's organization (Backend Schema 12.4). The logo upload arrives in step 17. */
+/** The caller's organization (Backend Schema 12.4). */
 @Controller('v1/organization')
 export class OrganizationController {
   constructor(private readonly organization: OrganizationService) {}
@@ -29,6 +42,21 @@ export class OrganizationController {
   @RequirePermission('org.settings.manage')
   update(@Body() body: UpdateOrganizationBody): Promise<OrganizationSettings> {
     return this.organization.update(body);
+  }
+
+  /** POST /api/v1/organization/logo — multipart field "file": JPG or PNG up to 2 MB (SYS-03). */
+  @Post('logo')
+  @RequirePermission('org.settings.manage')
+  @UseInterceptors(FileInterceptor(UPLOAD_FIELD))
+  uploadLogo(@UploadedFile() file: Upload | undefined): Promise<OrganizationSettings> {
+    return this.organization.uploadLogo(file);
+  }
+
+  /** DELETE /api/v1/organization/logo — the "Remove" button of the logo field. */
+  @Delete('logo')
+  @RequirePermission('org.settings.manage')
+  removeLogo(): Promise<OrganizationSettings> {
+    return this.organization.removeLogo();
   }
 }
 

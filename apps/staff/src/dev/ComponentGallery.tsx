@@ -233,7 +233,7 @@ export default function ComponentGallery() {
         </Flex>
       </Section>
 
-      <Section title="Shared components (step 13)">
+      <Section title="Shared components">
         <GalleryComponents />
       </Section>
     </main>

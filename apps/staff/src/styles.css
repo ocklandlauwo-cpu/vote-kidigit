@@ -252,3 +252,68 @@ body {
 .vk-row-inactive {
   color: var(--vk-text-tertiary);
 }
+
+/* Helper and error text under fields (body-sm). */
+.vk-text-sm {
+  font-size: var(--vk-font-body-sm-size);
+  line-height: var(--vk-font-body-sm-line);
+}
+
+/* Photo field (Design System 7.6): 5:7 preview with --vk-radius-md. */
+.vk-photo-preview {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--vk-photo-field-width);
+  height: var(--vk-photo-field-height);
+  overflow: hidden;
+  border: 1px solid var(--vk-border);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface-muted);
+  color: var(--vk-text-tertiary);
+  font-size: var(--vk-space-6);
+}
+.vk-photo-field[data-error] .vk-photo-preview {
+  border-color: var(--vk-danger-fg);
+}
+.vk-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vk-crop-area {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface-muted);
+}
+
+/* Dropzone (Design System 7.6). */
+.vk-dropzone .ant-upload-drag {
+  border: 1px dashed var(--vk-border-strong);
+  border-radius: var(--vk-radius-lg);
+  background: var(--vk-surface);
+}
+.vk-dropzone .ant-upload-drag .ant-upload-btn {
+  padding: var(--vk-space-6);
+}
+.vk-dropzone .ant-upload-drag.ant-upload-drag-hover {
+  border-style: solid;
+  border-color: var(--vk-primary);
+  background: var(--vk-primary-subtle);
+}
+.vk-dropzone[data-error] .ant-upload-drag {
+  border-color: var(--vk-danger-fg);
+}
+.vk-dropzone-icon {
+  color: var(--vk-text-tertiary);
+  font-size: var(--vk-space-8);
+}
+.vk-logo-preview {
+  display: block;
+  max-width: 100%;
+  max-height: var(--vk-space-16);
+}

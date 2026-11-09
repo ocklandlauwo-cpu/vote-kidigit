@@ -4,6 +4,7 @@
 import { onboardingItems } from '@vote-kidigit/shared';
 import { Button, Flex, Typography } from 'antd';
 import { type ReactNode, useState } from 'react';
+import { ApiError } from '../api/client';
 import { PasswordRules } from '../auth/PasswordRules';
 import { Banner } from '../components/Banner';
 import { ConfirmDialog, type ConfirmDialogProps } from '../components/ConfirmDialog';
@@ -11,6 +12,7 @@ import { EmptyState } from '../components/EmptyState';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { ErrorPage } from '../components/ErrorPage';
 import { PageHeader } from '../components/PageHeader';
+import { PhotoField } from '../components/PhotoField';
 import { StatusBadge } from '../components/StatusBadge';
 import { STATUS_SPECS, type StatusDomain } from '../components/statusSpecs';
 import { UserAvatar } from '../components/UserAvatar';
@@ -44,6 +46,25 @@ const DIALOGS: { name: string; props: Partial<ConfirmDialogProps> }[] = [
   { name: 'reason required', props: { tone: 'danger', requireReason: true } },
   { name: 'loading', props: { tone: 'danger', loading: true } },
 ];
+
+/** A photo field that keeps the cropped photo in the browser (no server in the gallery). */
+function LocalPhotoField() {
+  const [url, setUrl] = useState<string | null>(null);
+  return (
+    <PhotoField
+      url={url}
+      name="Asha Mollel"
+      onUpload={(photo) => {
+        setUrl(URL.createObjectURL(photo));
+        return Promise.resolve();
+      }}
+      onRemove={() => {
+        setUrl(null);
+        return Promise.resolve();
+      }}
+    />
+  );
+}
 
 export function GalleryComponents() {
   const [dialog, setDialog] = useState<string | null>(null);
@@ -190,6 +211,18 @@ export function GalleryComponents() {
             },
           }}
         />
+      </Variant>
+
+      <Variant name="PhotoField — choose a JPG or PNG to crop, then Remove; server refusal; disabled">
+        <Flex wrap gap="large">
+          <LocalPhotoField />
+          <PhotoField
+            url={null}
+            name="Juma"
+            onUpload={() => Promise.reject(new ApiError(413, 'FILE_TOO_LARGE', 'Too large'))}
+          />
+          <PhotoField url={null} name="Neema" onUpload={() => Promise.resolve()} disabled />
+        </Flex>
       </Variant>
 
       <Variant name="PasswordRules — empty, partly met, all met, reused">

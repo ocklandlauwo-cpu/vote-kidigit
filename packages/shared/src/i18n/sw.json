@@ -331,7 +331,6 @@
     "profile": "Wasifu wa shirika",
     "name": "Jina la shirika",
     "logo": "Nembo",
-    "logoSoon": "Kupakia nembo kutapatikana hivi karibuni. JPG au PNG, hadi MB 2.",
     "primaryColor": "Rangi kuu",
     "colorInvalid": "Andika rangi kama #0B6E8A",
     "preview": "Mfano kwa wapiga kura",
@@ -499,5 +498,21 @@
       "deleted": "Uchaguzi umefutwa",
       "saved": "Imehifadhiwa"
     }
+  },
+  "files": {
+    "dropTitle": "Buruta faili hapa au bofya kuchagua",
+    "imageHelp": "JPG au PNG, hadi MB 2",
+    "imageInvalid": "Tumia picha ya JPG au PNG chini ya MB 2",
+    "uploading": "Inapakia {{name}}",
+    "uploadPhoto": "Pakia picha",
+    "remove": "Ondoa",
+    "cropTitle": "Kata picha",
+    "cropHelp": "Sogeza picha ili uso uwe katikati.",
+    "zoom": "Kuza",
+    "noPhoto": "Hakuna picha",
+    "photoOf": "Picha ya {{name}}",
+    "logoOf": "Nembo ya {{name}}",
+    "logoSaved": "Nembo imehifadhiwa",
+    "logoRemoved": "Nembo imeondolewa"
   }
 }

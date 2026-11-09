@@ -14,6 +14,7 @@ import { RequestContextMiddleware } from './context/request-context.middleware.j
 import { HealthModule } from './health/health.module.js';
 import { PermissionsModule } from './modules/permissions/permissions.module.js';
 import { EventsModule } from './modules/events/events.module.js';
+import { FilesModule } from './modules/files/files.module.js';
 import { OrganizationModule } from './modules/organization/organization.module.js';
 import { PlatformModule } from './modules/platform/platform.module.js';
 import { RolesModule } from './modules/roles/roles.module.js';
@@ -42,6 +43,7 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
     UsersModule,
     RolesModule,
     EventsModule,
+    FilesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

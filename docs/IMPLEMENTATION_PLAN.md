@@ -499,7 +499,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 
 - ☑ 15. Event data model and lifecycle (part 1)
 - ☑ 16. Events API and event workspace shell
-- ☐ 17. Files and photos
+- ☑ 17. Files and photos
 - ☐ 18. Categories and contesters
 - ☐ 19. Voters, codes and CSV import
 - ☐ 20. Worker, scheduler and publishing

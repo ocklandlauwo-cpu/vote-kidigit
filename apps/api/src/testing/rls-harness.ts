@@ -17,6 +17,8 @@ export interface TenantTableCase {
   platformCanRead?: boolean;
   /** vk_api may only insert and read (audit log): updates and deletes are permission errors. */
   appendOnly?: boolean;
+  /** vk_api may insert, read and delete but never update (files): updates are permission errors. */
+  immutable?: boolean;
   /**
    * How a cross-organization insert is refused, when a BEFORE trigger refuses it before RLS
    * does (it cannot see the other organization's rows either). Default: the RLS error.
@@ -58,6 +60,7 @@ export function describeTenantIsolation(
       orgColumn = 'organization_id',
       platformCanRead = true,
       appendOnly = false,
+      immutable = false,
     } = testCase;
     const col = `"${orgColumn}"`;
 
@@ -117,20 +120,20 @@ export function describeTenantIsolation(
           ).rejects.toThrow(/permission denied/);
           return;
         }
-        expect(
-          await affected(
-            api,
-            ctxA,
-            `UPDATE ${table} SET ${col} = ${col} WHERE ${col} = $1::uuid`,
-            orgB,
-          ),
-        ).toBe(0);
+        const update = affected(
+          api,
+          ctxA,
+          `UPDATE ${table} SET ${col} = ${col} WHERE ${col} = $1::uuid`,
+          orgB,
+        );
+        if (immutable) await expect(update).rejects.toThrow(/permission denied/);
+        else expect(await update).toBe(0);
         expect(
           await affected(api, ctxA, `DELETE FROM ${table} WHERE ${col} = $1::uuid`, orgB),
         ).toBe(0);
       });
 
-      if (orgColumn !== 'id') {
+      if (orgColumn !== 'id' && !immutable) {
         it('organization A cannot move its rows to B', async () => {
           const { api, orgA, orgB } = getSetup();
           const countIn = (org: string) =>

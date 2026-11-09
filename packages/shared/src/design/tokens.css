@@ -166,6 +166,9 @@
   --vk-radius-lg: 12px;
   --vk-radius-xl: 16px;
   --vk-radius-full: 9999px;
+  /* 5:7 passport photo previews (Design System 7.6, 8.6) */
+  --vk-photo-field-width: 70px;
+  --vk-photo-field-height: 98px;
   --vk-shadow-sm: 0 1px 2px rgba(13, 18, 23, 0.06), 0 4px 12px rgba(13, 18, 23, 0.08);
   --vk-shadow-md: 0 4px 8px rgba(13, 18, 23, 0.06), 0 12px 32px rgba(13, 18, 23, 0.16);
   --vk-z-base: 0;

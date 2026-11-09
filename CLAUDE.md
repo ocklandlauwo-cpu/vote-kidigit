@@ -164,6 +164,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Staff workspace (`pages/events/`): `EventWorkspace` loads the event and passes it to tabs through the `Outlet` context. The header's main action and the More menu come from `eventActions.ts` (App Flow 3.4); actions whose steps have not arrived yet show greyed out. Event activity reuses `AuditView` from the audit page with the event endpoint.
 - Date pickers work in the organization time zone through `zonedTime.ts` (`toPicker`, `fromPicker`, `nowInPicker`), never the browser's.
 
+## Files in code
+
+- `files` rows (migration 013) are never updated: vk_api has no UPDATE grant; a new upload is a new row and the replaced one is deleted. The bytes live at `STORAGE_DIR/org/{orgId}/{kind}/{uuid}.{ext}` and are served only by `GET /api/v1/files/:id`.
+- Upload endpoints: `@UseInterceptors(FileInterceptor(UPLOAD_FIELD))` in a module that imports `FilesModule` (it exports the Multer limits: one file of at most MAX_UPLOAD_MB, larger is 413 FILE_TOO_LARGE). Then `files.withImage(kind, file, (tx, stored, discard) => …)`: it checks the type by magic bytes (FILE_TYPE), processes with sharp (photos 350 × 490 JPEG q82, logos inside 512 × 512 PNG, metadata dropped), writes the bytes, inserts the row and runs the callback in one transaction; `discard(oldId)` deletes a replaced file, whose bytes go after the commit.
+- The trigger `app.check_file_ref()` lets organizations.logo_file_id, categories.picture_file_id, contesters.photo_file_id and voters.photo_file_id point only at a file of the same organization and matching kind (NOT_FOUND otherwise).
+- Who may read a file (`FilesService.mayRead`): logos, any staff of the organization; category and contester pictures, event.view; voter photos, voter.view; both only for an event the user may see (photos belonging to nothing need event.access_all). csv_import and report files are refused until steps 19 and 26 add their rules.
+- API tests write to a temporary STORAGE_DIR per Jest worker (`testing/jest-setup.ts`). The RLS harness has `immutable: true` for tables without UPDATE.
+- Staff: `PhotoField` (components/) checks JPG/PNG ≤ 2 MB, opens `PhotoCropDialog` (react-easy-crop, 5:7, zoom 1–3) and hands a 350 × 490 JPEG to `onUpload`; `upload(path, blob, { onProgress })` in api/client.ts sends multipart through XMLHttpRequest for the progress bar. rc-upload replaces its `<input>` after each choice: tests look it up again before every upload.
+
 ## Email and queues in code
 
 - BullMQ through `QueueModule` (`queue/`); the API only adds jobs, the worker (`WorkerModule`) runs processors inside `requestContext.run(systemContext(job.requestId, orgId))`. Job payloads never carry secrets: the worker creates link tokens when it sends the email. Jobs are removed when done or finally failed.

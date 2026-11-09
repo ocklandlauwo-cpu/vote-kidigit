@@ -6,13 +6,14 @@ import type {
   OrganizationSettings,
   UpdateOrganizationSettingsRequest,
 } from '@vote-kidigit/shared';
-import { onboardingItems } from '@vote-kidigit/shared';
+import { fileUrl, onboardingItems } from '@vote-kidigit/shared';
 import { AuditQueryService } from '../../audit/audit-query.service.js';
 import { AuditService } from '../../audit/audit.service.js';
 import { AuthStateService } from '../../auth/auth-state.service.js';
 import { AppError } from '../../common/app-error.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
+import { FilesService, type Upload } from '../files/files.service.js';
 
 /** Saving the Regional section confirms the time zone, even when it stays the same. */
 export const TIME_ZONE_CONFIRMED = 'org.settings.timezone.confirm';
@@ -42,6 +43,7 @@ export class OrganizationService {
     private readonly auditQuery: AuditQueryService,
     private readonly authState: AuthStateService,
     private readonly requestContext: RequestContextService,
+    private readonly files: FilesService,
   ) {}
 
   /** GET /organization (any signed-in staff user of an organization). */
@@ -90,6 +92,53 @@ export class OrganizationService {
     return settings;
   }
 
+  /** POST /organization/logo: the new logo replaces the old one, whose file is deleted. */
+  uploadLogo(upload: Upload | undefined): Promise<OrganizationSettings> {
+    const ctx = this.context();
+    return this.files.withImage('org_logo', upload, async (tx, file, discard) => {
+      const before = await tx.organization.findUniqueOrThrow({
+        where: { id: ctx.orgId },
+        select: { logoFileId: true },
+      });
+      await tx.organization.update({ where: { id: ctx.orgId }, data: { logoFileId: file.id } });
+      if (before.logoFileId) await discard(before.logoFileId);
+      await this.audit.record(tx, {
+        action: 'org.logo.update',
+        entityType: 'organizations',
+        entityId: ctx.orgId,
+        before,
+        after: { logoFileId: file.id },
+      });
+      return this.load(tx);
+    });
+  }
+
+  /** DELETE /organization/logo */
+  async removeLogo(): Promise<OrganizationSettings> {
+    const ctx = this.context();
+    let removed: string[] = [];
+    const settings = await this.prisma.withContext(ctx, async (tx) => {
+      const before = await tx.organization.findUniqueOrThrow({
+        where: { id: ctx.orgId },
+        select: { logoFileId: true },
+      });
+      if (before.logoFileId) {
+        await tx.organization.update({ where: { id: ctx.orgId }, data: { logoFileId: null } });
+        removed = await this.files.deleteRows(tx, [before.logoFileId]);
+        await this.audit.record(tx, {
+          action: 'org.logo.remove',
+          entityType: 'organizations',
+          entityId: ctx.orgId,
+          before,
+          after: { logoFileId: null },
+        });
+      }
+      return this.load(tx);
+    });
+    await this.files.removeFromDisk(removed);
+    return settings;
+  }
+
   /** GET /audit (SYS-01): the organization's audit log with filters. */
   auditLog(query: OrgAuditQuery): Promise<AuditPage> {
     const ctx = this.context();
@@ -131,7 +180,7 @@ export class OrganizationService {
       helpPhone: org.helpPhone,
       sessionTimeoutMinutes: org.sessionTimeoutMinutes,
       archiveAfterDays: org.archiveAfterDays,
-      logoUrl: null, // file serving arrives with uploads (step 17)
+      logoUrl: org.logoFileId ? fileUrl(org.logoFileId) : null,
       onboarding: {
         dismissed: org.onboardingDismissedAt !== null,
         items: onboardingItems.map((key) => ({ key, done: done[key] })),

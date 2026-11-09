@@ -331,7 +331,6 @@
     "profile": "Profile",
     "name": "Organization name",
     "logo": "Logo",
-    "logoSoon": "Logo upload is coming soon. JPG or PNG, up to 2 MB.",
     "primaryColor": "Primary colour",
     "colorInvalid": "Enter a colour like #0B6E8A",
     "preview": "Preview for voters",
@@ -499,5 +498,21 @@
       "deleted": "Event deleted",
       "saved": "Saved"
     }
+  },
+  "files": {
+    "dropTitle": "Drag a file here or click to choose",
+    "imageHelp": "JPG or PNG, up to 2 MB",
+    "imageInvalid": "Use a JPG or PNG under 2 MB",
+    "uploading": "Uploading {{name}}",
+    "uploadPhoto": "Upload photo",
+    "remove": "Remove",
+    "cropTitle": "Crop photo",
+    "cropHelp": "Drag the photo so the face is in the centre.",
+    "zoom": "Zoom",
+    "noPhoto": "No photo",
+    "photoOf": "Photo of {{name}}",
+    "logoOf": "Logo of {{name}}",
+    "logoSaved": "Logo saved",
+    "logoRemoved": "Logo removed"
   }
 }

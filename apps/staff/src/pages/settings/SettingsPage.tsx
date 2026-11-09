@@ -1,8 +1,7 @@
 // SYS-03 Organization settings (App Flow 7.3): sections Profile (name, logo, primary colour,
 // help phone), Regional (time zone), Security (session timeout), SMS (sender ID) and Archive
-// period, each saved on its own; a warning before leaving with unsaved changes. The logo upload
-// arrives in step 17 and the message templates in step 21.
-import { UploadOutlined } from '@ant-design/icons';
+// period, each saved on its own; a warning before leaving with unsaved changes. The logo is
+// uploaded on its own (LogoField); the message templates arrive in step 21.
 import {
   deriveBrandTokens,
   isHexColor,
@@ -22,7 +21,6 @@ import {
   InputNumber,
   Select,
   Skeleton,
-  Tooltip,
   Typography,
 } from 'antd';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -33,6 +31,7 @@ import { Banner } from '../../components/Banner';
 import { ErrorPage } from '../../components/ErrorPage';
 import { PageHeader } from '../../components/PageHeader';
 import { UnsavedChangesPrompt } from '../../hooks/useUnsavedChanges';
+import { LogoField } from './LogoField';
 import { useOrganization, useUpdateOrganization } from './organizationApi';
 
 type SectionKey = 'profile' | 'regional' | 'security' | 'sms' | 'archive';
@@ -220,12 +219,8 @@ function SettingsForm({ settings }: { settings: OrganizationSettings }) {
             >
               <Input />
             </Form.Item>
-            <Form.Item label={t('settings.logo')} extra={t('settings.logoSoon')}>
-              <Tooltip title={t('settings.logoSoon')}>
-                <Button icon={<UploadOutlined />} disabled>
-                  {t('settings.logo')}
-                </Button>
-              </Tooltip>
+            <Form.Item label={t('settings.logo')}>
+              <LogoField url={settings.logoUrl} organizationName={settings.name} />
             </Form.Item>
             <Form.Item
               name="primaryColor"

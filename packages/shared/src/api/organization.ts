@@ -20,7 +20,7 @@ export const OrganizationSettingsSchema = z.object({
   id: z.uuid(),
   name: z.string(),
   slug: z.string(),
-  /** Set once logos can be uploaded (step 17). */
+  /** GET /api/v1/files/:id of the logo, or null without one. */
   logoUrl: z.string().nullable(),
   primaryColor: z.string().nullable(),
   timeZone: z.string(),
