@@ -23,6 +23,7 @@ import type { BatchAudience, MessageChannel, MessageType } from '../../generated
 import { SMS_JOB, type SendMessageJob } from '../../queue/sms-jobs.js';
 import { SMS_QUEUE } from '../../queue/queue.module.js';
 import { MessageContent, SAMPLE_CODE } from './message-content.js';
+import { maySend, notSendableReason } from './send-rules.js';
 
 type CreateBatch = z.output<typeof CreateBatchRequestSchema>;
 
@@ -38,7 +39,6 @@ export interface NewBatch {
 }
 
 /** Codes go out only once the event is published (Scheduled or Open). */
-const CODE_STATUSES = ['scheduled', 'open'];
 
 const batchSelect = {
   id: true,
@@ -287,6 +287,7 @@ export class BatchesService {
     const queued = await this.prisma.withContext(this.context(), async (tx) => {
       const batch = await this.find(tx, eventId, batchId);
       if (batch.status !== 'paused') throw this.invalid('NOT_PAUSED');
+      await this.assertSendable(tx, eventId, batch.type);
       await tx.smsBatch.update({
         where: { id: batchId },
         data: { status: 'sending', pausedReason: null },
@@ -321,6 +322,7 @@ export class BatchesService {
   async resendFailed(eventId: string, batchId: string): Promise<Batch> {
     const created = await this.prisma.withContext(this.context(), async (tx) => {
       const batch = await this.find(tx, eventId, batchId);
+      await this.assertSendable(tx, eventId, batch.type);
       const failed = await tx.smsMessage.findMany({
         where: { batchId, status: 'failed', voterId: { not: null } },
         select: { voterId: true },
@@ -366,10 +368,7 @@ export class BatchesService {
       select: { status: true },
     });
     if (!event) throw new AppError('NOT_FOUND');
-    if (type === 'code_delivery' && !CODE_STATUSES.includes(event.status)) {
-      throw this.invalid('NOT_PUBLISHED');
-    }
-    if (type === 'reminder_before_close' && event.status !== 'open') throw this.invalid('NOT_OPEN');
+    if (!maySend(type, event.status)) throw this.invalid(notSendableReason(type));
   }
 
   private async pendingCounts(tx: Tx, batchIds: string[]): Promise<Map<string, number>> {

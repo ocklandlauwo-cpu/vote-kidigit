@@ -443,6 +443,43 @@ describe('messages', () => {
     expect(reminder).toMatchObject({ audience: 'not_voted', totalCount: 2, createdBy: null });
   }, 60_000);
 
+  it('stops a batch when the event is cancelled while it sends', async () => {
+    const event = await seedEvent('scheduled', 12);
+    // Every send fails for now and waits for a retry, so the batch is still going.
+    fake.failWith = () => new SmsSendError('timeout', true);
+    const batch = (
+      await send(staff.moderator, `/events/${event.id}/batches`, {
+        type: 'code_delivery',
+        audience: 'all',
+      }).expect(201)
+    ).body as Batch;
+    await send(staff.moderator, `/events/${event.id}/cancel`, {
+      confirmName: event.name,
+      reason: 'Mkutano umeahirishwa',
+    }).expect(200);
+    fake.failWith = null;
+    expect((await owner.smsBatch.findUniqueOrThrow({ where: { id: batch.id } })).status).toBe(
+      'cancelled',
+    );
+    // The retries come and go (backoff 5 s) without sending any code.
+    await new Promise((resolve) => setTimeout(resolve, 8000));
+    expect(fake.outbox.filter((m) => m.text.includes(event.name))).toHaveLength(0);
+    expect(await owner.smsMessage.count({ where: { batchId: batch.id, status: 'sent' } })).toBe(0);
+    // No event_cancelled batch: no code had reached anyone.
+    expect(
+      await owner.smsBatch.count({ where: { eventId: event.id, type: 'event_cancelled' } }),
+    ).toBe(0);
+
+    const resume = await send(staff.moderator, `/events/${event.id}/batches/${batch.id}/resume`);
+    expect(codeOf(resume)).toBe('INVALID_TRANSITION');
+    await owner.smsMessage.updateMany({ where: { batchId: batch.id }, data: { status: 'failed' } });
+    const resend = await send(
+      staff.moderator,
+      `/events/${event.id}/batches/${batch.id}/resend-failed`,
+    );
+    expect(codeOf(resend)).toBe('INVALID_TRANSITION');
+  }, 60_000);
+
   it('refuses codes before publish and needs messages.send', async () => {
     const draft = await seedEvent('draft', 1);
     const res = await send(staff.moderator, `/events/${draft.id}/batches`, {

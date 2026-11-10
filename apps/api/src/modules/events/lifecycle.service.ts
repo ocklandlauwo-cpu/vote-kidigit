@@ -135,6 +135,11 @@ export class LifecycleService {
         });
       }
       await transitionEvent(tx, eventId, 'cancelled', body.reason);
+      // Codes and reminders still on their way stop here.
+      await tx.smsBatch.updateMany({
+        where: { eventId, status: { in: ['queued', 'sending', 'paused'] } },
+        data: { status: 'cancelled', completedAt: new Date() },
+      });
       await this.audit.record(tx, {
         action: 'event.cancel',
         entityType: 'voting_events',

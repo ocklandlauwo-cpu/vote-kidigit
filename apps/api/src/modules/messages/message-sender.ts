@@ -7,6 +7,7 @@ import { PrismaService, type Tx } from '../../database/prisma.service.js';
 import { MailService } from '../../mail/mail.service.js';
 import { CodesService } from '../voters/codes.service.js';
 import { MessageContent } from './message-content.js';
+import { maySend } from './send-rules.js';
 import { SMS_GATEWAY, type SmsGateway, SmsSendError } from './sms-gateway.js';
 
 /** `held`: the batch is paused; the job waits in the queue until Resume or Cancel. */
@@ -104,12 +105,23 @@ export class MessageSender {
         bodyRedacted: true,
         eventId: true,
         batch: { select: { id: true, status: true } },
+        event: { select: { status: true } },
         voter: { select: { codeCiphertext: true, deletedAt: true } },
       },
     });
     if (message?.status !== 'queued') return null;
     if (message.batch?.status === 'cancelled') return null;
     if (message.batch?.status === 'paused') return 'held' as const;
+    if (!maySend(message.type, message.event.status)) {
+      // The event moved on (cancelled, closed): nothing more of this batch goes out.
+      if (message.batch) {
+        await tx.smsBatch.updateMany({
+          where: { id: message.batch.id, status: { in: ['queued', 'sending'] } },
+          data: { status: 'cancelled', completedAt: new Date() },
+        });
+      }
+      return null;
+    }
     if (message.batch?.status === 'queued') {
       await tx.smsBatch.updateMany({
         where: { id: message.batch.id, status: 'queued' },
