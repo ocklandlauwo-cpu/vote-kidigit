@@ -23,6 +23,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import type { Discard } from '../files/files.service.js';
 import { FilesService, type Upload } from '../files/files.service.js';
 import { importPhotoZip } from '../files/photo-zip.js';
+import { BatchesService } from '../messages/batches.service.js';
 import { CodesService, isCodeCollision } from './codes.service.js';
 
 type CreateVoter = z.output<typeof CreateVoterRequestSchema>;
@@ -47,6 +48,21 @@ const detailSelect = {
   failedAttempts: true,
   lockedUntil: true,
   createdAt: true,
+  messages: {
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: {
+      id: true,
+      type: true,
+      channel: true,
+      status: true,
+      bodyRedacted: true,
+      createdAt: true,
+      sentAt: true,
+      deliveredAt: true,
+      failedAt: true,
+    },
+  },
 } satisfies Prisma.VoterSelect;
 
 /** Audited columns: never the code columns (the audit drops them anyway). */
@@ -87,6 +103,17 @@ function toDetail(row: DetailRow): VoterDetail {
     failedAttempts: row.failedAttempts,
     lockedUntil: iso(row.lockedUntil),
     createdAt: row.createdAt.toISOString(),
+    messages: row.messages.map((m) => ({
+      id: m.id,
+      type: m.type,
+      channel: m.channel,
+      status: m.status,
+      bodyRedacted: m.bodyRedacted,
+      createdAt: m.createdAt.toISOString(),
+      sentAt: iso(m.sentAt),
+      deliveredAt: iso(m.deliveredAt),
+      failedAt: iso(m.failedAt),
+    })),
   };
 }
 
@@ -113,6 +140,7 @@ export class VotersService {
     private readonly audit: AuditService,
     private readonly codes: CodesService,
     private readonly files: FilesService,
+    private readonly batches: BatchesService,
     private readonly requestContext: RequestContextService,
   ) {}
 
@@ -342,11 +370,55 @@ export class VotersService {
   }
 
   /**
+   * POST …/resend-code (COD-05): the same code again by SMS. Codes go out once the event is
+   * published (Scheduled or Open).
+   */
+  async resendCode(eventId: string, voterId: string): Promise<VoterDetail> {
+    await this.prisma.withContext(this.context(), async (tx) => {
+      await this.find(tx, eventId, voterId, { id: true });
+      if (!(await this.published(tx, eventId))) {
+        throw new AppError('INVALID_TRANSITION', 'Codes are sent once the event is published.', {
+          reason: 'NOT_PUBLISHED',
+        });
+      }
+    });
+    await this.batches.send({
+      eventId,
+      type: 'code_delivery',
+      channel: 'sms',
+      audience: 'single',
+      voterId,
+    });
+    return this.detail(eventId, voterId);
+  }
+
+  /**
    * POST …/regenerate-code (COD-06): a new code replaces the old one, which stops working at
-   * once. Allowed after publish. The new code is sent by SMS from step 21; until then it waits
-   * as "not sent".
+   * once, and is sent by SMS when the event is published (before that it waits as "not sent").
    */
   async regenerateCode(eventId: string, voterId: string): Promise<VoterDetail> {
+    const detail = await this.issueNewCode(eventId, voterId);
+    const send = await this.prisma.withContext(this.context(), (tx) => this.published(tx, eventId));
+    if (!send) return detail;
+    await this.batches.send({
+      eventId,
+      type: 'code_delivery',
+      channel: 'sms',
+      audience: 'single',
+      voterId,
+    });
+    return this.detail(eventId, voterId);
+  }
+
+  private async published(tx: Tx, eventId: string): Promise<boolean> {
+    const event = await tx.votingEvent.findFirst({
+      where: { id: eventId, deletedAt: null },
+      select: { status: true },
+    });
+    return event?.status === 'scheduled' || event?.status === 'open';
+  }
+
+  private async issueNewCode(eventId: string, voterId: string): Promise<VoterDetail> {
     for (let attempt = 1; ; attempt += 1) {
       try {
         return await this.prisma.withContext(this.context(), async (tx) => {

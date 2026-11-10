@@ -8,6 +8,7 @@ import type { Env } from '../config/env.schema.js';
 export const EMAIL_QUEUE = 'email';
 export const IMPORTS_QUEUE = 'imports';
 export const SCHEDULE_QUEUE = 'schedule';
+export const SMS_QUEUE = 'sms';
 
 /** ioredis options from REDIS_URL, as BullMQ needs (it creates its own connections). */
 export function redisOptionsFromUrl(url: string): RedisOptions {
@@ -51,6 +52,16 @@ export function redisOptionsFromUrl(url: string): RedisOptions {
     BullModule.registerQueue({
       name: IMPORTS_QUEUE,
       defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
+    }),
+    // One job per message (PRD SMS-07): up to 3 automatic retries with growing waits.
+    BullModule.registerQueue({
+      name: SMS_QUEUE,
+      defaultJobOptions: {
+        attempts: 4,
+        backoff: { type: 'exponential', delay: 5_000 },
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
     }),
     // The 1-minute sweep (Backend Schema 11.9); a missed run is simply done by the next one.
     BullModule.registerQueue({

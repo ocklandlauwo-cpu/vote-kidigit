@@ -117,6 +117,26 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${org}::uuid, ${f.eventId}::uuid)`,
   },
   {
+    table: 'public.sms_templates',
+    insertFor: (tx, org) =>
+      tx.$executeRaw`INSERT INTO public.sms_templates (organization_id, type, channel, body)
+        VALUES (${org}::uuid, 'event_cancelled', 'sms', 'Intruder')`,
+  },
+  {
+    table: 'public.sms_batches',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.sms_batches (organization_id, event_id, type, channel, audience)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, 'code_delivery', 'sms', 'all')`,
+  },
+  {
+    table: 'public.sms_messages',
+    // Backend Schema 10.2: messages carry voters' phones, like voters.
+    platformCanRead: false,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.sms_messages (organization_id, event_id, channel, type, to_address, body_redacted)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, 'sms', 'code_delivery', '+255700000000', 'Intruder')`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -219,6 +239,30 @@ async function seedOrganization(
     },
   });
   await owner.voterImport.create({ data: { organizationId: orgId, eventId: event.id } });
+  await owner.smsTemplate.create({
+    data: { organizationId: orgId, type: 'code_delivery', channel: 'sms', body: 'Msimbo wako' },
+  });
+  const batch = await owner.smsBatch.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      type: 'code_delivery',
+      channel: 'sms',
+      audience: 'all',
+    },
+  });
+  await owner.smsMessage.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      batchId: batch.id,
+      voterId: voter.id,
+      channel: 'sms',
+      type: 'code_delivery',
+      toAddress: '+255712000001',
+      bodyRedacted: 'Msimbo wako ni ••••-••••',
+    },
+  });
   await owner.categoryVoter.create({
     data: { categoryId: category.id, voterId: voter.id, organizationId: orgId },
   });

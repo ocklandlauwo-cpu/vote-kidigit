@@ -90,6 +90,7 @@ model User {
   assignmentsCreated EventAssignment[] @relation("AssignmentCreator")
   filesCreated       File[]            @relation("FileCreator")
   importsCreated     VoterImport[]     @relation("ImportCreator")
+  batchesCreated     SmsBatch[]        @relation("BatchCreator")
 
   @@unique([emailNormalized], map: "users_email_normalized_key", where: raw("deleted_at IS NULL"))
   /// Target of composite foreign keys from organization-owned child tables.
@@ -186,6 +187,9 @@ model VotingEvent {
   categories   Category[]
   voters       Voter[]
   voterImports VoterImport[]
+  smsTemplates SmsTemplate[]
+  smsBatches   SmsBatch[]
+  smsMessages  SmsMessage[]
 
   @@unique([publicResultsToken], map: "voting_events_public_results_token_key")
   /// Target of composite foreign keys from the event's children.
@@ -311,6 +315,7 @@ model Voter {
 
   event      VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
   photo      File?           @relation("VoterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
+  messages   SmsMessage[]
   categories CategoryVoter[]
 
   @@unique([eventId, membershipIdNormalized], map: "voters_event_id_membership_id_normalized_key", where: raw("deleted_at IS NULL"))
@@ -560,6 +565,95 @@ enum TieOutcome {
   no_winner
 
   @@map("tie_outcome")
+  @@schema("public")
+}
+
+/// Message templates (Backend Schema 7.1): organization defaults (event_id NULL) and event
+/// overrides; without a row the built-in Swahili default applies. One per type and channel.
+model SmsTemplate {
+  id             String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  eventId        String?        @map("event_id") @db.Uuid
+  type           MessageType
+  channel        MessageChannel
+  language       String         @default("sw")
+  subject        String?
+  body           String
+  updatedBy      String?        @map("updated_by") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  event VotingEvent? @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
+
+  @@unique([organizationId, type, channel], map: "sms_templates_org_default_key", where: raw("event_id IS NULL"))
+  @@unique([eventId, type, channel], map: "sms_templates_event_key", where: raw("event_id IS NOT NULL"))
+  @@index([organizationId])
+  @@map("sms_templates")
+  @@schema("public")
+}
+
+/// One send action (Backend Schema 7.2): its audience, status and counters.
+model SmsBatch {
+  id             String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  eventId        String         @map("event_id") @db.Uuid
+  type           MessageType
+  channel        MessageChannel
+  audience       BatchAudience
+  status         BatchStatus    @default(queued)
+  totalCount     Int            @default(0) @map("total_count")
+  sentCount      Int            @default(0) @map("sent_count")
+  deliveredCount Int            @default(0) @map("delivered_count")
+  failedCount    Int            @default(0) @map("failed_count")
+  pausedReason   String?        @map("paused_reason")
+  createdBy      String?        @map("created_by") @db.Uuid
+  startedAt      DateTime?      @map("started_at") @db.Timestamptz(6)
+  completedAt    DateTime?      @map("completed_at") @db.Timestamptz(6)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  event    VotingEvent  @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  creator  User?        @relation("BatchCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  messages SmsMessage[]
+
+  @@index([eventId, createdAt(sort: Desc)])
+  @@index([organizationId])
+  @@index([createdBy])
+  @@map("sms_batches")
+  @@schema("public")
+}
+
+/// Each SMS or email (Backend Schema 7.3). The voting code is never stored: body_redacted has
+/// it as ••••-••••; the worker decrypts the code only to send.
+model SmsMessage {
+  id                String         @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId    String         @map("organization_id") @db.Uuid
+  eventId           String         @map("event_id") @db.Uuid
+  batchId           String?        @map("batch_id") @db.Uuid
+  voterId           String?        @map("voter_id") @db.Uuid
+  channel           MessageChannel
+  type              MessageType
+  toAddress         String         @map("to_address")
+  bodyRedacted      String         @map("body_redacted")
+  providerMessageId String?        @unique @map("provider_message_id")
+  status            MessageStatus  @default(queued)
+  attempts          Int            @default(0) @db.SmallInt
+  lastError         String?        @map("last_error")
+  sentAt            DateTime?      @map("sent_at") @db.Timestamptz(6)
+  deliveredAt       DateTime?      @map("delivered_at") @db.Timestamptz(6)
+  failedAt          DateTime?      @map("failed_at") @db.Timestamptz(6)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  event VotingEvent @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  batch SmsBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  voter Voter?      @relation(fields: [voterId], references: [id], onDelete: SetNull)
+
+  @@index([batchId, status])
+  @@index([voterId, createdAt(sort: Desc)])
+  @@index([eventId])
+  @@index([organizationId])
+  @@map("sms_messages")
   @@schema("public")
 }
 

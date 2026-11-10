@@ -25,6 +25,7 @@ export function voterDetail(summary: VoterSummary, change: Partial<VoterDetail> 
     failedAttempts: 0,
     lockedUntil: null,
     createdAt: '2026-11-10T08:00:00.000Z',
+    messages: [],
     ...change,
   };
 }

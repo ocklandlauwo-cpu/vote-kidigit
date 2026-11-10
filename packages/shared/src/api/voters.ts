@@ -9,6 +9,7 @@ import {
   ImportStatusSchema,
 } from '../constants/enums.js';
 import { EmailSchema } from './auth.js';
+import { VoterMessageSchema } from './messages.js';
 import { PaginationQuerySchema, pageSchema } from './common.js';
 
 // ---------------------------------------------------------------------------------------------
@@ -124,6 +125,8 @@ export const VoterDetailSchema = VoterSummarySchema.extend({
   failedAttempts: z.number().int(),
   lockedUntil: z.iso.datetime().nullable(),
   createdAt: z.iso.datetime(),
+  /** SMS and email history, newest first (the last 20). */
+  messages: z.array(VoterMessageSchema),
 });
 export type VoterDetail = z.infer<typeof VoterDetailSchema>;
 

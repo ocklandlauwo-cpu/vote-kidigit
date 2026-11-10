@@ -139,6 +139,14 @@ export class VotersController {
     return this.voters.removePhoto(eventId, voterId);
   }
 
+  /** POST /api/v1/events/:eventId/voters/:voterId/resend-code */
+  @Post('voters/:voterId/resend-code')
+  @HttpCode(200)
+  @RequirePermission('messages.send')
+  resendCode(@EventId() eventId: string, @VoterId() voterId: string): Promise<VoterDetail> {
+    return this.voters.resendCode(eventId, voterId);
+  }
+
   /** POST /api/v1/events/:eventId/voters/:voterId/regenerate-code */
   @Post('voters/:voterId/regenerate-code')
   @HttpCode(200)

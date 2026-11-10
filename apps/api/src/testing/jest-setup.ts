@@ -8,3 +8,5 @@ const worker = process.env.JEST_WORKER_ID ?? '0';
 process.env.QUEUE_PREFIX = `bull-test-${worker}`;
 // Uploads go to a temporary directory per worker, never the development storage.
 process.env.STORAGE_DIR = path.join(tmpdir(), `vk-test-storage-${worker}`);
+// Tests never send a real SMS, whatever apps/api/.env says.
+process.env.SMS_DRIVER = 'fake';

@@ -5,6 +5,7 @@ import { AuditService } from '../../audit/audit.service.js';
 import { AppError } from '../../common/app-error.js';
 import { RequestContextService, systemContext } from '../../context/request-context.js';
 import { PrismaService } from '../../database/prisma.service.js';
+import { BatchesService } from '../messages/batches.service.js';
 import { transitionEvent } from './lifecycle.service.js';
 
 /** How often the worker sweeps (Backend Schema 11.9): an event opens within a minute. */
@@ -14,13 +15,20 @@ const DueSchema = z.object({
   event_id: z.uuid(),
   category_id: z.uuid().nullable(),
   organization_id: z.uuid(),
-  action: z.enum(['open_event', 'close_event', 'close_category']),
+  action: z.enum([
+    'open_event',
+    'close_event',
+    'close_category',
+    'reminder_before_open',
+    'reminder_before_close',
+  ]),
 });
 type Due = z.infer<typeof DueSchema>;
 
 export interface SweepResult {
   opened: number;
   closedCategories: number;
+  reminders: number;
   failed: number;
 }
 
@@ -37,6 +45,7 @@ export class SchedulerRunner {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly batches: BatchesService,
     private readonly requestContext: RequestContextService,
   ) {}
 
@@ -49,7 +58,7 @@ export class SchedulerRunner {
         ),
       ),
     );
-    const result: SweepResult = { opened: 0, closedCategories: 0, failed: 0 };
+    const result: SweepResult = { opened: 0, closedCategories: 0, reminders: 0, failed: 0 };
     for (const item of due) {
       if (item.action === 'close_event') continue; // step 27
       try {
@@ -57,7 +66,8 @@ export class SchedulerRunner {
           this.apply(item),
         );
         if (item.action === 'open_event') result.opened += 1;
-        else result.closedCategories += 1;
+        else if (item.action === 'close_category') result.closedCategories += 1;
+        else result.reminders += 1;
       } catch (error: unknown) {
         result.failed += 1;
         this.logger.warn({
@@ -68,13 +78,23 @@ export class SchedulerRunner {
         });
       }
     }
-    if (result.opened || result.closedCategories || result.failed) {
+    if (result.opened || result.closedCategories || result.reminders || result.failed) {
       this.logger.log({ message: 'Scheduler sweep', ...result });
     }
     return result;
   }
 
-  private apply(item: Due): Promise<void> {
+  private async apply(item: Due): Promise<void> {
+    if (item.action === 'reminder_before_open' || item.action === 'reminder_before_close') {
+      // PRD SMS-06: to voters who have not voted (everyone until participation, step 22).
+      await this.batches.send({
+        eventId: item.event_id,
+        type: item.action,
+        channel: 'sms',
+        audience: 'not_voted',
+      });
+      return;
+    }
     return this.prisma.withContext(this.requestContext.getOrThrow(), async (tx) => {
       if (item.action === 'open_event') {
         await transitionEvent(tx, item.event_id, 'open');

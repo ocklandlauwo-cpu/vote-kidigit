@@ -16,6 +16,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module.js';
 import { EventsModule } from './modules/events/events.module.js';
 import { CategoriesModule } from './modules/categories/categories.module.js';
 import { FilesModule } from './modules/files/files.module.js';
+import { MessagesModule } from './modules/messages/messages.module.js';
 import { VotersModule } from './modules/voters/voters.module.js';
 import { OrganizationModule } from './modules/organization/organization.module.js';
 import { PlatformModule } from './modules/platform/platform.module.js';
@@ -48,6 +49,7 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
     FilesModule,
     CategoriesModule,
     VotersModule,
+    MessagesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

@@ -11,6 +11,7 @@ import { AppError } from '../../common/app-error.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
 import type { EventStatus } from '../../generated/prisma/enums.js';
+import { BatchesService } from '../messages/batches.service.js';
 import { EventsService } from './events.service.js';
 
 type PublishEvent = z.output<typeof PublishEventRequestSchema>;
@@ -37,11 +38,27 @@ export class LifecycleService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly events: EventsService,
+    private readonly batches: BatchesService,
     private readonly requestContext: RequestContextService,
   ) {}
 
-  /** POST /events/:eventId/publish (EVT-08). From Draft, or "Open now" from Scheduled. */
-  publish(eventId: string, body: PublishEvent): Promise<EventDetail> {
+  /**
+   * POST /events/:eventId/publish (EVT-08). From Draft, or "Open now" from Scheduled. With
+   * "Send codes now" the voters whose code was not sent yet get it by SMS.
+   */
+  async publish(eventId: string, body: PublishEvent): Promise<EventDetail> {
+    const detail = await this.publishIn(eventId, body);
+    if (!body.sendCodes) return detail;
+    await this.batches.send({
+      eventId,
+      type: 'code_delivery',
+      channel: 'sms',
+      audience: 'not_sent',
+    });
+    return this.prisma.withContext(this.context(), (tx) => this.events.detailIn(tx, eventId));
+  }
+
+  private publishIn(eventId: string, body: PublishEvent): Promise<EventDetail> {
     return this.prisma.withContext(this.context(), async (tx) => {
       const event = await this.find(tx, eventId);
       if (event.status === 'draft') {
@@ -91,8 +108,24 @@ export class LifecycleService {
     });
   }
 
-  /** POST /events/:eventId/cancel: the typed name must match; the reason is kept and audited. */
-  cancel(eventId: string, body: CancelEventRequest): Promise<EventDetail> {
+  /**
+   * POST /events/:eventId/cancel: the typed name must match; the reason is kept and audited.
+   * Voters who already received a code are told by SMS (App Flow 6.11).
+   */
+  async cancel(eventId: string, body: CancelEventRequest): Promise<EventDetail> {
+    const detail = await this.cancelIn(eventId, body);
+    if (detail.firstCodeSentAt) {
+      await this.batches.send({
+        eventId,
+        type: 'event_cancelled',
+        channel: 'sms',
+        audience: 'all',
+      });
+    }
+    return detail;
+  }
+
+  private cancelIn(eventId: string, body: CancelEventRequest): Promise<EventDetail> {
     return this.prisma.withContext(this.context(), async (tx) => {
       const event = await this.find(tx, eventId);
       if (body.confirmName.trim() !== event.name.trim()) {
