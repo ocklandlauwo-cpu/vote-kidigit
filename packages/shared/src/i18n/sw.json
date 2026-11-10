@@ -526,13 +526,14 @@
       "startPassed": "Muda wa kuanza umeshapita: unaweza kufungua sasa tu.",
       "openNow": "Fungua sasa",
       "openNowHelp": "Wapiga kura wanaweza kuanza kupiga kura mara moja.",
-      "codesLater": "Misimbo ya kupiga kura hutumwa kutoka kichupo cha Ujumbe.",
       "lockNote": "Baada ya kuchapisha, nafasi, wagombea na wapiga kura haviwezi kubadilishwa.",
       "confirm": "Chapisha",
       "notReadyTitle": "Uchaguzi bado haujawa tayari",
       "notReadyBody": "Rekebisha haya kwanza, kisha uchapishe:",
       "scheduled": "Uchaguzi umepangwa",
-      "opened": "Uchaguzi umefunguliwa"
+      "opened": "Uchaguzi umefunguliwa",
+      "sendCodes": "Tuma misimbo sasa",
+      "sendCodesHelp": "Wapiga kura ambao bado hawajapokea msimbo wataupata kwa SMS."
     },
     "openNowConfirm": {
       "title": "Fungua {{name}} sasa?",
@@ -786,7 +787,11 @@
       "deleteBody": "Mpiga kura na msimbo wake watafutwa.",
       "deleted": "Mpiga kura amefutwa",
       "saved": "Mpiga kura amehifadhiwa",
-      "created": "Mpiga kura ameongezwa"
+      "created": "Mpiga kura ameongezwa",
+      "resend": "Tuma msimbo tena",
+      "resent": "Msimbo unatumwa tena",
+      "smsHistory": "Historia ya SMS",
+      "noMessages": "Bado hakuna ujumbe uliotumwa."
     },
     "import": {
       "title": "Pakia wapiga kura kutoka CSV",
@@ -851,5 +856,122 @@
       "help": "Jina la kila picha liwe namba ya uanachama ya mpiga kura, kwa mfano \"M-1029.jpg\". JPG au PNG hadi MB 2 kila moja; ZIP hadi MB 50.",
       "person": "Mpiga kura"
     }
+  },
+  "messages": {
+    "types": {
+      "code_delivery": "Msimbo wa kura",
+      "reminder_before_open": "Kumbusho kabla ya kufunguliwa",
+      "voting_open": "Kura imefunguliwa",
+      "reminder_before_close": "Kumbusho kabla ya kufungwa",
+      "vote_confirmation": "Uthibitisho wa kura",
+      "results_published": "Matokeo yametangazwa",
+      "event_cancelled": "Uchaguzi umesitishwa",
+      "event_extended": "Muda umeongezwa"
+    },
+    "channel": {
+      "sms": "SMS",
+      "email": "Barua pepe"
+    },
+    "source": {
+      "event": "Maandishi ya uchaguzi huu",
+      "organization": "Maandishi ya taasisi",
+      "default": "Maandishi ya kawaida"
+    },
+    "audience": {
+      "all": "Wapiga kura wote",
+      "not_sent": "Ambao bado hawajatumiwa",
+      "failed": "Walioshindikana tu",
+      "not_voted": "Ambao bado hawajapiga kura",
+      "single": "Mpiga kura mmoja"
+    },
+    "batchStatus": {
+      "queued": "Inasubiri",
+      "sending": "Inatuma",
+      "paused": "Imesimamishwa",
+      "completed": "Imekamilika",
+      "cancelled": "Imesitishwa"
+    },
+    "filter": {
+      "any": "Zote",
+      "queued": "Zinasubiri",
+      "sent": "Zimetumwa",
+      "delivered": "Zimefika",
+      "failed": "Zimeshindikana"
+    },
+    "col": {
+      "time": "Muda",
+      "type": "Aina",
+      "audience": "Wapokeaji",
+      "sent": "Zimetumwa",
+      "delivered": "Zimefika",
+      "failed": "Zimeshindikana",
+      "pending": "Zinasubiri",
+      "actions": "Vitendo",
+      "voter": "Mpiga kura",
+      "status": "Hali",
+      "error": "Hitilafu"
+    },
+    "templates": {
+      "title": "Maandishi ya ujumbe",
+      "view": "Tazama"
+    },
+    "editor": {
+      "title": "Maandishi: {{type}}",
+      "subject": "Kichwa cha barua pepe",
+      "body": "Ujumbe",
+      "insert": "Weka kishika nafasi:",
+      "preview": "Mfano (kwa data ya mfano)",
+      "counter_one": "{{characters}} / {{limit}}",
+      "counter_other": "{{characters}} / {{limit}} — itatumwa kama SMS {{count}}",
+      "unknown": "Vishika nafasi visivyojulikana: {{names}}",
+      "reset": "Rudisha maandishi ya kawaida",
+      "resetDone": "Maandishi ya kawaida yamerudishwa",
+      "saved": "Maandishi yamehifadhiwa"
+    },
+    "schedule": {
+      "title": "Ratiba ya makumbusho",
+      "beforeOpen": "Kumbusho kabla ya kufunguliwa",
+      "beforeClose": "Kumbusho kabla ya kufungwa",
+      "hours": "saa",
+      "minutes": "dakika",
+      "saved": "Ratiba imehifadhiwa"
+    },
+    "send": {
+      "title": "Tuma",
+      "codes": "Tuma misimbo",
+      "reminderNow": "Tuma kumbusho sasa",
+      "afterPublish": "Misimbo hutumwa baada ya kuchapisha.",
+      "codesTitle": "Tuma misimbo ya kura",
+      "reminderTitle": "Tuma kumbusho sasa",
+      "reminderBody": "Kumbusho litatumwa kwa wapiga kura ambao bado hawajapiga kura.",
+      "audience": "Wapokeaji",
+      "estimate_one": "Mpiga kura {{recipients}} · takriban SMS {{sms}}",
+      "estimate_other": "Wapiga kura {{recipients}} · takriban SMS {{sms}}",
+      "nobody": "Hakuna mpiga kura wa kutumiwa.",
+      "confirm": "Tuma",
+      "started": "Utumaji umeanza"
+    },
+    "delivery": {
+      "title": "Utumaji",
+      "emptyTitle": "Bado hakuna ujumbe uliotumwa",
+      "emptyBody": "Misimbo hutumwa baada ya kuchapisha."
+    },
+    "batch": {
+      "summary": "{{time}} · {{audience}} · {{by}}",
+      "system": "Mfumo",
+      "noMessages": "Hakuna ujumbe hapa.",
+      "voterRemoved": "Mpiga kura amefutwa",
+      "resendFailed": "Tuma tena zilizoshindikana",
+      "resent": "Zilizoshindikana zinatumwa tena",
+      "resume": "Endelea",
+      "resumed": "Utumaji unaendelea",
+      "cancel": "Sitisha utumaji",
+      "cancelled": "Utumaji umesitishwa",
+      "cancelTitle": "Sitisha utumaji huu?",
+      "cancelBody_one": "Ujumbe {{count}} ambao bado haujatumwa hautatumwa.",
+      "cancelBody_other": "Jumbe {{count}} ambazo bado hazijatumwa hazitatumwa."
+    },
+    "paused_one": "Utumaji umesimamishwa: ujumbe {{count}} umeshindikana. Kagua mtoa huduma wa SMS, kisha Endelea au Sitisha.",
+    "paused_other": "Utumaji umesimamishwa: jumbe {{count}} zimeshindikana. Kagua mtoa huduma wa SMS, kisha Endelea au Sitisha."
   }
 }

@@ -92,6 +92,15 @@ export function useRegenerateCode(eventId: string) {
   );
 }
 
+export function useResendCode(eventId: string) {
+  return useVoterMutation(eventId, (id: string) =>
+    api(`${base(eventId)}/voters/${id}/resend-code`, {
+      method: 'POST',
+      schema: VoterDetailSchema,
+    }),
+  );
+}
+
 export function useVoterPhoto(eventId: string) {
   return {
     upload: useVoterMutation(eventId, ({ id, photo }: { id: string; photo: Blob }) =>

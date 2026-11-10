@@ -1,5 +1,5 @@
 // EVT-05a Voter (App Flow 6.5): add or edit (Draft), photo, the code's status (never the code),
-// Regenerate code (confirm) and Delete. SMS history and Resend arrive with messages (step 21).
+// SMS history (redacted texts), Resend code, Regenerate code (confirm) and Delete.
 import {
   type Category,
   type CreateVoterRequest,
@@ -17,10 +17,12 @@ import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { PhotoField } from '../../../components/PhotoField';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { useFormat } from '../../../hooks/useFormat';
+import { codeBadge } from '../messages/messageText';
 import {
   useCreateVoter,
   useDeleteVoter,
   useRegenerateCode,
+  useResendCode,
   useUpdateVoter,
   useVoter,
   useVoterPhoto,
@@ -60,9 +62,13 @@ export function VoterDrawer({
   const update = useUpdateVoter(event.id);
   const remove = useDeleteVoter(event.id);
   const regenerate = useRegenerateCode(event.id);
+  const resend = useResendCode(event.id);
   const photo = useVoterPhoto(event.id);
   const editable = event.status === 'draft' && hasPermission(me, 'voter.manage');
   const mayRegenerate = hasPermission(me, 'code.regenerate');
+  // Codes go out once the event is published (Scheduled or Open).
+  const mayResend =
+    hasPermission(me, 'messages.send') && (event.status === 'scheduled' || event.status === 'open');
   const selectable = categories.filter((c) => c.eligibility === 'selected');
   const detail = voter.data;
   const failure = create.error ?? update.error;
@@ -141,11 +147,25 @@ export function VoterDrawer({
       size={480}
       destroyOnHidden
       afterOpenChange={(visible) => {
-        if (!visible) for (const m of [create, update, remove, regenerate]) m.reset();
+        if (!visible) for (const m of [create, update, remove, regenerate, resend]) m.reset();
       }}
       footer={
         <Flex justify="space-between" gap="middle" wrap>
-          <Flex gap="small">
+          <Flex gap="small" wrap>
+            {voterId && mayResend && (
+              <Button
+                loading={resend.isPending}
+                onClick={() =>
+                  resend.mutate(voterId, {
+                    onSuccess: () => void message.success(t('voters.panel.resent')),
+                    onError: (error) => void message.error(errorMessage(t, error)),
+                  })
+                }
+                data-testid="voter-resend"
+              >
+                {t('voters.panel.resend')}
+              </Button>
+            )}
             {voterId && mayRegenerate && (
               <Button onClick={() => setConfirm('regenerate')}>
                 {t('voters.panel.regenerate')}
@@ -307,6 +327,33 @@ export function VoterDrawer({
                 <Typography.Text type="warning">
                   {t('voters.panel.lockedUntil', { time: format.dateTime(detail.lockedUntil) })}
                 </Typography.Text>
+              )}
+            </Flex>
+          )}
+          {detail && (
+            <Flex vertical gap="small" data-testid="voter-sms-history">
+              <Typography.Text strong>{t('voters.panel.smsHistory')}</Typography.Text>
+              {detail.messages.length === 0 ? (
+                <Typography.Text type="secondary">{t('voters.panel.noMessages')}</Typography.Text>
+              ) : (
+                <ul className="vk-plain-list">
+                  {detail.messages.map((m) => (
+                    <li key={m.id}>
+                      <Flex vertical gap="small">
+                        <Flex justify="space-between" gap="small" wrap>
+                          <Typography.Text>
+                            {t(`messages.types.${m.type}`)} · {t(`messages.channel.${m.channel}`)}
+                          </Typography.Text>
+                          <StatusBadge domain="code" value={codeBadge(m.status)} />
+                        </Flex>
+                        <Typography.Text type="secondary">{m.bodyRedacted}</Typography.Text>
+                        <Typography.Text type="secondary">
+                          {format.dateTime(m.deliveredAt ?? m.failedAt ?? m.sentAt ?? m.createdAt)}
+                        </Typography.Text>
+                      </Flex>
+                    </li>
+                  ))}
+                </ul>
               )}
             </Flex>
           )}

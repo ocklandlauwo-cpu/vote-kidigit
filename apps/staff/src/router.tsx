@@ -22,6 +22,7 @@ import { EventOverview } from './pages/events/EventOverview';
 import { EventSettings } from './pages/events/EventSettings';
 import { EventsPage } from './pages/events/EventsPage';
 import { CategoriesTab } from './pages/events/categories/CategoriesTab';
+import { MessagesTab } from './pages/events/messages/MessagesTab';
 import { ImportPage } from './pages/events/voters/ImportPage';
 import { VotersTab } from './pages/events/voters/VotersTab';
 import { EventActivity, EventTabSoon } from './pages/events/EventTabs';
@@ -129,7 +130,12 @@ export const routes: RouteObject[] = [
                     element: <EventActivity />,
                     handle: { crumb: 'events.tabs.activity' },
                   },
-                  ...(['live', 'messages', 'results'] as const).map((tab) => ({
+                  {
+                    path: 'messages',
+                    element: <MessagesTab />,
+                    handle: { crumb: 'events.tabs.messages' },
+                  },
+                  ...(['live', 'results'] as const).map((tab) => ({
                     path: tab,
                     element: <EventTabSoon />,
                     handle: { crumb: `events.tabs.${tab}` as const },

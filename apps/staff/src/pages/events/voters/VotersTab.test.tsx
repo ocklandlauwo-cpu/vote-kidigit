@@ -65,7 +65,27 @@ function renderTab(status: EventStatus = 'draft', items = [asha, juma], permissi
   const calls = stub({
     [`GET /v1/events/${EVENT_ID}/voters`]: () => jsonResponse(200, page(items)),
     [`GET /v1/events/${EVENT_ID}/categories`]: () => jsonResponse(200, { items: [chair] }),
-    [`GET /v1/events/${EVENT_ID}/voters/${asha.id}`]: () => jsonResponse(200, voterDetail(asha)),
+    [`GET /v1/events/${EVENT_ID}/voters/${asha.id}`]: () =>
+      jsonResponse(
+        200,
+        voterDetail(asha, {
+          messages: [
+            {
+              id: '0190f0a1-2b3c-7d4e-8f90-000000000801',
+              type: 'code_delivery',
+              channel: 'sms',
+              status: 'delivered',
+              bodyRedacted: 'Chama: Msimbo wa kura AGM 2027: ••••-••••.',
+              createdAt: '2026-11-10T08:00:00.000Z',
+              sentAt: '2026-11-10T08:00:02.000Z',
+              deliveredAt: '2026-11-10T08:00:09.000Z',
+              failedAt: null,
+            },
+          ],
+        }),
+      ),
+    [`POST /v1/events/${EVENT_ID}/voters/${asha.id}/resend-code`]: () =>
+      jsonResponse(200, voterDetail(asha)),
     [`POST /v1/events/${EVENT_ID}/voters/bulk`]: () => jsonResponse(200, { affected: 2 }),
     [`POST /v1/events/${EVENT_ID}/voters`]: () =>
       jsonResponse(400, {
@@ -183,6 +203,26 @@ describe('EVT-05 voters tab', () => {
       .at(-1) as HTMLElement;
     await userEvent.click(confirm);
     await waitFor(() => expect(calls.some((c) => c.path.endsWith('/regenerate-code'))).toBe(true));
+  });
+
+  it('shows the SMS history without the code, and resends the same code', async () => {
+    const { calls } = renderTab('scheduled', [asha, juma], [...MANAGE, 'messages.send']);
+    await userEvent.click(await screen.findByText('Asha Mollel'));
+    const history = await screen.findByTestId('voter-sms-history');
+    expect(
+      within(history).getByText('Chama: Msimbo wa kura AGM 2027: ••••-••••.'),
+    ).toBeInTheDocument();
+    expect(within(history).getByText('Imefika')).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('voter-resend'));
+    await waitFor(() => expect(calls.some((c) => c.path.endsWith('/resend-code'))).toBe(true));
+    expect(await screen.findByText('Msimbo unatumwa tena')).toBeInTheDocument();
+  });
+
+  it('offers no Resend before publish or without messages.send', async () => {
+    renderTab('draft', [asha, juma], [...MANAGE, 'messages.send']);
+    await userEvent.click(await screen.findByText('Asha Mollel'));
+    await screen.findByTestId('voter-sms-history');
+    expect(screen.queryByTestId('voter-resend')).not.toBeInTheDocument();
   });
 
   it('is read-only after publish', async () => {

@@ -526,13 +526,14 @@
       "startPassed": "The start time has passed: you can only open now.",
       "openNow": "Open now",
       "openNowHelp": "Voters can start voting at once.",
-      "codesLater": "Voting codes are sent from the Messages tab.",
       "lockNote": "After publishing, categories, contesters and voters can no longer be changed.",
       "confirm": "Publish",
       "notReadyTitle": "The event is not ready yet",
       "notReadyBody": "Fix these first, then publish:",
       "scheduled": "Event scheduled",
-      "opened": "Event opened"
+      "opened": "Event opened",
+      "sendCodes": "Send codes now",
+      "sendCodesHelp": "Voters who have not received a code yet get it by SMS."
     },
     "openNowConfirm": {
       "title": "Open {{name}} now?",
@@ -786,7 +787,11 @@
       "deleteBody": "The voter and their code will be deleted.",
       "deleted": "Voter deleted",
       "saved": "Voter saved",
-      "created": "Voter added"
+      "created": "Voter added",
+      "resend": "Resend code",
+      "resent": "Resending the code",
+      "smsHistory": "SMS history",
+      "noMessages": "No messages sent yet."
     },
     "import": {
       "title": "Upload voters from CSV",
@@ -851,5 +856,122 @@
       "help": "Name each photo after the voter's membership ID, e.g. \"M-1029.jpg\". JPG or PNG up to 2 MB each; ZIP up to 50 MB.",
       "person": "Voter"
     }
+  },
+  "messages": {
+    "types": {
+      "code_delivery": "Voting code",
+      "reminder_before_open": "Reminder before opening",
+      "voting_open": "Voting open",
+      "reminder_before_close": "Closing reminder",
+      "vote_confirmation": "Vote confirmation",
+      "results_published": "Results published",
+      "event_cancelled": "Event cancelled",
+      "event_extended": "Voting extended"
+    },
+    "channel": {
+      "sms": "SMS",
+      "email": "Email"
+    },
+    "source": {
+      "event": "This event’s text",
+      "organization": "Organization text",
+      "default": "Default text"
+    },
+    "audience": {
+      "all": "All voters",
+      "not_sent": "Not yet sent",
+      "failed": "Failed only",
+      "not_voted": "Not yet voted",
+      "single": "One voter"
+    },
+    "batchStatus": {
+      "queued": "Waiting",
+      "sending": "Sending",
+      "paused": "Paused",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "filter": {
+      "any": "All",
+      "queued": "Waiting",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "failed": "Failed"
+    },
+    "col": {
+      "time": "Time",
+      "type": "Type",
+      "audience": "Audience",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "failed": "Failed",
+      "pending": "Pending",
+      "actions": "Actions",
+      "voter": "Voter",
+      "status": "Status",
+      "error": "Error"
+    },
+    "templates": {
+      "title": "Message templates",
+      "view": "View"
+    },
+    "editor": {
+      "title": "Template: {{type}}",
+      "subject": "Email subject",
+      "body": "Message",
+      "insert": "Insert a placeholder:",
+      "preview": "Preview (sample data)",
+      "counter_one": "{{characters}} / {{limit}}",
+      "counter_other": "{{characters}} / {{limit}} — sent as {{count}} SMS",
+      "unknown": "Unknown placeholders: {{names}}",
+      "reset": "Back to the default text",
+      "resetDone": "Default text restored",
+      "saved": "Template saved"
+    },
+    "schedule": {
+      "title": "Reminder schedule",
+      "beforeOpen": "Reminder before opening",
+      "beforeClose": "Reminder before closing",
+      "hours": "hours",
+      "minutes": "minutes",
+      "saved": "Schedule saved"
+    },
+    "send": {
+      "title": "Send",
+      "codes": "Send codes",
+      "reminderNow": "Send reminder now",
+      "afterPublish": "Codes are sent after you publish.",
+      "codesTitle": "Send voting codes",
+      "reminderTitle": "Send reminder now",
+      "reminderBody": "The reminder goes to voters who have not voted yet.",
+      "audience": "Audience",
+      "estimate_one": "{{recipients}} voter · about {{sms}} SMS",
+      "estimate_other": "{{recipients}} voters · about {{sms}} SMS",
+      "nobody": "No voters to send to.",
+      "confirm": "Send",
+      "started": "Sending started"
+    },
+    "delivery": {
+      "title": "Delivery",
+      "emptyTitle": "No messages sent yet",
+      "emptyBody": "Codes are sent after you publish."
+    },
+    "batch": {
+      "summary": "{{time}} · {{audience}} · {{by}}",
+      "system": "System",
+      "noMessages": "No messages here.",
+      "voterRemoved": "Voter deleted",
+      "resendFailed": "Resend failed",
+      "resent": "Resending the failed messages",
+      "resume": "Resume",
+      "resumed": "Sending resumed",
+      "cancel": "Cancel sending",
+      "cancelled": "Sending cancelled",
+      "cancelTitle": "Cancel this batch?",
+      "cancelBody_one": "{{count}} message not sent yet will not be sent.",
+      "cancelBody_other": "{{count}} messages not sent yet will not be sent."
+    },
+    "paused_one": "Sending paused: {{count}} message failed. Check the SMS provider, then Resume or Cancel.",
+    "paused_other": "Sending paused: {{count}} messages failed. Check the SMS provider, then Resume or Cancel."
   }
 }

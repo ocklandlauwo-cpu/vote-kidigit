@@ -1,13 +1,14 @@
 // EVT-08 Publish (App Flow 6.8): if a checklist item fails, a dialog lists the problems with a
 // "Fix" link each and nothing is published. Otherwise: Schedule (opens by itself at the start)
-// or Open now. "Send codes now" joins when SMS sending exists (step 21).
+// or Open now, plus the optional "Send codes now" tick box (voters whose code was not sent yet).
 import { type ChecklistItem, ChecklistItemSchema, type EventDetail } from '@vote-kidigit/shared';
-import { App, Button, Flex, Modal, Radio, Skeleton, Typography } from 'antd';
+import { App, Button, Checkbox, Flex, Modal, Radio, Skeleton, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { isApiError } from '../../api/client';
 import { errorMessage } from '../../api/errorMessage';
+import { hasPermission, useMe } from '../../auth/useAuth';
 import { useFormat } from '../../hooks/useFormat';
 import { FIX } from './checklistFix';
 import { useChecklist, usePublishEvent } from './eventsApi';
@@ -38,6 +39,8 @@ export function PublishDialog({
   const publish = usePublishEvent(event.id);
   const startPassed = new Date(event.startAt) <= new Date();
   const [mode, setMode] = useState<'schedule' | 'open_now' | null>(null);
+  const [sendCodes, setSendCodes] = useState(false);
+  const maySendCodes = hasPermission(useMe().data, 'messages.send');
   const chosen = mode ?? (startPassed ? 'open_now' : 'schedule');
 
   // The server re-checks; a change made meanwhile shows the same list.
@@ -47,13 +50,14 @@ export function PublishDialog({
 
   function close() {
     setMode(null);
+    setSendCodes(false);
     publish.reset();
     onClose();
   }
 
   function confirm() {
     publish.mutate(
-      { mode: chosen, sendCodes: false },
+      { mode: chosen, sendCodes: maySendCodes && sendCodes },
       {
         onSuccess: () => {
           void message.success(
@@ -143,7 +147,20 @@ export function PublishDialog({
             </Radio>
           </Radio.Group>
           <Typography.Text type="secondary">{t('events.publish.lockNote')}</Typography.Text>
-          <Typography.Text type="secondary">{t('events.publish.codesLater')}</Typography.Text>
+          {maySendCodes && (
+            <Checkbox
+              checked={sendCodes}
+              onChange={(e) => setSendCodes(e.target.checked)}
+              data-testid="publish-send-codes"
+            >
+              <Flex vertical>
+                <Typography.Text strong>{t('events.publish.sendCodes')}</Typography.Text>
+                <Typography.Text type="secondary">
+                  {t('events.publish.sendCodesHelp')}
+                </Typography.Text>
+              </Flex>
+            </Checkbox>
+          )}
           {publish.isError && !failingFromError(publish.error) && (
             <Typography.Text type="danger" role="alert">
               {errorMessage(t, publish.error)}

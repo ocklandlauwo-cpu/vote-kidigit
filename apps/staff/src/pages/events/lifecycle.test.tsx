@@ -37,7 +37,7 @@ interface Call {
 
 function renderWorkspace(
   event: EventDetail,
-  options: { failing?: string[]; publishError?: object } = {},
+  options: { failing?: string[]; publishError?: object; permissions?: PermissionKey[] } = {},
 ) {
   const calls: Call[] = [];
   vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
@@ -58,7 +58,7 @@ function renderWorkspace(
     return Promise.resolve(jsonResponse(404, { code: 'NOT_FOUND', message: 'x' }));
   });
   const queryClient = testQueryClient();
-  queryClient.setQueryData(ME_KEY, me(ALL));
+  queryClient.setQueryData(ME_KEY, me(options.permissions ?? ALL));
   const view = renderWithProviders(<p />, {
     path: '/start',
     queryClient,
@@ -113,6 +113,32 @@ describe('publishing (EVT-08)', () => {
       }),
     );
     expect(await screen.findByText('Uchaguzi umepangwa')).toBeInTheDocument();
+  });
+
+  it('sends codes with publishing when "Send codes now" is ticked', async () => {
+    const event = eventDetail('draft', { startAt: future(24), endAt: future(32) });
+    const { calls } = renderWorkspace(event, { permissions: [...ALL, 'messages.send'] });
+    await screen.findByRole('heading', { level: 1, name: 'AGM 2027' });
+    await userEvent.click(mainButton());
+    const tick = await screen.findByRole('checkbox', { name: /Tuma misimbo sasa/ });
+    expect(tick).not.toBeChecked();
+    await userEvent.click(tick);
+    await userEvent.click(screen.getByTestId('publish-confirm'));
+    await waitFor(() =>
+      expect(calls.find((c) => c.path.endsWith('/publish'))?.body).toEqual({
+        mode: 'schedule',
+        sendCodes: true,
+      }),
+    );
+  });
+
+  it('hides "Send codes now" without messages.send', async () => {
+    const event = eventDetail('draft', { startAt: future(24), endAt: future(32) });
+    renderWorkspace(event);
+    await screen.findByRole('heading', { level: 1, name: 'AGM 2027' });
+    await userEvent.click(mainButton());
+    await screen.findByText('Chapisha AGM 2027');
+    expect(screen.queryByTestId('publish-send-codes')).not.toBeInTheDocument();
   });
 
   it('offers only Open now once the start time has passed', async () => {

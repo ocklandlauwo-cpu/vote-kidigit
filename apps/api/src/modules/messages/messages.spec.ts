@@ -457,10 +457,13 @@ describe('messages', () => {
       confirmName: event.name,
       reason: 'Mkutano umeahirishwa',
     }).expect(200);
-    fake.failWith = null;
     expect((await owner.smsBatch.findUniqueOrThrow({ where: { id: batch.id } })).status).toBe(
       'cancelled',
     );
+    // A send already handed to the gateway when the event was cancelled may still finish;
+    // let those settle (still failing), then let the retries through.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    fake.failWith = null;
     // The retries come and go (backoff 5 s) without sending any code.
     await new Promise((resolve) => setTimeout(resolve, 8000));
     expect(fake.outbox.filter((m) => m.text.includes(event.name))).toHaveLength(0);

@@ -432,3 +432,20 @@ body {
   line-height: var(--vk-font-stat-line);
   font-variant-numeric: tabular-nums;
 }
+
+/* EVT-07 template cards: as many columns as fit, one on a phone. */
+.vk-template-grid {
+  display: grid;
+  gap: var(--vk-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+}
+
+/* EVT-07 live preview: the text as the voter's phone shows it. */
+.vk-message-preview {
+  padding: var(--vk-space-3);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface-muted);
+  color: var(--vk-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -27,6 +27,9 @@ import { maySend, notSendableReason } from './send-rules.js';
 
 type CreateBatch = z.output<typeof CreateBatchRequestSchema>;
 
+/** One message row per voter in one transaction: large events need longer than the default. */
+const CREATE_TIMEOUT_MS = 60_000;
+
 export interface NewBatch {
   eventId: string;
   type: MessageType;
@@ -162,7 +165,9 @@ export class BatchesService {
 
   /** Creates, commits and queues in one go (resend, regenerate, cancellation, reminders). */
   async send(batch: NewBatch): Promise<string | null> {
-    const created = await this.prisma.withContext(this.context(), (tx) => this.create(tx, batch));
+    const created = await this.prisma.withContext(this.context(), (tx) => this.create(tx, batch), {
+      timeout: CREATE_TIMEOUT_MS,
+    });
     if (!created) return null;
     await this.enqueue(created.messageIds);
     return created.batchId;
@@ -170,17 +175,21 @@ export class BatchesService {
 
   /** POST /events/:eventId/batches (App Flow 6.7 Send). */
   async start(eventId: string, body: CreateBatch): Promise<Batch> {
-    const created = await this.prisma.withContext(this.context(), async (tx) => {
-      await this.assertSendable(tx, eventId, body.type);
-      const result = await this.create(tx, { eventId, ...body });
-      if (!result) {
-        throw new AppError('VALIDATION_FAILED', 'Nobody is in this audience.', {
-          source: 'body',
-          issues: [{ path: 'audience', code: 'empty', message: 'nobody to send to' }],
-        });
-      }
-      return result;
-    });
+    const created = await this.prisma.withContext(
+      this.context(),
+      async (tx) => {
+        await this.assertSendable(tx, eventId, body.type);
+        const result = await this.create(tx, { eventId, ...body });
+        if (!result) {
+          throw new AppError('VALIDATION_FAILED', 'Nobody is in this audience.', {
+            source: 'body',
+            issues: [{ path: 'audience', code: 'empty', message: 'nobody to send to' }],
+          });
+        }
+        return result;
+      },
+      { timeout: CREATE_TIMEOUT_MS },
+    );
     await this.enqueue(created.messageIds);
     return this.prisma.withContext(this.context(), (tx) => this.load(tx, eventId, created.batchId));
   }
@@ -320,24 +329,28 @@ export class BatchesService {
    * code is sent again, PRD COD-05).
    */
   async resendFailed(eventId: string, batchId: string): Promise<Batch> {
-    const created = await this.prisma.withContext(this.context(), async (tx) => {
-      const batch = await this.find(tx, eventId, batchId);
-      await this.assertSendable(tx, eventId, batch.type);
-      const failed = await tx.smsMessage.findMany({
-        where: { batchId, status: 'failed', voterId: { not: null } },
-        select: { voterId: true },
-      });
-      if (failed.length === 0) throw this.invalid('NOTHING_FAILED');
-      const result = await this.create(tx, {
-        eventId,
-        type: batch.type,
-        channel: batch.channel,
-        audience: 'failed',
-        voterIds: failed.map((m) => m.voterId ?? ''),
-      });
-      if (!result) throw this.invalid('NOTHING_FAILED');
-      return result;
-    });
+    const created = await this.prisma.withContext(
+      this.context(),
+      async (tx) => {
+        const batch = await this.find(tx, eventId, batchId);
+        await this.assertSendable(tx, eventId, batch.type);
+        const failed = await tx.smsMessage.findMany({
+          where: { batchId, status: 'failed', voterId: { not: null } },
+          select: { voterId: true },
+        });
+        if (failed.length === 0) throw this.invalid('NOTHING_FAILED');
+        const result = await this.create(tx, {
+          eventId,
+          type: batch.type,
+          channel: batch.channel,
+          audience: 'failed',
+          voterIds: failed.map((m) => m.voterId ?? ''),
+        });
+        if (!result) throw this.invalid('NOTHING_FAILED');
+        return result;
+      },
+      { timeout: CREATE_TIMEOUT_MS },
+    );
     await this.enqueue(created.messageIds);
     return this.prisma.withContext(this.context(), (tx) => this.load(tx, eventId, created.batchId));
   }
