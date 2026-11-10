@@ -18,6 +18,7 @@ Vote-Kidigit is a multi-tenant electronic voting platform. Organizations use it 
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.2 | 10 Nov 2026 | SMS provider changed from NextSMS to Beem Africa (owner decision, Implementation Plan step 21): SMS-01, NFR-06, sections 8 and 9 and the assumptions now name Beem. Behaviour is unchanged. |
 | 1.1 | 3 Nov 2026 | Review screen before submit on web, USSD and kiosk; membership ID entered before the code; staggered category windows confirmed; Unpublish to Draft until codes are sent; kiosk identity by membership ID and SMS code, with someone else's phone allowed under staff approval; no staff notification bell or email alerts in V1. Aligned with the App Flow Document (V1). |
 | 1.0 | 2 Nov 2026 | First draft |
 
@@ -59,7 +60,7 @@ V1 succeeds if it runs 5 elections a month with zero disputed results and publis
 | Turnout | 100% of registered voters (aspirational; report actual) | Ballots submitted ÷ voters registered, per event |
 | Time to results | Results available at close time, under 1 minute | Close timestamp vs. results-ready timestamp |
 | Disputed results | 0 | Disputes logged by moderators |
-| SMS delivery | ≥ 98% delivered on first send | NextSMS delivery reports |
+| SMS delivery | ≥ 98% delivered on first send | Beem Africa delivery reports |
 | Peak load | 5,000 voters within 30 minutes, no failed ballots | Load test before each large event |
 
 ### 2.2 In scope for V1
@@ -69,7 +70,7 @@ V1 succeeds if it runs 5 elections a month with zero disputed results and publis
 - Voting events with full lifecycle, scheduling and on-demand open/close
 - Categories with contesters (name, photo, optional party), display order and per-category rules
 - Voter registration by manual entry and CSV upload; mapping voters to categories
-- Voting codes delivered by SMS (NextSMS) and email; resend and regenerate
+- Voting codes delivered by SMS (Beem Africa) and email; resend and regenerate
 - Voting on mobile web, USSD and kiosk (in-person)
 - Secret ballot
 - Live turnout during voting; results after close; publish results via public link
@@ -304,7 +305,7 @@ For Yes/No categories, the contester wins when Yes votes exceed No votes (or mee
 
 | ID | Requirement | Priority |
 |---|---|---|
-| SMS-01 | Send SMS through NextSMS using the organization's registered sender ID. | M |
+| SMS-01 | Send SMS through Beem Africa using the organization's registered sender ID. | M |
 | SMS-02 | Message types: code delivery, reminder before opening, voting now open, closing reminder, vote confirmation, results published, event cancelled, event extended. | M |
 | SMS-03 | Templates editable per event, in Swahili by default, with placeholders {voter_name}, {org_name}, {event_name}, {voting_code}, {voting_link}, {ussd_code}, {start_time}, {end_time}, {results_link}. | M |
 | SMS-04 | Live character counter warns when a message exceeds 160 characters (billed as several SMS). | M |
@@ -490,7 +491,7 @@ The core design choice: the record that a voter **has voted** and the **ballot i
 | NFR-03 | USSD each menu response under 2 seconds (operators typically end sessions that respond slowly). |
 | NFR-04 | Results ready within 1 minute of close for events up to 50,000 voters. |
 | NFR-05 | CSV import of 10,000 voters validates and previews in under 30 seconds. |
-| NFR-06 | Bulk SMS of 5,000 messages queued in under 1 minute, sent at the rate NextSMS allows. |
+| NFR-06 | Bulk SMS of 5,000 messages queued in under 1 minute, sent at the rate Beem Africa allows. |
 
 ### 8.2 Availability and reliability
 
@@ -551,14 +552,14 @@ The recommendation favours a stack a small team can ship in two weeks, with buil
 | File storage | S3-compatible object storage | Photos, logos, generated PDFs |
 | PDF | Headless Chromium (Browsershot) | Pixel-accurate branded PDFs with QR code |
 | Excel | Laravel Excel | Voter report export, CSV import |
-| SMS | NextSMS REST API | Already chosen; delivery-report callbacks |
+| SMS | Beem Africa SMS API | Chosen 10 Nov 2026 (replaces NextSMS); delivery-report callbacks |
 | USSD | USSD aggregator with a short code on all networks (provider to be chosen) | Callback to the platform's USSD endpoint |
 | Hosting | Managed cloud (e.g. AWS af-south-1, Cape Town) or a Tanzanian data centre; 2+ app servers behind a load balancer | Meets 99.9% during events |
 | Monitoring | Sentry (errors), uptime checks, alerting to on-call phone | Visible failures during voting |
 
 ### 9.1 Architecture
 
-All three voting channels call one ballot service, so rules and counting are identical everywhere. External services (NextSMS, USSD aggregator) talk to the platform through dedicated endpoints.
+All three voting channels call one ballot service, so rules and counting are identical everywhere. External services (Beem Africa SMS, USSD aggregator) talk to the platform through dedicated endpoints.
 
 ![](images/prd-image2.png)
 
@@ -575,7 +576,7 @@ Shipping every V1 feature in two weeks is high-risk, mainly because a USSD short
 | Release | Dates (proposed) | Contents |
 |---|---|---|
 | Sprint 1 — Foundation | 2–8 Nov 2026 | Tenancy, staff auth, roles and permissions, events, categories, contesters, rules, voter CSV upload and mapping, codes |
-| Sprint 2 — Voting and results | 9–15 Nov 2026 | Voter web and kiosk, NextSMS sending and delivery reports, live turnout, results, tie resolution, results PDF, voter report, audit log, load test at 5,000 voters |
+| Sprint 2 — Voting and results | 9–15 Nov 2026 | Voter web and kiosk, SMS sending (Beem Africa) and delivery reports, live turnout, results, tie resolution, results PDF, voter report, audit log, load test at 5,000 voters |
 | Pilot event | From 16 Nov 2026 | Real election on web + kiosk + SMS, with team on standby |
 | V1 complete | By 13 Dec 2026 | USSD voting, observer role, email channel, admin Swahili toggle, remaining S-priority items, penetration test fixes |
 
@@ -597,7 +598,7 @@ Shipping every V1 feature in two weeks is high-risk, mainly because a USSD short
 - A Moderator-created event is mapped to that moderator automatically.
 - Admins (not moderators) reopen or extend closed events.
 - Gender values are Male and Female.
-- Each organization uses its own registered NextSMS sender ID; SMS costs are borne outside the platform.
+- Each organization uses its own sender ID registered with Beem Africa; SMS costs are borne outside the platform.
 - The admin portal is bilingual; everything a voter sees is Swahili.
 - The "party" field is optional and switched on per event.
 - The public results link is open to anyone who has it.

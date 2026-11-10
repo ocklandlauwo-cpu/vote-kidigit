@@ -42,10 +42,11 @@ jobs:
       VOTER_IDLE_MINUTES: '10'
       LOGIN_MAX_ATTEMPTS: '5'
       LOGIN_LOCK_MINUTES: '15'
-      NEXTSMS_BASE_URL: http://localhost:9/nextsms-ci
-      NEXTSMS_USERNAME: ci
-      NEXTSMS_PASSWORD: ci
-      NEXTSMS_DEFAULT_SENDER_ID: VOTEKIDIGIT
+      SMS_DRIVER: fake
+      BEEM_BASE_URL: http://localhost:9/beem-ci
+      BEEM_API_KEY: ci
+      BEEM_SECRET_KEY: ci
+      BEEM_DEFAULT_SENDER_ID: VOTEKIDIGIT
       USSD_SHORT_CODE: '*000#'
       SMTP_HOST: localhost
       SMTP_PORT: '1025'
@@ -80,7 +81,7 @@ jobs:
             echo "CODE_HMAC_KEY=$(openssl rand -hex 64)"
             echo "CODE_ENCRYPTION_KEY=$(openssl rand -base64 32)"
             echo "DEPLOY_HEALTH_SECRET=$(openssl rand -hex 24)"
-            echo "NEXTSMS_DLR_SECRET=$(openssl rand -hex 24)"
+            echo "BEEM_DLR_SECRET=$(openssl rand -hex 24)"
             echo "USSD_CALLBACK_SECRET=$(openssl rand -hex 24)"
           } >> "$GITHUB_ENV"
 

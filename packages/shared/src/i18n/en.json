@@ -353,7 +353,7 @@
     "sessionTimeoutHelp": "Between 5 and 60 minutes.",
     "sms": "SMS",
     "smsSender": "SMS sender ID",
-    "smsSenderHelp": "The name registered with NextSMS, up to 11 characters.",
+    "smsSenderHelp": "The name registered with Beem Africa, up to 11 characters.",
     "smsSenderInvalid": "Enter 1 to 11 letters or digits",
     "templatesSoon": "Message templates are coming soon.",
     "archive": "Archive period",

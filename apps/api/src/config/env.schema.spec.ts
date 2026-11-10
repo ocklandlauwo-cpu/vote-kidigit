@@ -20,11 +20,12 @@ function validRawEnv(): Record<string, string> {
     VOTER_IDLE_MINUTES: '10',
     LOGIN_MAX_ATTEMPTS: '5',
     LOGIN_LOCK_MINUTES: '15',
-    NEXTSMS_BASE_URL: 'https://messaging.example.test/api',
-    NEXTSMS_USERNAME: 'user',
-    NEXTSMS_PASSWORD: 'nextsms-secret-pw',
-    NEXTSMS_DEFAULT_SENDER_ID: 'VOTEKIDIGIT',
-    NEXTSMS_DLR_SECRET: randomBytes(24).toString('base64url'),
+    SMS_DRIVER: 'beem',
+    BEEM_BASE_URL: 'https://sms.example.test',
+    BEEM_API_KEY: 'beem-key',
+    BEEM_SECRET_KEY: 'beem-secret-key',
+    BEEM_DEFAULT_SENDER_ID: 'VOTEKIDIGIT',
+    BEEM_DLR_SECRET: randomBytes(24).toString('base64url'),
     USSD_SHORT_CODE: '*150*00#',
     USSD_CALLBACK_SECRET: randomBytes(24).toString('base64url'),
     SMTP_HOST: 'mail.example.test',
@@ -85,11 +86,11 @@ describe('validateEnv', () => {
   });
 
   it('refuses CHANGE_ME placeholders and plain http in production only', () => {
-    const raw = { ...validRawEnv(), NEXTSMS_USERNAME: 'CHANGE_ME' };
+    const raw = { ...validRawEnv(), BEEM_API_KEY: 'CHANGE_ME' };
     expect(() => validateEnv(raw)).not.toThrow();
 
     const message = errorOf({ ...raw, NODE_ENV: 'production' });
-    expect(message).toContain('NEXTSMS_USERNAME: still has its CHANGE_ME placeholder');
+    expect(message).toContain('BEEM_API_KEY: still has its CHANGE_ME placeholder');
     expect(message).toContain('APP_URL: must use https in production');
   });
 

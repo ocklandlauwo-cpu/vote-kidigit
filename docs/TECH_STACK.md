@@ -2,6 +2,8 @@
 
 Nov 3, 2026 · @Smartone
 
+**Change log:** 10 Nov 2026 — SMS provider Beem Africa replaces NextSMS (owner decision): environment variables BEEM_*, SMS_DRIVER; adapter notes in 10.
+
 ## 1. How Claude Code must use this document
 
 This is the single source of truth for every runtime, package and version in Vote-Kidigit V1. It is written to be placed in the repository as docs/TECH_STACK.md and referenced from CLAUDE.md. It builds the product described in the PRD (V1.1) and the App Flow Document (V1).
@@ -100,7 +102,7 @@ Everything runs on one Rocky Linux 9 VPS managed with DirectAdmin. DirectAdmin's
 
 | Process | Started by | Instances | Role |
 |---|---|---|---|
-| vk-api | PM2 (cluster mode) | 4 | NestJS HTTP API: staff portal API, voter ballot API, USSD callback, NextSMS delivery reports, public results |
+| vk-api | PM2 (cluster mode) | 4 | NestJS HTTP API: staff portal API, voter ballot API, USSD callback, Beem SMS delivery reports, public results |
 | vk-worker | PM2 (fork mode) | 1 | Same NestJS codebase started in worker mode: BullMQ consumers (SMS batches, reminders, PDF generation, CSV imports), the 1-minute scheduler for auto open/close, result calculation |
 | PostgreSQL 18.6 | systemd | 1 | All data |
 | Redis 7.2 | systemd | 1 | Sessions, job queues, rate limits, live turnout counters |
@@ -114,7 +116,7 @@ Four API instances fit the 8 GB RAM budget (about 250 MB each) and leave room fo
 
 architecture · one VPS, two Node processes, three data stores
 
-NextSMS delivery reports and USSD requests come back in through the web server to vk-api; PostgreSQL and Redis are reachable only from inside the server.
+Beem SMS delivery reports and USSD requests come back in through the web server to vk-api; PostgreSQL and Redis are reachable only from inside the server.
 
 ## 4. Server and runtime versions
 
@@ -286,7 +288,7 @@ The backend is NestJS 11 on Express 5, with Prisma 7 talking to PostgreSQL and B
 - **Secret ballot (PRD section 7):** Ballot and BallotSelection rows never reference a voter. Mark the voter and insert the ballot in one prisma.$transaction, with the participation check inside the transaction to stop double votes.
 - **Hard close:** the ballot service checks event.status === OPEN and now < endAt inside the same transaction; never rely on the scheduler alone.
 - **Sessions vs voters:** staff use sessions; voters use a short-lived signed ballot token (HMAC with node:crypto, stored in Redis, 10-minute idle expiry). No JWT library.
-- **Do not add:** class-validator, class-transformer, @nestjs/swagger, Passport, TypeORM, Mongoose, Axios. Use Zod and global fetch (NextSMS, USSD aggregator).
+- **Do not add:** class-validator, class-transformer, @nestjs/swagger, Passport, TypeORM, Mongoose, Axios. Use Zod and global fetch (Beem SMS, USSD aggregator).
 
 ## 7. Frontends: staff portal and voter app
 
@@ -532,12 +534,19 @@ VOTER_IDLE_MINUTES=10
 LOGIN_MAX_ATTEMPTS=5
 LOGIN_LOCK_MINUTES=15
 
-# --- NextSMS ---
-NEXTSMS_BASE_URL=CHANGE_ME      # from NextSMS API documentation
-NEXTSMS_USERNAME=CHANGE_ME
-NEXTSMS_PASSWORD=CHANGE_ME
-NEXTSMS_DEFAULT_SENDER_ID=CHANGE_ME
-NEXTSMS_DLR_SECRET=CHANGE_ME    # shared secret checked on delivery-report callbacks
+# --- SMS: Beem Africa ---
+# SMS_DRIVER=fake records messages instead of sending (development, tests); production needs beem.
+# The adapter POSTs {BEEM_BASE_URL}/v1/send with HTTP Basic auth (API key : secret key) and JSON
+# {source_addr, encoding: 0, message, recipients: [{recipient_id, dest_addr}]}, one message per
+# request (each carries its own code); the response's request_id is stored as provider_message_id.
+# In the Beem dashboard set the delivery-report URL to
+#   https://<host>/api/webhooks/beem/dlr?secret=<BEEM_DLR_SECRET>
+SMS_DRIVER=beem
+BEEM_BASE_URL=https://apisms.beem.africa
+BEEM_API_KEY=CHANGE_ME
+BEEM_SECRET_KEY=CHANGE_ME
+BEEM_DEFAULT_SENDER_ID=CHANGE_ME
+BEEM_DLR_SECRET=CHANGE_ME       # shared secret checked on delivery-report callbacks
 
 # --- USSD (aggregator to be chosen) ---
 USSD_SHORT_CODE=*XXX#
@@ -581,7 +590,7 @@ These conventions keep generated code consistent across sessions. Copy this sect
 - Errors: throw NestJS HTTP exceptions with a stable code (e.g. VOTING_CLOSED, RULE_NOT_MET) that frontends map to the messages in the App Flow Document.
 - Every state-changing action writes an audit log entry inside the same transaction.
 - Never log request bodies on /api/v1/vote/* or /ussd/*, never log codes or ballot choices.
-- External calls (NextSMS, USSD aggregator) go through one adapter class each, using global fetch with a timeout via AbortSignal.timeout().
+- External calls (Beem SMS, USSD aggregator) go through one adapter class each, using global fetch with a timeout via AbortSignal.timeout().
 
 ### 11.3 Database
 

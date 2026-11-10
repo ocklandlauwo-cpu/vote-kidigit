@@ -87,7 +87,7 @@ These are things only you can arrange. Each is needed by a specific step; start 
 | The six documents exported as Markdown into docs/ | 1 | Same day | PRD.md, APP_FLOW.md, TECH_STACK.md, DESIGN_SYSTEM.md, BACKEND_SCHEMA.md, IMPLEMENTATION_PLAN.md |
 | Inter 4.1 font files (InterVariable.woff2, italic) from the official Inter release | 5 | Same day | Download from the Inter project's GitHub releases |
 | SMTP mailbox no-reply@ on the DirectAdmin server | 10 | 1 day | For invitations and password resets |
-| NextSMS account, API credentials and an approved sender ID | 21 | Days to weeks | Sender ID approval is the slow part; start now |
+| Beem Africa account, API key and secret, and an approved sender ID | 21 | Days to weeks | Sender ID approval is the slow part; start now |
 | Sentry project (free tier) and DSNs for API, staff and voter apps | 8 | Same day | Optional until step 33 |
 | VPS root SSH access, DirectAdmin admin login | 33 | Ready | Rocky Linux 9, 8 GB RAM |
 | Domain DNS pointed to the VPS and Let's Encrypt in DirectAdmin | 33 | 1–2 days | Final domain name still to confirm |
@@ -297,9 +297,9 @@ Goal: a moderator can create an event, set up categories, contesters and voters,
 
 **Read:** App Flow 6.7; Backend Schema 7.1–7.3, 12.8, 12.12; PRD SMS-01–SMS-09; Design System 11.7.
 
-**Build:** migration for sms_templates, sms_batches, sms_messages; template rendering with the placeholder whitelist and SMS segment count; NextSmsAdapter (global fetch, AbortSignal.timeout(10000), credentials from config; a FakeSmsAdapter in development and tests that records messages); batch creation and sending (decrypt code only in the worker, store redacted body, 3 retries with backoff, pause at > 20% failures); delivery-report webhook updating messages, voters.code_status and batch counters; first_code_sent_at; scheduled reminders; email channel through the email queue; EVT-07 Messages tab (templates editor with preview and counter, schedule settings, send dialog, batch table with drill-down, resend failed).
+**Build:** migration for sms_templates, sms_batches, sms_messages; template rendering with the placeholder whitelist and SMS segment count; BeemSmsAdapter (global fetch, AbortSignal.timeout(10000), credentials from config; Beem Africa replaced NextSMS on 10 Nov 2026; a FakeSmsAdapter in development and tests that records messages); batch creation and sending (decrypt code only in the worker, store redacted body, 3 retries with backoff, pause at > 20% failures); delivery-report webhook updating messages, voters.code_status and batch counters; first_code_sent_at; scheduled reminders; email channel through the email queue; EVT-07 Messages tab (templates editor with preview and counter, schedule settings, send dialog, batch table with drill-down, resend failed).
 
-**Done when:** tests with the fake adapter cover sending to 5,000 voters, redaction, retries, auto-pause, resume, DLR updates, resend of the same code and regenerate; a manual test sends one real SMS to your phone through NextSMS in development (recorded in the PR).
+**Done when:** tests with the fake adapter cover sending to 5,000 voters, redaction, retries, auto-pause, resume, DLR updates, resend of the same code and regenerate; a manual test sends one real SMS to your phone through Beem Africa in development (recorded in the PR).
 
 ## 7. Phase 3 — Voting, kiosk, control room, results and reports (steps 22–29)
 
@@ -537,7 +537,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 
 | Risk | Effect | Response |
 |---|---|---|
-| NextSMS sender ID not approved in time | Codes can't be sent in the pilot | Apply now; fallback: NextSMS default sender for the pilot, agreed with the organization |
+| Beem sender ID not approved in time | Codes can't be sent in the pilot | Apply now; fallback: an approved sender ID agreed with the organization for the pilot |
 | Steps take longer than a day | Pilot date slips | Phase 5 items never move earlier; if Phase 3 runs late, drop step 29's search (keep dashboards) and the bulk ZIP from step 18 to after the pilot |
 | USSD aggregator delays | USSD missing in V1 | USSD is already after the pilot; V1 can ship web + kiosk with USSD as V1.1 |
 | Load test fails on the VPS | Pilot capacity risk | Pilot has under 1,000 voters; fixes continue before V1 |

@@ -6,6 +6,7 @@ Nov 3, 2026 · @Smartone
 
 | Date | Change |
 |---|---|
+| 10 Nov 2026 | SMS provider is Beem Africa instead of NextSMS (owner decision, Implementation Plan step 21): delivery reports arrive at POST /webhooks/beem/dlr checked with BEEM_DLR_SECRET; provider_message_id holds the Beem request id; sms_sender_id is the sender ID registered with Beem. |
 | 5 Nov 2026 | Added 4.10 platform_settings (PLT-04 needed storage for the default session timeout, USSD short code and support contact; migration 009_platform_settings, Implementation Plan step 12). |
 | 5 Nov 2026 | Added GET /users/roles (12.4): the invite and edit forms of USR-02/03 need the role list, which GET /roles keeps for roles.manage; each role says whether the caller may give it (Implementation Plan step 14). |
 | 5 Nov 2026 | Step 15 clarifications (migrations 011, 012): app.category_is_votable() is also false once now() >= the event's end_at (hard close, PRD 4.3 rule 4), before the scheduler closes the event; app.transition_event() refuses to open an event whose end_at has passed, refuses any move of a deactivated event (PRD 4.3 rule 3), raises VALIDATION_FAILED for a missing or short cancel reason and NOT_FOUND for another organization's event; outside Draft results_visibility may also change (12.5); a category_voters row must link a voter and a category of the same event (NOT_FOUND otherwise); the guard triggers do not restrict vk_owner. |
@@ -101,7 +102,7 @@ Some requests arrive before the organization is known. These SECURITY DEFINER fu
 | app.find_voter_by_credentials(p_membership_id text, p_code_hmac bytea, p_event_id uuid DEFAULT NULL) | Rows of voter_id, event_id, organization_id | Voter sign-in on web, kiosk, USSD |
 | app.find_voter_for_kiosk(p_event_id uuid, p_membership_id text) | voter_id, organization_id, has_phone | Kiosk send-code step |
 | app.resolve_results_token(p_token text) | event_id, organization_id | Public results page |
-| app.resolve_sms_message(p_provider_message_id text) | sms_message_id, organization_id | NextSMS delivery-report webhook |
+| app.resolve_sms_message(p_provider_message_id text) | sms_message_id, organization_id | Beem delivery-report webhook |
 | app.due_transitions(p_now timestamptz) | Rows of event_id, category_id, organization_id, action | Worker 1-minute sweep |
 
 ### 2.5 Entity-relationship diagram
@@ -192,7 +193,7 @@ Standard columns (id, created_at, updated_at) are listed once here and implied i
 | time_zone | text | no | 'Africa/Dar_es_Salaam' | IANA name, validated by the API |
 | contact_email | text | yes |  |  |
 | contact_phone | text | yes |  | E.164 (+255…) |
-| sms_sender_id | text | yes |  | Registered NextSMS sender ID, max 11 characters |
+| sms_sender_id | text | yes |  | Sender ID registered with Beem Africa, max 11 characters |
 | help_phone | text | yes |  | Shown on voter screens |
 | session_timeout_minutes | smallint | no | 15 | CHECK (BETWEEN 5 AND 60) |
 | archive_after_days | integer | no | 90 | Days after results publication before auto-archive |
@@ -567,7 +568,7 @@ Unique (organization_id, event_id, type, channel) NULLS NOT DISTINCT. Platform d
 | type | message_type | no |  |
 | to_address | text | no | Phone (E.164) or email |
 | body_redacted | text | no | Final text with the voting code replaced by ••••-••••; the real code is never stored |
-| provider_message_id | text | yes | NextSMS message ID; unique |
+| provider_message_id | text | yes | Beem request id of this message; unique |
 | status | message_status | no |  |
 | attempts | smallint | no | Up to 3 automatic retries |
 | last_error | text | yes | Provider error text |
@@ -1307,7 +1308,7 @@ REST over JSON at /api/v1, plus the USSD and webhook callbacks. Request and resp
 | Method | Path | Auth | Purpose |
 |---|---|---|---|
 | POST | /ussd/:provider/callback | USSD_CALLBACK_SECRET + IP allow-list | USSD menu engine (8.5); plain-text CON / END response |
-| POST | /webhooks/nextsms/dlr | NEXTSMS_DLR_SECRET | Delivery reports → sms_messages, voters.code_status, batch counters |
+| POST | /webhooks/beem/dlr | BEEM_DLR_SECRET | Delivery reports → sms_messages, voters.code_status, batch counters |
 | GET | /health | Public | Process up (no details) |
 | GET | /health/live-events | Deploy secret header | Count of open events; deploy aborts when > 0 (Tech Stack 9.7) |
 

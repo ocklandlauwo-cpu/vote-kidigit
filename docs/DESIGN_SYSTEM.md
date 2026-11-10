@@ -933,7 +933,7 @@ Never use "Click here", "Please note", "Kindly", "Invalid input", "Error 500" or
 - Keep code-delivery SMS within 160 characters after placeholders are filled with typical values.
 - Order: name → what the message is → code (if any) → when → how. Never include ballot choices or results details beyond the public link.
 - No links other than the official voting or results link; no shortened links from third parties.
-- Sender ID is the organization's registered NextSMS sender.
+- Sender ID is the organization's sender ID registered with Beem Africa.
 
 ## 12. Implementation
 

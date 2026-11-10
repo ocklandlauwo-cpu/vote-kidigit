@@ -9,7 +9,7 @@ import { optionalText, pageSchema, PaginationQuerySchema, TimeZoneSchema } from 
 export const DEFAULT_TIME_ZONE = 'Africa/Dar_es_Salaam';
 
 export const OrganizationNameSchema = z.string().trim().min(2).max(120);
-/** Registered NextSMS sender ID: up to 11 letters, digits or spaces. */
+/** Sender ID registered with Beem Africa: up to 11 letters, digits or spaces. */
 export const SmsSenderIdSchema = z
   .string()
   .trim()

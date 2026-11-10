@@ -66,12 +66,13 @@ export const envSchema = z
     LOGIN_MAX_ATTEMPTS: z.coerce.number().int().min(1).max(20),
     LOGIN_LOCK_MINUTES: minutes,
 
-    // NextSMS
-    NEXTSMS_BASE_URL: z.url({ protocol: /^https?$/ }),
-    NEXTSMS_USERNAME: text,
-    NEXTSMS_PASSWORD: text,
-    NEXTSMS_DEFAULT_SENDER_ID: text.max(11, 'must be at most 11 characters'),
-    NEXTSMS_DLR_SECRET: secret(16),
+    // SMS (Beem Africa). The fake driver records messages instead of sending them.
+    SMS_DRIVER: z.enum(['fake', 'beem']).default('fake'),
+    BEEM_BASE_URL: z.url({ protocol: /^https?$/ }),
+    BEEM_API_KEY: text,
+    BEEM_SECRET_KEY: text,
+    BEEM_DEFAULT_SENDER_ID: text.max(11, 'must be at most 11 characters'),
+    BEEM_DLR_SECRET: secret(16),
 
     // USSD
     USSD_SHORT_CODE: text,
@@ -105,6 +106,9 @@ export const envSchema = z
           message: 'still has its CHANGE_ME placeholder',
         });
       }
+    }
+    if (env.SMS_DRIVER !== 'beem') {
+      ctx.addIssue({ code: 'custom', path: ['SMS_DRIVER'], message: 'must be beem in production' });
     }
     if (!env.APP_URL.startsWith('https://')) {
       ctx.addIssue({ code: 'custom', path: ['APP_URL'], message: 'must use https in production' });

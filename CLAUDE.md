@@ -64,7 +64,7 @@ The Markdown files were converted from the Word originals (kept outside git). Th
 - Errors: throw NestJS HTTP exceptions with a stable code (e.g. VOTING_CLOSED, RULE_NOT_MET) that frontends map to the messages in the App Flow Document.
 - Every state-changing action writes an audit log entry inside the same transaction.
 - Never log request bodies on `/api/v1/vote/*` or `/ussd/*`; never log codes or ballot choices.
-- External calls (NextSMS, USSD aggregator) go through one adapter class each, using global fetch with a timeout via `AbortSignal.timeout()`.
+- External calls (Beem SMS, USSD aggregator) go through one adapter class each, using global fetch with a timeout via `AbortSignal.timeout()`.
 
 ### Database
 
