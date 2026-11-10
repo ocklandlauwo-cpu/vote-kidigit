@@ -7,6 +7,7 @@ import {
 } from '@vote-kidigit/shared';
 import type { z } from 'zod';
 import { AuditService } from '../../audit/audit.service.js';
+import type { AuthState } from '../../auth/auth.types.js';
 import { AppError } from '../../common/app-error.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
@@ -44,9 +45,13 @@ export class LifecycleService {
 
   /**
    * POST /events/:eventId/publish (EVT-08). From Draft, or "Open now" from Scheduled. With
-   * "Send codes now" the voters whose code was not sent yet get it by SMS.
+   * "Send codes now" the voters whose code was not sent yet get it by SMS; that needs
+   * messages.send as well, checked before anything changes.
    */
-  async publish(eventId: string, body: PublishEvent): Promise<EventDetail> {
+  async publish(actor: AuthState, eventId: string, body: PublishEvent): Promise<EventDetail> {
+    if (body.sendCodes && !actor.permissions.includes('messages.send')) {
+      throw new AppError('FORBIDDEN');
+    }
     const detail = await this.publishIn(eventId, body);
     if (!body.sendCodes) return detail;
     await this.batches.send({

@@ -132,10 +132,11 @@ export class EventsController {
   @HttpCode(200)
   @RequirePermission('event.publish')
   publish(
+    @CurrentAuth() auth: AuthState,
     @Param('eventId', IdParamPipe) eventId: string,
     @Body() body: PublishEventBody,
   ): Promise<EventDetail> {
-    return this.lifecycle.publish(eventId, body);
+    return this.lifecycle.publish(auth, eventId, body);
   }
 
   /** POST /api/v1/events/:eventId/unpublish */

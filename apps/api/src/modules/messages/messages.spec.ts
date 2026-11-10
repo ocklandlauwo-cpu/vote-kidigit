@@ -207,13 +207,26 @@ describe('messages', () => {
       expect(row).toMatchObject({ status: 'sent', attempts: 1 });
       expect(voter.codeStatus).toBe('sent');
     }
-    const plainInDb = await owner.$queryRaw<{ n: bigint }[]>`
-      SELECT count(*) AS n FROM public.sms_messages
-      WHERE event_id = ${event.id}::uuid AND body_redacted ~ '[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}'`;
-    expect(Number(plainInDb[0]?.n)).toBe(0);
-    const audit = await owner.auditLog.findMany({ where: { eventId: event.id } });
-    expect(JSON.stringify(audit)).not.toMatch(/[A-HJKMNP-Z2-9]{4}-[A-HJKMNP-Z2-9]{4}/);
-    expect(logs.join('\n')).not.toContain(await codeOfVoter(sample[0]?.id ?? ''));
+    // Every voter's own code, decrypted here: none appears in a stored message, the audit log
+    // or the logs. (A pattern match would also hit digit runs in UUIDs.)
+    const allCodes = await Promise.all(
+      (await owner.voter.findMany({ where: { eventId: event.id }, select: { id: true } })).map(
+        (v) => codeOfVoter(v.id),
+      ),
+    );
+    const bodies = (
+      await owner.smsMessage.findMany({
+        where: { eventId: event.id },
+        select: { bodyRedacted: true },
+      })
+    ).map((m) => m.bodyRedacted);
+    expect(bodies.every((body) => body.includes(REDACTED_CODE))).toBe(true);
+    const stored = [
+      bodies.join(' '),
+      JSON.stringify(await owner.auditLog.findMany({ where: { eventId: event.id } })),
+      logs.join(' '),
+    ].join(' ');
+    expect(allCodes.filter((code) => stored.includes(code))).toEqual([]);
     const updated = await owner.votingEvent.findUniqueOrThrow({ where: { id: event.id } });
     expect(updated.firstCodeSentAt).not.toBeNull();
   }, 240_000);
@@ -482,6 +495,50 @@ describe('messages', () => {
     );
     expect(codeOf(resend)).toBe('INVALID_TRANSITION');
   }, 60_000);
+
+  it('publishes with "Send codes now" only for holders of messages.send', async () => {
+    const role = await owner.role.create({
+      data: { organizationId: orgId, name: `Publisher ${uniqueSuffix()}` },
+    });
+    await owner.rolePermission.createMany({
+      data: ['event.view', 'event.publish'].map((permissionKey) => ({
+        roleId: role.id,
+        permissionKey,
+        organizationId: orgId,
+      })),
+    });
+    const email = `publisher-${uniqueSuffix()}@example.test`;
+    const id = await createUser(owner, orgId, { email, password: PASSWORD });
+    await owner.userRole.create({ data: { userId: id, roleId: role.id, organizationId: orgId } });
+    const agent = request.agent(app.getHttpServer()).set('X-Forwarded-For', testIp());
+    const login = await agent.post('/api/v1/auth/login').send({ email, password: PASSWORD });
+    const publisher: Staff = { id, agent, csrf: (login.body as MeResponse).csrfToken };
+
+    const event = await seedEvent('draft', 2);
+    await owner.eventAssignment.create({
+      data: { organizationId: orgId, eventId: event.id, userId: id, type: 'moderator' },
+    });
+    const category = await owner.category.create({
+      data: { organizationId: orgId, eventId: event.id, name: 'Mwenyekiti', displayOrder: 0 },
+    });
+    await owner.contester.create({
+      data: { organizationId: orgId, eventId: event.id, categoryId: category.id, fullName: 'Asha' },
+    });
+    const refused = await send(publisher, `/events/${event.id}/publish`, {
+      mode: 'schedule',
+      sendCodes: true,
+    }).expect(403);
+    expect(codeOf(refused)).toBe('FORBIDDEN');
+    // Nothing changed: still Draft, no batch.
+    expect((await owner.votingEvent.findUniqueOrThrow({ where: { id: event.id } })).status).toBe(
+      'draft',
+    );
+    expect(await owner.smsBatch.count({ where: { eventId: event.id } })).toBe(0);
+    await send(publisher, `/events/${event.id}/publish`, {
+      mode: 'schedule',
+      sendCodes: false,
+    }).expect(200);
+  });
 
   it('refuses codes before publish and needs messages.send', async () => {
     const draft = await seedEvent('draft', 1);
