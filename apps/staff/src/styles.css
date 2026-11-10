@@ -449,3 +449,8 @@ body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* EVT-07 reminder offsets: room for the number and its unit ("1440 minutes"). */
+.vk-reminder-input {
+  width: 11rem;
+}

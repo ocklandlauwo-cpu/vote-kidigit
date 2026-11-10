@@ -78,9 +78,13 @@ export class BeemSmsAdapter implements SmsGateway {
       successful?: boolean;
       request_id?: number | string;
       message?: string;
+      error_code?: string;
     } | null;
     if (!response.ok || !body?.successful || body.request_id === undefined) {
-      const reason = errorText(`${response.status} ${body?.message ?? response.statusText}`);
+      // Beem's own short fields only (error_code, message); a body without them (a proxy's
+      // page) leaves just the HTTP status.
+      const detail = [body?.error_code, body?.message ?? response.statusText].filter(Boolean);
+      const reason = errorText(`${response.status} ${detail.join(' ')}`);
       // 4xx other than 429 is a refusal (bad number, sender ID, credentials): do not retry.
       const retryable = response.status >= 500 || response.status === 429 || response.ok;
       throw new SmsSendError(reason, retryable);

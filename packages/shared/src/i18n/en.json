@@ -860,7 +860,7 @@
   "messages": {
     "types": {
       "code_delivery": "Voting code",
-      "reminder_before_open": "Reminder before opening",
+      "reminder_before_open": "Opening reminder",
       "voting_open": "Voting open",
       "reminder_before_close": "Closing reminder",
       "vote_confirmation": "Vote confirmation",

@@ -860,9 +860,9 @@
   "messages": {
     "types": {
       "code_delivery": "Msimbo wa kura",
-      "reminder_before_open": "Kumbusho kabla ya kufunguliwa",
+      "reminder_before_open": "Kumbusho la kuanza",
       "voting_open": "Kura imefunguliwa",
-      "reminder_before_close": "Kumbusho kabla ya kufungwa",
+      "reminder_before_close": "Kumbusho la kufunga",
       "vote_confirmation": "Uthibitisho wa kura",
       "results_published": "Matokeo yametangazwa",
       "event_cancelled": "Uchaguzi umesitishwa",

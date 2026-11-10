@@ -494,6 +494,7 @@ function ReminderRow({
           disabled={disabled}
           onChange={(next) => onChange(next ?? min)}
           suffix={unit}
+          className="vk-reminder-input"
           aria-label={`${label} (${unit})`}
         />
       )}

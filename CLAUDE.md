@@ -106,6 +106,7 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 4. **Icons in the voter app.** Resolved in step 5: `@ant-design/icons` 6.3.4 added to Tech Stack 7.2 for the voter app.
 5. **PRD section 9 and 10.1** (Laravel, cloud hosting, 15 Nov pilot) are superseded by the Tech Stack and the Implementation Plan dates.
 6. **Theme hook location.** Design System 12 puts `useEffectiveTheme` in `packages/shared/src/design/theme.ts`, but the shared package may depend only on zod. `theme.ts` is a framework-free store (`subscribeTheme`, `getEffectiveTheme`, `toggleTheme`…); each app has a two-line `useEffectiveTheme` hook on `useSyncExternalStore`.
+7. **Code SMS length.** Design System 11.7 keeps the code SMS within 160 characters, but the App Flow link is `/vote/{eventId}` (a 36-character UUID), so the default code SMS is 2 SMS with typical values. Open: reported in the step 21 PR (a short link needs change control). The send dialog shows the real SMS count.
 
 ## Database access in code
 
@@ -203,6 +204,16 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Email goes through `MailService` from the worker only: SMTP in production, printed to stdout in development, kept in `MailService.outbox` in tests. Templates (`mail/templates.ts`) take a `language` ('sw' default, 'en') from the recipient.
 - Tests: `QUEUE_PREFIX` is per Jest worker (`testing/jest-setup.ts`); start the worker with `Test.createTestingModule({ imports: [WorkerModule] })` and wait for mail in `outbox` (see `auth/tokens.spec.ts`). API tests time out after 30 s (jest `testTimeout`): Argon2id hashes are slow while test files run in parallel.
 - First platform admin: `pnpm --filter @vote-kidigit/api create-platform-admin --email … --name "…"` (built `dist/`; `create-platform-admin:dev` builds first). The password is asked without echo or read with `--password-stdin`.
+
+## Messages in code
+
+- Migration 016: sms_templates, sms_batches, sms_messages. Only `BatchesService` creates batches (`start` for staff, `send(NewBatch)` for resend, regenerate, publish with codes, cancellation and reminders); it creates the rows in one transaction (60 s timeout) and then `enqueue`s one `send-<messageId>` job each on the `sms` queue.
+- Messages store `body_redacted` with `REDACTED_CODE`; `MessageSender` (worker only) decrypts the code just before the send. Never store, log or audit a rendered text with a code.
+- Which message types may go out in which event state is `send-rules.ts` (`maySend`): checked on start, resume and resend failed, and again by the worker, which cancels a batch whose event moved on. Cancelling an event cancels its unfinished batches.
+- A message of a paused batch stays in the queue as a delayed job (`DelayedError`, no attempt used); Resume promotes those jobs and adds only missing ones. Re-adding the same job id while a job is active is silently ignored by BullMQ.
+- `SMS_GATEWAY` is `BeemSmsAdapter` or `FakeSmsAdapter` (`SMS_DRIVER`); tests read `FakeSmsAdapter.outbox` and set `failWith`. Beem errors keep only `error_code` and `message` from the body. Delivery reports: `POST /api/webhooks/beem/dlr?secret=BEEM_DLR_SECRET`.
+- "Send codes now" on publish needs `messages.send` as well as `event.publish` (checked in LifecycleService). Staff: `pages/events/messages/` (MessagesTab, TemplateDrawer, SendDialog, BatchDrawer); message statuses reuse the Code / SMS badge (queued shows as Not sent); batch status is plain text (Design System 3.3 has no batch row).
+- In tests, filter the fake outbox by event name: test files and tests share phone numbers.
 
 ## Design system in code
 
