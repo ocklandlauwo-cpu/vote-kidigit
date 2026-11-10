@@ -100,6 +100,8 @@ interface UploadOptions<T> {
   schema?: Schema<T>;
   /** Name sent with the file (the server keeps it as original_name). */
   filename?: string;
+  /** Other form fields, sent before the file. */
+  fields?: Record<string, string>;
   /** 0–100 while the file is sent (Design System 7.6 progress bar). */
   onProgress?: (percent: number) => void;
 }
@@ -111,6 +113,7 @@ interface UploadOptions<T> {
 export function upload<T = void>(path: string, file: Blob, options: UploadOptions<T> = {}) {
   return new Promise<T>((resolve, reject) => {
     const form = new FormData();
+    for (const [name, value] of Object.entries(options.fields ?? {})) form.append(name, value);
     form.append(
       UPLOAD_FIELD,
       file,

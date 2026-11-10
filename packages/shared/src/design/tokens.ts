@@ -171,8 +171,8 @@ export const space = {
 
 export const radius = { xs: 4, sm: 6, md: 8, lg: 12, xl: 16, full: 9999 } as const;
 
-/** 5:7 photo previews (Design System 7.6): [width, height] in px. */
-export const photoSize = { field: [70, 98] } as const;
+/** 5:7 photo previews (Design System 7.6, 8.6): [width, height] in px. */
+export const photoSize = { field: [70, 98], category: [40, 56], contester: [48, 67] } as const;
 
 export const shadow = {
   light: {

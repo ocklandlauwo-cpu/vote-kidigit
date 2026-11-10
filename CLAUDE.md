@@ -164,6 +164,14 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Staff workspace (`pages/events/`): `EventWorkspace` loads the event and passes it to tabs through the `Outlet` context. The header's main action and the More menu come from `eventActions.ts` (App Flow 3.4); actions whose steps have not arrived yet show greyed out. Event activity reuses `AuditView` from the audit page with the event endpoint.
 - Date pickers work in the organization time zone through `zonedTime.ts` (`toPicker`, `fromPicker`, `nowInPicker`), never the browser's.
 
+## Categories in code
+
+- `modules/categories/` serves Backend Schema 12.6 under `v1/events/:eventId`. Contesters are addressed by `/events/:eventId/contesters/:contesterId` and always looked up with that `eventId`. Setup locks come from the database (`guard_event_setup`, EVENT_LOCKED); the services do not repeat them. A no-op update passes the guard, so a reorder that changes nothing writes nothing.
+- Rules are one object (`CategoryRulesSchema` in shared `api/categories.ts`): structural checks only (exact needs N, range needs min ≤ max, threshold needs a %). Counts against contesters belong to the publish checklist. Saving clears the counts of the other mode. Decimal columns reach the audit log as text (`toJson` honours `toJSON`).
+- Category status comes from `app.category_is_votable()` for "open"; closed means `closed_at`, manual close, its own closing time passed, or the event over. Manual open/close (`event.close`) only while the event is Open; a closed category stays closed.
+- The photo ZIP route needs one access decorator but two permissions: it is `@RequirePermission('event.view')` and the service checks `contester.manage` (voter.manage for voters, step 19). `files/zip-reader.ts` reads ZIPs with node:zlib (no ZIP library in the Tech Stack); `testing/zip.ts` builds them for tests.
+- Staff `pages/events/categories/`: panels receive the current object from the query (`latest()` in CategoriesTab), never a copy taken when they opened. Without that, a photo upload leaves the panel stale. Rule words live in `ruleText.ts`. dnd-kit keyboard drag works in jsdom when `getBoundingClientRect` is stubbed per card (see CategoriesTab.test.tsx). Ant Design 6 drawers are `.ant-drawer-open .ant-drawer-section` in browser checks.
+
 ## Files in code
 
 - `files` rows (migration 013) are never updated: vk_api has no UPDATE grant; a new upload is a new row and the replaced one is deleted. The bytes live at `STORAGE_DIR/org/{orgId}/{kind}/{uuid}.{ext}` and are served only by `GET /api/v1/files/:id`.

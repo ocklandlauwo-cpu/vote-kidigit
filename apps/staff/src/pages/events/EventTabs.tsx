@@ -1,5 +1,5 @@
 // The Activity tab (App Flow 6.9: the audit log filtered to this event) and the tabs whose
-// screens arrive later (Categories 18, Voters 19, Messages 21, Results 27, Live 26).
+// screens arrive later (Voters 19, Messages 21, Results 27, Live 26).
 import type { EventDetail } from '@vote-kidigit/shared';
 import { useTranslation } from 'react-i18next';
 import { useOutletContext } from 'react-router';

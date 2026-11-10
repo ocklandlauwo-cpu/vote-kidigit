@@ -28,6 +28,10 @@ function toJson(value: unknown): Prisma.InputJsonValue | null | undefined {
   if (value instanceof Date) return value.toISOString();
   if (typeof value === 'bigint') return value.toString();
   if (ArrayBuffer.isView(value)) return undefined;
+  // Decimal columns (Prisma.Decimal) and similar values serialise themselves.
+  if (typeof value === 'object' && 'toJSON' in value && typeof value.toJSON === 'function') {
+    return toJson((value as { toJSON(): unknown }).toJSON());
+  }
   if (Array.isArray(value)) return value.map((item) => toJson(item) ?? null);
   if (typeof value === 'object') {
     const out: JsonObject = {};

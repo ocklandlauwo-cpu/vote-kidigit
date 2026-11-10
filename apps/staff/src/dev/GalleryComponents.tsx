@@ -1,7 +1,15 @@
 // Gallery sections for the shared components of step 13: every variant and state, in the
 // current theme and language (switch both from the gallery header). Developer tool: the sample
 // texts are fixed Swahili examples, not product strings.
-import { onboardingItems } from '@vote-kidigit/shared';
+import { DndContext } from '@dnd-kit/core';
+import { SortableContext } from '@dnd-kit/sortable';
+import {
+  type Category,
+  categoryStatuses,
+  DEFAULT_CATEGORY_RULES,
+  type EventDetail,
+  onboardingItems,
+} from '@vote-kidigit/shared';
 import { Button, Flex, Typography } from 'antd';
 import { type ReactNode, useState } from 'react';
 import { ApiError } from '../api/client';
@@ -16,6 +24,7 @@ import { PhotoField } from '../components/PhotoField';
 import { StatusBadge } from '../components/StatusBadge';
 import { STATUS_SPECS, type StatusDomain } from '../components/statusSpecs';
 import { UserAvatar } from '../components/UserAvatar';
+import { CategoryCard } from '../pages/events/categories/CategoryCard';
 
 function Variant({ name, children }: { name: string; children: ReactNode }) {
   return (
@@ -64,6 +73,77 @@ function LocalPhotoField() {
       }}
     />
   );
+}
+
+const galleryEvent = {
+  id: '00000000-0000-7000-8000-000000000001',
+  name: 'AGM 2027',
+  status: 'draft',
+  showParty: true,
+} as EventDetail;
+
+function galleryCategory(index: number, status: Category['status']): Category {
+  const id = `00000000-0000-7000-8000-00000000010${index}`;
+  return {
+    id,
+    name: ['Mwenyekiti', 'Katibu', 'Mweka hazina', 'Mjumbe'][index] ?? 'Nafasi',
+    pictureUrl: null,
+    displayOrder: index,
+    isActive: status !== 'inactive',
+    opensAt: null,
+    closesAt: null,
+    manualState: 'auto',
+    closedAt: null,
+    status,
+    rules:
+      index === 1
+        ? {
+            ...DEFAULT_CATEGORY_RULES,
+            selectionMode: 'range',
+            exactCount: null,
+            minCount: 1,
+            maxCount: 3,
+            seats: 3,
+            allowSkip: true,
+          }
+        : DEFAULT_CATEGORY_RULES,
+    eligibility: 'all',
+    eligibleVoters: 1200,
+    yesNo: index === 0,
+    contesters:
+      index === 0
+        ? [
+            {
+              id: `${id}-c`,
+              categoryId: id,
+              fullName: 'Asha Mollel',
+              party: 'Chama A',
+              photoUrl: null,
+              status: 'active',
+              withdrawnAt: null,
+            },
+          ]
+        : [
+            {
+              id: `${id}-a`,
+              categoryId: id,
+              fullName: 'Juma Ali',
+              party: null,
+              photoUrl: null,
+              status: 'active',
+              withdrawnAt: null,
+            },
+            {
+              id: `${id}-b`,
+              categoryId: id,
+              fullName: 'Neema Joseph',
+              party: null,
+              photoUrl: null,
+              status: 'withdrawn',
+              withdrawnAt: '2026-11-01T08:00:00.000Z',
+            },
+          ],
+  };
 }
 
 export function GalleryComponents() {
@@ -223,6 +303,33 @@ export function GalleryComponents() {
           />
           <PhotoField url={null} name="Neema" onUpload={() => Promise.resolve()} disabled />
         </Flex>
+      </Variant>
+
+      <Variant name="CategoryCard — not open (Yes / No), open, closed, inactive; withdrawn contester">
+        <DndContext>
+          <SortableContext items={categoryStatuses.map((_, i) => galleryCategory(i, 'open').id)}>
+            <Flex vertical gap="middle">
+              {categoryStatuses.map((status, index) => (
+                <CategoryCard
+                  key={status}
+                  category={galleryCategory(index, status)}
+                  event={galleryEvent}
+                  editable
+                  canContesters
+                  canOpenClose={status === 'open'}
+                  reorderable
+                  showArrows={index === 3}
+                  isFirst={index === 0}
+                  isLast={index === 3}
+                  onAction={noop}
+                  onMove={noop}
+                  onContester={noop}
+                  onSetOpen={noop}
+                />
+              ))}
+            </Flex>
+          </SortableContext>
+        </DndContext>
       </Variant>
 
       <Variant name="PasswordRules — empty, partly met, all met, reused">

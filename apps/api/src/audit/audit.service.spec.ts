@@ -3,7 +3,7 @@
 import { randomUUID } from 'node:crypto';
 import { RequestContextService, type RequestContext } from '../context/request-context.js';
 import type { PrismaService } from '../database/prisma.service.js';
-import type { PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, type PrismaClient } from '../generated/prisma/client.js';
 import {
   apiClient,
   createOrganization,
@@ -149,5 +149,11 @@ describe('auditDiff', () => {
       before: null,
       after: { name: 'Chair' },
     });
+  });
+
+  it('stores decimal columns as their text', () => {
+    expect(
+      auditDiff({ thresholdPct: null }, { thresholdPct: new Prisma.Decimal('50.01') }),
+    ).toEqual({ before: { thresholdPct: null }, after: { thresholdPct: '50.01' } });
   });
 });
