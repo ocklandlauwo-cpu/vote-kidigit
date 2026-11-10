@@ -145,6 +145,18 @@ describe('validateVoterCsv', () => {
     expect(lines).toHaveLength(2);
   });
 
+  it('never lets a value in the error file run as a spreadsheet formula', () => {
+    const result = validateVoterCsv(
+      csv([['=HYPERLINK("http://x","bofya")', 'M-1', '+255712', '@SUM(A1)', '', '', '']]),
+      none(),
+    );
+    const line = errorRowsCsv(result).split(/\r?\n/)[1] ?? '';
+    expect(line).toContain(`"'=HYPERLINK(""http://x"",""bofya"")"`);
+    expect(line).toContain("'+255712");
+    expect(line).toContain("'@SUM(A1)");
+    expect(line).not.toMatch(/,=|,\+|,@/);
+  });
+
   it('offers a template that validates', () => {
     expect(validateVoterCsv(voterCsvTemplate(), none())).toMatchObject({
       missingColumns: [],

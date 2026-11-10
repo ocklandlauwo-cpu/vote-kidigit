@@ -171,7 +171,11 @@ export function voterCsvTemplate(): string {
   });
 }
 
-/** VTR-05: the rejected rows as they were, with the reasons, to fix and upload again. */
+/**
+ * VTR-05: the rejected rows as they were, with the reasons, to fix and upload again. The values
+ * come from an uploaded file and the result is opened in a spreadsheet, so cells starting with
+ * = + - @ (or a tab / carriage return) are prefixed with ' and never run as formulas.
+ */
 export function errorRowsCsv(validation: CsvValidation): string {
   const rows = new Map<number, string[]>();
   for (const problem of validation.problems) {
@@ -179,11 +183,14 @@ export function errorRowsCsv(validation: CsvValidation): string {
     rows.set(problem.row, [...(rows.get(problem.row) ?? []), `${problem.field}: ${problem.code}`]);
   }
   const fields = [...VOTER_CSV_COLUMNS];
-  return Papa.unparse({
-    fields: ['row', ...fields, 'errors'],
-    data: [...rows.entries()].map(([row, reasons]) => {
-      const record = validation.records.get(row) ?? {};
-      return [String(row), ...fields.map((f) => record[f] ?? ''), reasons.join('; ')];
-    }),
-  });
+  return Papa.unparse(
+    {
+      fields: ['row', ...fields, 'errors'],
+      data: [...rows.entries()].map(([row, reasons]) => {
+        const record = validation.records.get(row) ?? {};
+        return [String(row), ...fields.map((f) => record[f] ?? ''), reasons.join('; ')];
+      }),
+    },
+    { escapeFormulae: true },
+  );
 }
