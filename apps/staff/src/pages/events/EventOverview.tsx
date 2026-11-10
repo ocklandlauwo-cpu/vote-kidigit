@@ -1,25 +1,19 @@
 // EVT-03 Overview (App Flow 6.3). Draft: the setup checklist ("4 of 6 complete", each open item
-// links to where it is fixed) and the key facts. The other statuses' contents (countdown,
-// turnout, results summary) arrive with publishing, voting and results (steps 20-28).
+// links to where it is fixed) and the key facts. Scheduled: countdown to opening, codes sent /
+// delivered / failed, the checklist folded (all green). Cancelled: date, by whom and reason.
+// Turnout and results summaries arrive with voting and results (steps 22-28).
 import { CheckCircleFilled } from '@ant-design/icons';
-import type { ChecklistItemKey, EventDetail } from '@vote-kidigit/shared';
-import { Card, Descriptions, Flex, Progress, Skeleton, Typography } from 'antd';
+import type { EventDetail } from '@vote-kidigit/shared';
+import { Card, Collapse, Descriptions, Flex, Progress, Skeleton, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { Link, useOutletContext } from 'react-router';
 import { errorMessage } from '../../api/errorMessage';
 import { Banner } from '../../components/Banner';
 import { useFormat } from '../../hooks/useFormat';
+import { useNow } from '../../hooks/useNow';
+import { FIX } from './checklistFix';
+import { durationText } from './countdown';
 import { useChecklist } from './eventsApi';
-
-/** The tab where each checklist item is fixed. */
-const FIX: Record<ChecklistItemKey, string> = {
-  details: 'settings',
-  categories: 'categories',
-  contesters: 'categories',
-  rules: 'categories',
-  voters: 'voters',
-  eligibility: 'categories',
-};
 
 function Checklist({ event }: { event: EventDetail }) {
   const { t } = useTranslation();
@@ -80,6 +74,88 @@ function Checklist({ event }: { event: EventDetail }) {
   );
 }
 
+function Scheduled({ event }: { event: EventDetail }) {
+  const { t } = useTranslation();
+  const format = useFormat();
+  const now = useNow();
+  const left = new Date(event.startAt).getTime() - now;
+  const counts = event.codeCounts;
+  return (
+    <>
+      <Card data-testid="scheduled-countdown">
+        <Flex vertical gap="small">
+          <Typography.Title level={3} style={{ margin: 0 }}>
+            {left > 60_000
+              ? t('events.overview.opensIn', { time: durationText(t, left) })
+              : t('events.overview.opensNow')}
+          </Typography.Title>
+          <Typography.Text type="secondary">
+            {t('events.overview.opensAt', { time: format.dateTime(event.startAt) })}
+          </Typography.Text>
+        </Flex>
+      </Card>
+      <Card title={t('events.overview.codesTitle')}>
+        <Flex gap="middle" wrap data-testid="code-counts">
+          {(
+            [
+              ['codesSent', counts.sent, 'info'],
+              ['codesDelivered', counts.delivered, 'success'],
+              ['codesFailed', counts.failed, 'danger'],
+              ['codesNotSent', counts.notSent, 'neutral'],
+            ] as const
+          ).map(([key, value, tone]) => (
+            <div key={key} className={`vk-stat vk-tone-${tone}`}>
+              <Typography.Text type="secondary">{t(`events.overview.${key}`)}</Typography.Text>
+              <span className="vk-stat-value">{value.toLocaleString('en')}</span>
+            </div>
+          ))}
+        </Flex>
+      </Card>
+      <Collapse
+        items={[
+          {
+            key: 'checklist',
+            label: (
+              <Flex align="center" gap="small">
+                <CheckCircleFilled style={{ color: 'var(--vk-success-fg)' }} aria-hidden />
+                {t('events.overview.checklistDone')}
+              </Flex>
+            ),
+            children: <Checklist event={event} />,
+          },
+        ]}
+      />
+    </>
+  );
+}
+
+function Cancelled({ event }: { event: EventDetail }) {
+  const { t } = useTranslation();
+  const format = useFormat();
+  return (
+    <Card title={t('events.overview.cancelledTitle')} data-testid="cancelled-summary">
+      <Descriptions
+        column={1}
+        items={[
+          {
+            key: 'date',
+            label: t('events.overview.cancelledAt'),
+            children: format.dateTime(event.cancelledAt),
+          },
+          ...(event.cancelledBy
+            ? [{ key: 'by', label: t('events.overview.cancelledBy'), children: event.cancelledBy }]
+            : []),
+          {
+            key: 'reason',
+            label: t('events.overview.cancelReason'),
+            children: event.cancelReason ?? '',
+          },
+        ]}
+      />
+    </Card>
+  );
+}
+
 export function EventOverview() {
   const { t } = useTranslation();
   const format = useFormat();
@@ -88,15 +164,8 @@ export function EventOverview() {
     <Flex vertical gap="large">
       {/* EVT-03 */}
       {event.status === 'draft' && <Checklist event={event} />}
-      {event.status === 'cancelled' && event.cancelledAt && (
-        <Banner
-          tone="locked"
-          message={t('events.overview.cancelled', {
-            date: format.dateTime(event.cancelledAt),
-            reason: event.cancelReason ?? '',
-          })}
-        />
-      )}
+      {event.status === 'scheduled' && <Scheduled event={event} />}
+      {event.status === 'cancelled' && <Cancelled event={event} />}
       <Card title={t('events.overview.facts')}>
         <Descriptions
           column={1}
@@ -129,7 +198,7 @@ export function EventOverview() {
           ]}
         />
       </Card>
-      {event.status !== 'draft' && event.status !== 'cancelled' && (
+      {!['draft', 'scheduled', 'cancelled'].includes(event.status) && (
         <Typography.Text type="secondary">{t('events.overview.statusSoon')}</Typography.Text>
       )}
     </Flex>

@@ -24,7 +24,15 @@
     "stay": "Baki",
     "exportSoon": "Kupakua kutapatikana hivi karibuni",
     "loadError": "Hatukuweza kupakia hii.",
-    "view": "Angalia"
+    "view": "Angalia",
+    "duration": {
+      "days_one": "siku 1",
+      "days_other": "siku {{count}}",
+      "hours_one": "saa 1",
+      "hours_other": "saa {{count}}",
+      "minutes_one": "dakika 1",
+      "minutes_other": "dakika {{count}}"
+    }
   },
   "nav": {
     "groupWork": "Kazi",
@@ -462,8 +470,20 @@
       "voters": "Wapiga kura",
       "moderators": "Wasimamizi",
       "none": "Hakuna",
-      "cancelled": "Ulisitishwa {{date}}. Sababu: {{reason}}",
-      "statusSoon": "Muhtasari wa hali hii utaonekana hapa hivi karibuni."
+      "statusSoon": "Muhtasari wa hali hii utaonekana hapa hivi karibuni.",
+      "opensIn": "Unafunguliwa baada ya {{time}}",
+      "opensNow": "Unafunguliwa ndani ya dakika moja",
+      "opensAt": "Utafunguliwa {{time}}",
+      "codesTitle": "Misimbo ya kupiga kura",
+      "codesSent": "Imetumwa",
+      "codesDelivered": "Imefika",
+      "codesFailed": "Imeshindikana",
+      "codesNotSent": "Haijatumwa",
+      "checklistDone": "Orodha ya kuchapisha: yote 6 yamekamilika",
+      "cancelledTitle": "Uchaguzi umesitishwa",
+      "cancelledAt": "Tarehe",
+      "cancelledBy": "Na",
+      "cancelReason": "Sababu"
     },
     "checklist": {
       "details": "Taarifa za uchaguzi zimekamilika (jina, kuanza na kumalizika)",
@@ -498,6 +518,41 @@
       "deleteBody": "Uchaguzi utaondolewa kwenye orodha. Kumbukumbu za ukaguzi zinabaki.",
       "deleted": "Uchaguzi umefutwa",
       "saved": "Imehifadhiwa"
+    },
+    "publish": {
+      "title": "Chapisha {{name}}",
+      "schedule": "Panga",
+      "scheduleHelp": "Utafunguliwa wenyewe {{time}}.",
+      "startPassed": "Muda wa kuanza umeshapita: unaweza kufungua sasa tu.",
+      "openNow": "Fungua sasa",
+      "openNowHelp": "Wapiga kura wanaweza kuanza kupiga kura mara moja.",
+      "codesLater": "Misimbo ya kupiga kura hutumwa kutoka kichupo cha Ujumbe.",
+      "lockNote": "Baada ya kuchapisha, nafasi, wagombea na wapiga kura haviwezi kubadilishwa.",
+      "confirm": "Chapisha",
+      "notReadyTitle": "Uchaguzi bado haujawa tayari",
+      "notReadyBody": "Rekebisha haya kwanza, kisha uchapishe:",
+      "scheduled": "Uchaguzi umepangwa",
+      "opened": "Uchaguzi umefunguliwa"
+    },
+    "openNowConfirm": {
+      "title": "Fungua {{name}} sasa?",
+      "body": "Wapiga kura wataweza kupiga kura mara moja, kabla ya muda uliopangwa."
+    },
+    "unpublishConfirm": {
+      "title": "Rudisha kuwa Rasimu?",
+      "body": "Utaweza kuhariri tena, na lazima uchapishe tena kabla ya kupiga kura.",
+      "done": "Uchaguzi umerudishwa kuwa Rasimu",
+      "codesSent": "Haiwezekani baada ya misimbo kutumwa kwa SMS"
+    },
+    "cancelConfirm": {
+      "title": "Sitisha {{name}}?",
+      "body": "Uchaguzi utasitishwa na hautaweza kufunguliwa tena.",
+      "done": "Uchaguzi umesitishwa"
+    },
+    "archiveConfirm": {
+      "title": "Weka {{name}} kwenye kumbukumbu?",
+      "body": "Utabaki kusomeka tu na utahamia kichujio cha Kumbukumbu.",
+      "done": "Uchaguzi umewekwa kwenye kumbukumbu"
     }
   },
   "files": {

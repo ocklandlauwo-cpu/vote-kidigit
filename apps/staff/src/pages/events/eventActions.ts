@@ -18,13 +18,13 @@ export type EventActionKey =
 export interface EventAction {
   key: EventActionKey;
   permission: PermissionKey;
-  /** Built so far; the others arrive with publishing (step 20) and results (steps 27-28). */
+  /** Built so far; closing, reopening and results arrive with steps 27-28. */
   available: boolean;
 }
 
 const MAIN: Partial<Record<EventStatus, EventAction>> = {
-  draft: { key: 'publish', permission: 'event.publish', available: false },
-  scheduled: { key: 'openNow', permission: 'event.publish', available: false },
+  draft: { key: 'publish', permission: 'event.publish', available: true },
+  scheduled: { key: 'openNow', permission: 'event.publish', available: true },
   open: { key: 'closeNow', permission: 'event.close', available: false },
   closed: { key: 'publishResults', permission: 'results.publish', available: false },
   results_published: { key: 'downloadPdf', permission: 'reports.download', available: false },
@@ -39,16 +39,16 @@ export function mainAction(status: EventStatus): EventAction | null {
 export function moreActions(status: EventStatus, isActive: boolean): EventAction[] {
   const actions: EventAction[] = [];
   if (status === 'scheduled') {
-    actions.push({ key: 'unpublish', permission: 'event.publish', available: false });
+    actions.push({ key: 'unpublish', permission: 'event.publish', available: true });
   }
   if (status === 'draft' || status === 'scheduled' || status === 'open') {
-    actions.push({ key: 'cancel', permission: 'event.cancel', available: false });
+    actions.push({ key: 'cancel', permission: 'event.cancel', available: true });
   }
   if (status === 'closed') {
     actions.push({ key: 'reopen', permission: 'event.reopen', available: false });
   }
   if (status === 'results_published' || status === 'cancelled') {
-    actions.push({ key: 'archive', permission: 'event.archive', available: false });
+    actions.push({ key: 'archive', permission: 'event.archive', available: true });
   }
   // An Open event cannot be deactivated (PRD 4.3 rule 3).
   if (status !== 'open') {

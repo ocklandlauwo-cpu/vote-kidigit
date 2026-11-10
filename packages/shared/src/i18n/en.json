@@ -24,7 +24,15 @@
     "stay": "Stay",
     "exportSoon": "Export is coming soon",
     "loadError": "Couldn’t load this.",
-    "view": "View"
+    "view": "View",
+    "duration": {
+      "days_one": "1 day",
+      "days_other": "{{count}} days",
+      "hours_one": "1 hour",
+      "hours_other": "{{count}} hours",
+      "minutes_one": "1 minute",
+      "minutes_other": "{{count}} minutes"
+    }
   },
   "nav": {
     "groupWork": "Work",
@@ -462,8 +470,20 @@
       "voters": "Voters",
       "moderators": "Moderators",
       "none": "None",
-      "cancelled": "Cancelled on {{date}}. Reason: {{reason}}",
-      "statusSoon": "The overview for this status will appear here soon."
+      "statusSoon": "The overview for this status will appear here soon.",
+      "opensIn": "Opens in {{time}}",
+      "opensNow": "Opens within a minute",
+      "opensAt": "Opens at {{time}}",
+      "codesTitle": "Voting codes",
+      "codesSent": "Sent",
+      "codesDelivered": "Delivered",
+      "codesFailed": "Failed",
+      "codesNotSent": "Not sent",
+      "checklistDone": "Publishing checklist: all 6 complete",
+      "cancelledTitle": "Event cancelled",
+      "cancelledAt": "Date",
+      "cancelledBy": "By",
+      "cancelReason": "Reason"
     },
     "checklist": {
       "details": "Event details complete (name, start and end)",
@@ -498,6 +518,41 @@
       "deleteBody": "The event will be removed from the list. The audit log keeps its history.",
       "deleted": "Event deleted",
       "saved": "Saved"
+    },
+    "publish": {
+      "title": "Publish {{name}}",
+      "schedule": "Schedule",
+      "scheduleHelp": "Opens automatically at {{time}}.",
+      "startPassed": "The start time has passed: you can only open now.",
+      "openNow": "Open now",
+      "openNowHelp": "Voters can start voting at once.",
+      "codesLater": "Voting codes are sent from the Messages tab.",
+      "lockNote": "After publishing, categories, contesters and voters can no longer be changed.",
+      "confirm": "Publish",
+      "notReadyTitle": "The event is not ready yet",
+      "notReadyBody": "Fix these first, then publish:",
+      "scheduled": "Event scheduled",
+      "opened": "Event opened"
+    },
+    "openNowConfirm": {
+      "title": "Open {{name}} now?",
+      "body": "Voters can vote at once, before the scheduled time."
+    },
+    "unpublishConfirm": {
+      "title": "Return to Draft?",
+      "body": "You can edit again, and must publish again before voting.",
+      "done": "Event returned to Draft",
+      "codesSent": "Not possible once codes have been sent by SMS"
+    },
+    "cancelConfirm": {
+      "title": "Cancel {{name}}?",
+      "body": "The event will be cancelled and cannot be opened again.",
+      "done": "Event cancelled"
+    },
+    "archiveConfirm": {
+      "title": "Archive {{name}}?",
+      "body": "It becomes read-only and moves to the Archived filter.",
+      "done": "Event archived"
     }
   },
   "files": {

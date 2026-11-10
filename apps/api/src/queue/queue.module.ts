@@ -7,6 +7,7 @@ import type { Env } from '../config/env.schema.js';
 /** Queue names (Backend Schema 7.9: sms, email, reports, imports, schedule). */
 export const EMAIL_QUEUE = 'email';
 export const IMPORTS_QUEUE = 'imports';
+export const SCHEDULE_QUEUE = 'schedule';
 
 /** ioredis options from REDIS_URL, as BullMQ needs (it creates its own connections). */
 export function redisOptionsFromUrl(url: string): RedisOptions {
@@ -49,6 +50,11 @@ export function redisOptionsFromUrl(url: string): RedisOptions {
     // Validation and import are deterministic: a failure is recorded on the import, not retried.
     BullModule.registerQueue({
       name: IMPORTS_QUEUE,
+      defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
+    }),
+    // The 1-minute sweep (Backend Schema 11.9); a missed run is simply done by the next one.
+    BullModule.registerQueue({
+      name: SCHEDULE_QUEUE,
       defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
     }),
   ],

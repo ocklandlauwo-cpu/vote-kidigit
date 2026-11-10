@@ -502,7 +502,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 - ☑ 17. Files and photos
 - ☑ 18. Categories and contesters
 - ☑ 19. Voters, codes and CSV import
-- ☐ 20. Worker, scheduler and publishing
+- ☑ 20. Worker, scheduler and publishing
 - ☐ 21. SMS and email messaging
 
 **Phase 3 — Voting and results**

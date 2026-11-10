@@ -264,6 +264,11 @@ export class EventsService {
     if (!found) throw new AppError('NOT_FOUND');
   }
 
+  /** The event detail inside an existing transaction (used by LifecycleService too). */
+  detailIn(tx: Tx, eventId: string): Promise<EventDetail> {
+    return this.loadDetail(tx, eventId);
+  }
+
   private async loadDetail(tx: Tx, eventId: string): Promise<EventDetail> {
     const row = await tx.votingEvent.findFirst({
       where: { id: eventId, deletedAt: null },
@@ -283,10 +288,24 @@ export class EventsService {
       },
     });
     if (!row) throw new AppError('NOT_FOUND');
-    const [categories, contesters] = await Promise.all([
+    const [categories, contesters, codes, cancel] = await Promise.all([
       tx.category.count({ where: { eventId } }),
       tx.contester.count({ where: { eventId, status: 'active' } }),
+      tx.voter.groupBy({
+        by: ['codeStatus'],
+        where: { eventId, deletedAt: null },
+        _count: { _all: true },
+      }),
+      row.cancelledAt
+        ? tx.auditLog.findFirst({
+            where: { eventId, action: 'event.cancel' },
+            orderBy: { createdAt: 'desc' },
+            select: { actorLabel: true },
+          })
+        : null,
     ]);
+    const codeCount = (status: string) =>
+      codes.find((c) => c.codeStatus === status)?._count._all ?? 0;
     return {
       ...toSummary(row),
       showParty: row.showParty,
@@ -298,9 +317,16 @@ export class EventsService {
       closedAt: iso(row.closedAt),
       cancelledAt: iso(row.cancelledAt),
       cancelReason: row.cancelReason,
+      cancelledBy: cancel?.actorLabel ?? null,
       archivedAt: iso(row.archivedAt),
       categories,
       contesters,
+      codeCounts: {
+        notSent: codeCount('not_sent'),
+        sent: codeCount('sent'),
+        delivered: codeCount('delivered'),
+        failed: codeCount('failed'),
+      },
       createdAt: row.createdAt.toISOString(),
     };
   }

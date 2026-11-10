@@ -21,6 +21,8 @@ import {
   OrgAuditQuerySchema,
   ReplaceEventAssignmentsRequestSchema,
   UpdateEventRequestSchema,
+  CancelEventRequestSchema,
+  PublishEventRequestSchema,
 } from '@vote-kidigit/shared';
 import type { AuthState } from '../../auth/auth.types.js';
 import { CurrentAuth, RequirePermission, SignedIn } from '../../auth/decorators.js';
@@ -28,12 +30,15 @@ import { IdParamPipe } from '../../common/id-param.pipe.js';
 import { zodDto } from '../../common/zod-validation.pipe.js';
 import { AssignmentsService } from './assignments.service.js';
 import { EventsService } from './events.service.js';
+import { LifecycleService } from './lifecycle.service.js';
 
 class EventListQuery extends zodDto(EventListQuerySchema) {}
 class CreateEventBody extends zodDto(CreateEventRequestSchema) {}
 class UpdateEventBody extends zodDto(UpdateEventRequestSchema) {}
 class ReplaceAssignmentsBody extends zodDto(ReplaceEventAssignmentsRequestSchema) {}
 class EventAuditQuery extends zodDto(OrgAuditQuerySchema) {}
+class PublishEventBody extends zodDto(PublishEventRequestSchema) {}
+class CancelEventBody extends zodDto(CancelEventRequestSchema) {}
 
 /**
  * Events (Backend Schema 12.5). Event-scoped permissions also need the event to be assigned to
@@ -45,6 +50,7 @@ export class EventsController {
   constructor(
     private readonly events: EventsService,
     private readonly assignments: AssignmentsService,
+    private readonly lifecycle: LifecycleService,
   ) {}
 
   /** GET /api/v1/events — every signed-in staff user; filtered to their assigned events. */
@@ -119,6 +125,44 @@ export class EventsController {
   @RequirePermission('event.activate')
   activate(@Param('eventId', IdParamPipe) eventId: string): Promise<EventDetail> {
     return this.events.setActive(eventId, true);
+  }
+
+  /** POST /api/v1/events/:eventId/publish — {mode: 'schedule' | 'open_now', sendCodes} */
+  @Post(':eventId/publish')
+  @HttpCode(200)
+  @RequirePermission('event.publish')
+  publish(
+    @Param('eventId', IdParamPipe) eventId: string,
+    @Body() body: PublishEventBody,
+  ): Promise<EventDetail> {
+    return this.lifecycle.publish(eventId, body);
+  }
+
+  /** POST /api/v1/events/:eventId/unpublish */
+  @Post(':eventId/unpublish')
+  @HttpCode(200)
+  @RequirePermission('event.publish')
+  unpublish(@Param('eventId', IdParamPipe) eventId: string): Promise<EventDetail> {
+    return this.lifecycle.unpublish(eventId);
+  }
+
+  /** POST /api/v1/events/:eventId/cancel — {confirmName, reason} */
+  @Post(':eventId/cancel')
+  @HttpCode(200)
+  @RequirePermission('event.cancel')
+  cancel(
+    @Param('eventId', IdParamPipe) eventId: string,
+    @Body() body: CancelEventBody,
+  ): Promise<EventDetail> {
+    return this.lifecycle.cancel(eventId, body);
+  }
+
+  /** POST /api/v1/events/:eventId/archive */
+  @Post(':eventId/archive')
+  @HttpCode(200)
+  @RequirePermission('event.archive')
+  archive(@Param('eventId', IdParamPipe) eventId: string): Promise<EventDetail> {
+    return this.lifecycle.archive(eventId);
   }
 
   /** POST /api/v1/events/:eventId/deactivate */

@@ -54,9 +54,11 @@ export function eventDetail(
     closedAt: null,
     cancelledAt: status === 'cancelled' ? '2026-11-06T09:00:00.000Z' : null,
     cancelReason: status === 'cancelled' ? 'Mkutano umeahirishwa' : null,
+    cancelledBy: status === 'cancelled' ? 'Neema Mushi <neema@example.test>' : null,
     archivedAt: null,
     categories: 2,
     contesters: 5,
+    codeCounts: { notSent: 200, sent: 600, delivered: 380, failed: 20 },
     createdAt: '2026-11-01T08:00:00.000Z',
     ...overrides,
   };

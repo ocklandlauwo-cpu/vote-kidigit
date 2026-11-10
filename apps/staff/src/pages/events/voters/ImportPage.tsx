@@ -5,6 +5,7 @@
 import { ArrowLeftOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons';
 import { type EventDetail, type ImportProblem, type VoterImport } from '@vote-kidigit/shared';
 import { Button, Flex, Progress, Result, Spin, Steps, Table, Tabs, Typography, Upload } from 'antd';
+import type { TFunction } from 'i18next';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext } from 'react-router';
@@ -70,7 +71,7 @@ function ProblemTable({
   );
 }
 
-function failureText(t: ReturnType<typeof useTranslation>['t'], result: VoterImport): string {
+function failureText(t: TFunction, result: VoterImport): string {
   switch (result.failureReason) {
     case 'missing_columns':
       return t('voters.import.missingColumns', { columns: result.missingColumns.join(', ') });

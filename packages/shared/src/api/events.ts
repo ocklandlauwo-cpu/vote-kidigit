@@ -85,12 +85,42 @@ export const EventDetailSchema = EventSummarySchema.extend({
   closedAt: z.iso.datetime().nullable(),
   cancelledAt: z.iso.datetime().nullable(),
   cancelReason: z.string().nullable(),
+  /** Who cancelled (from the audit log), for the Cancelled overview. */
+  cancelledBy: z.string().nullable(),
   archivedAt: z.iso.datetime().nullable(),
   categories: z.number().int(),
   contesters: z.number().int(),
+  /** Voters per code status: the Scheduled overview shows sent / delivered / failed. */
+  codeCounts: z.object({
+    notSent: z.number().int(),
+    sent: z.number().int(),
+    delivered: z.number().int(),
+    failed: z.number().int(),
+  }),
   createdAt: z.iso.datetime(),
 });
 export type EventDetail = z.infer<typeof EventDetailSchema>;
+
+// Lifecycle (Backend Schema 12.5, App Flow 6.8, 6.11).
+
+/** POST /events/:eventId/publish: Schedule (opens at the start time) or Open now. */
+export const PublishEventRequestSchema = z
+  .object({
+    mode: z.enum(['schedule', 'open_now']),
+    /** "Send codes now" (App Flow 6.8): takes effect when SMS sending exists (step 21). */
+    sendCodes: z.boolean().default(false),
+  })
+  .strict();
+export type PublishEventRequest = z.input<typeof PublishEventRequestSchema>;
+
+/** POST /events/:eventId/cancel: type the event name and give a reason (App Flow 6.11). */
+export const CancelEventRequestSchema = z
+  .object({
+    confirmName: z.string().max(200),
+    reason: z.string().trim().min(10).max(500),
+  })
+  .strict();
+export type CancelEventRequest = z.infer<typeof CancelEventRequestSchema>;
 
 /** app.publish_checklist() (App Flow 6.3), in order. */
 export const checklistItems = [

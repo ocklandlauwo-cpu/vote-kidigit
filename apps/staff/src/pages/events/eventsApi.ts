@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AuditPageSchema,
+  type CancelEventRequest,
+  type PublishEventRequest,
   ChecklistResponseSchema,
   type CreateEventRequest,
   EventAssignmentsResponseSchema,
@@ -111,5 +113,29 @@ export function useReplaceAssignments(eventId: string) {
       body,
       schema: EventAssignmentsResponseSchema,
     }),
+  );
+}
+
+export function usePublishEvent(eventId: string) {
+  return useEventMutation((body: PublishEventRequest) =>
+    api(`/v1/events/${eventId}/publish`, { method: 'POST', body, schema: EventDetailSchema }),
+  );
+}
+
+export function useUnpublishEvent(eventId: string) {
+  return useEventMutation(() =>
+    api(`/v1/events/${eventId}/unpublish`, { method: 'POST', schema: EventDetailSchema }),
+  );
+}
+
+export function useCancelEvent(eventId: string) {
+  return useEventMutation((body: CancelEventRequest) =>
+    api(`/v1/events/${eventId}/cancel`, { method: 'POST', body, schema: EventDetailSchema }),
+  );
+}
+
+export function useArchiveEvent(eventId: string) {
+  return useEventMutation(() =>
+    api(`/v1/events/${eventId}/archive`, { method: 'POST', schema: EventDetailSchema }),
   );
 }
