@@ -83,6 +83,7 @@
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "testTimeout": 30000,
+    "maxWorkers": "50%",
     "setupFiles": [
       "<rootDir>/testing/jest-setup.ts"
     ]

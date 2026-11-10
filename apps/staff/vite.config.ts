@@ -26,5 +26,8 @@ export default defineConfig({
     // Ant Design is large: the first test of a file also pays its import, which takes several
     // seconds on a busy CI runner.
     testTimeout: 20_000,
+    // Half the cores: `pnpm test` runs the API's Jest (and its database) at the same time, and
+    // a worker per core made renders miss the 5 s waits of findBy… under that load.
+    maxWorkers: '50%',
   },
 });
