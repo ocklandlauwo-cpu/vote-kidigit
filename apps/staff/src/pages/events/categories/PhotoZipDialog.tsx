@@ -1,7 +1,11 @@
-// Bulk contester photos (App Flow 6.4, PRD CAT-08): a ZIP of JPG/PNG files named after the
-// contesters; the result lists the matched and unmatched files.
+// Bulk photos (App Flow 6.4, 6.5; PRD CAT-08, VTR-06): a ZIP of JPG/PNG files named after the
+// contesters (full name) or the voters (membership ID); the result lists matched and unmatched files.
 import { CheckCircleOutlined, UploadOutlined } from '@ant-design/icons';
-import { PHOTO_ZIP_MAX_BYTES, type PhotoZipResult } from '@vote-kidigit/shared';
+import {
+  PHOTO_ZIP_MAX_BYTES,
+  type PhotoZipResult,
+  type PhotoZipTarget,
+} from '@vote-kidigit/shared';
 import { Button, Flex, Modal, Progress, Table, Typography, Upload } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,10 +18,12 @@ const isZip = (file: File) =>
 
 export function PhotoZipDialog({
   eventId,
+  target = 'contesters',
   open,
   onClose,
 }: {
   eventId: string;
+  target?: PhotoZipTarget;
   open: boolean;
   onClose: () => void;
 }) {
@@ -43,7 +49,7 @@ export function PhotoZipDialog({
     setError(null);
     setProgress({ name: file.name, percent: 0 });
     zip.mutate(
-      { file, onProgress: (percent) => setProgress({ name: file.name, percent }) },
+      { file, target, onProgress: (percent) => setProgress({ name: file.name, percent }) },
       {
         onSuccess: setResult,
         onError: (e) =>
@@ -60,7 +66,7 @@ export function PhotoZipDialog({
   return (
     <Modal
       open={open}
-      title={t('categories.zip.title')}
+      title={t(target === 'voters' ? 'voters.zip.title' : 'categories.zip.title')}
       width={640}
       onCancel={progress ? undefined : close}
       closable={!progress}
@@ -75,7 +81,9 @@ export function PhotoZipDialog({
       <Flex vertical gap="middle">
         {!result && (
           <>
-            <Typography.Text type="secondary">{t('categories.zip.help')}</Typography.Text>
+            <Typography.Text type="secondary">
+              {t(target === 'voters' ? 'voters.zip.help' : 'categories.zip.help')}
+            </Typography.Text>
             <div className="vk-dropzone" data-error={error ? true : undefined}>
               <Upload.Dragger
                 accept=".zip,application/zip"
@@ -123,7 +131,12 @@ export function PhotoZipDialog({
                 dataSource={result.matched}
                 columns={[
                   { title: t('categories.zip.file'), dataIndex: 'fileName' },
-                  { title: t('categories.zip.contester'), dataIndex: 'name' },
+                  {
+                    title: t(
+                      target === 'voters' ? 'voters.zip.person' : 'categories.zip.contester',
+                    ),
+                    dataIndex: 'name',
+                  },
                 ]}
               />
             )}

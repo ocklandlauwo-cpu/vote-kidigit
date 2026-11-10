@@ -172,6 +172,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - The photo ZIP route needs one access decorator but two permissions: it is `@RequirePermission('event.view')` and the service checks `contester.manage` (voter.manage for voters, step 19). `files/zip-reader.ts` reads ZIPs with node:zlib (no ZIP library in the Tech Stack); `testing/zip.ts` builds them for tests.
 - Staff `pages/events/categories/`: panels receive the current object from the query (`latest()` in CategoriesTab), never a copy taken when they opened. Without that, a photo upload leaves the panel stale. Rule words live in `ruleText.ts`. dnd-kit keyboard drag works in jsdom when `getBoundingClientRect` is stubbed per card (see CategoriesTab.test.tsx). Ant Design 6 drawers are `.ant-drawer-open .ant-drawer-section` in browser checks.
 
+## Voters and codes in code
+
+- Codes only through `CodesService` (`modules/voters/codes.service.ts`): `issue()` returns `{ codeHmac, codeCiphertext }` and drops the plain code. `fingerprint()` serves sign-in lookup; `decrypt()` is for the SMS worker only (step 21). No endpoint, log or audit entry ever carries a code (voters.spec checks rows, audit and logs). On the rare fingerprint collision (`isCodeCollision`), retry with a new code.
+- Voter parsing rules are shared (`packages/shared/src/api/voters.ts`: `normalizePhone`, `parseGender`, `normalizeMembershipId`, `VOTER_CSV_COLUMNS`), so the API, the CSV worker and the staff forms agree. Lists return `phoneMasked`; only the detail has the phone.
+- CSV import: `POST …/imports` stores the file (`FilesService.withDocument`, kind csv_import) and queues `validate` on the `imports` queue. The worker (`ImportsWorkerModule`, `ImportRunner`) writes counters and problems (row, field, code, severity; no voter data) to `voter_imports`. Confirm queues `confirm`, which re-validates and inserts in batches of 500 in one transaction (timeout 120 s, all or nothing). `validateVoterCsv` (pure) is the one judge of rows, also for `errors.csv`.
+- The worker must not import `FilesModule` or `AuthModule` (throttler guard only exists in the API): `ImportsWorkerModule` provides `FilesService` and `EVENT_ACCESS` itself. Tests start the worker with `Test.createTestingModule({ imports: [WorkerModule] })`; if it fails to start, Jest hangs instead of failing.
+- Category links are created with `categoryVoter.createMany` after the voter, not as a nested create (the composite foreign key includes organization_id). Bulk assign/unassign works only for categories with "selected" eligibility.
+- The Write tool turned `\uFEFF` escapes into literal BOM characters (lint: no-irregular-whitespace); check new files that need a BOM escape.
+
 ## Files in code
 
 - `files` rows (migration 013) are never updated: vk_api has no UPDATE grant; a new upload is a new row and the replaced one is deleted. The bytes live at `STORAGE_DIR/org/{orgId}/{kind}/{uuid}.{ext}` and are served only by `GET /api/v1/files/:id`.

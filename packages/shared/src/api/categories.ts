@@ -175,8 +175,9 @@ export const UpdateContesterRequestSchema = z
 export type UpdateContesterRequest = z.infer<typeof UpdateContesterRequestSchema>;
 
 /** Bulk photos (CAT-08): a ZIP whose image file names match the people's names. */
-export const photoZipTargets = ['contesters'] as const;
+export const photoZipTargets = ['contesters', 'voters'] as const;
 export const PhotoZipTargetSchema = z.enum(photoZipTargets);
+export type PhotoZipTarget = z.infer<typeof PhotoZipTargetSchema>;
 export const PhotoZipRequestSchema = z.object({ target: PhotoZipTargetSchema }).strict();
 export type PhotoZipRequest = z.infer<typeof PhotoZipRequestSchema>;
 

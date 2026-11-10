@@ -89,6 +89,7 @@ model User {
   eventAssignments   EventAssignment[] @relation("AssignedUser")
   assignmentsCreated EventAssignment[] @relation("AssignmentCreator")
   filesCreated       File[]            @relation("FileCreator")
+  importsCreated     VoterImport[]     @relation("ImportCreator")
 
   @@unique([emailNormalized], map: "users_email_normalized_key", where: raw("deleted_at IS NULL"))
   /// Target of composite foreign keys from organization-owned child tables.
@@ -184,6 +185,7 @@ model VotingEvent {
   assignments  EventAssignment[]
   categories   Category[]
   voters       Voter[]
+  voterImports VoterImport[]
 
   @@unique([publicResultsToken], map: "voting_events_public_results_token_key")
   /// Target of composite foreign keys from the event's children.
@@ -670,10 +672,46 @@ model File {
   pictureOf         Category[]     @relation("CategoryPicture")
   photoOfContesters Contester[]    @relation("ContesterPhoto")
   photoOfVoters     Voter[]        @relation("VoterPhoto")
+  voterImports      VoterImport[]
 
   @@index([organizationId])
   @@index([createdBy])
   @@map("files")
+  @@schema("public")
+}
+
+/// CSV voter imports (Backend Schema 7.7, App Flow 6.6): the uploaded file, the validation
+/// result (counters and row problems) and the import itself. Rows are inserted at confirm.
+model VoterImport {
+  id             String       @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  eventId        String       @map("event_id") @db.Uuid
+  fileId         String?      @map("file_id") @db.Uuid
+  status         ImportStatus @default(uploaded)
+  totalRows      Int          @default(0) @map("total_rows")
+  validRows      Int          @default(0) @map("valid_rows")
+  warningRows    Int          @default(0) @map("warning_rows")
+  errorRows      Int          @default(0) @map("error_rows")
+  /// [{row, field, code, severity}]: no voter data, only where and what.
+  errors         Json         @default("[]")
+  columnMapping  Json?        @map("column_mapping")
+  /// Voters inserted at confirm.
+  importedRows   Int          @default(0) @map("imported_rows")
+  failureReason  String?      @map("failure_reason")
+  createdBy      String?      @map("created_by") @db.Uuid
+  completedAt    DateTime?    @map("completed_at") @db.Timestamptz(6)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  event   VotingEvent @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  file    File?       @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  creator User?       @relation("ImportCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([eventId])
+  @@index([organizationId])
+  @@index([fileId])
+  @@index([createdBy])
+  @@map("voter_imports")
   @@schema("public")
 }
 

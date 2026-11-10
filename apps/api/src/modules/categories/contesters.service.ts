@@ -3,8 +3,6 @@ import {
   type Contester,
   type CreateContesterRequest,
   normalizePersonName,
-  PHOTO_ZIP_MAX_FILES,
-  type PhotoZipResult,
   type UpdateContesterRequest,
 } from '@vote-kidigit/shared';
 import { AuditService } from '../../audit/audit.service.js';
@@ -12,9 +10,8 @@ import type { AuthState } from '../../auth/auth.types.js';
 import { AppError } from '../../common/app-error.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
-import { detectImageType } from '../files/image-processing.js';
 import { FilesService, type Upload } from '../files/files.service.js';
-import { readZip } from '../files/zip-reader.js';
+import { importPhotoZip } from '../files/photo-zip.js';
 import { contesterSelect, toContester } from './contesters.mapping.js';
 
 const auditSelect = { fullName: true, party: true, status: true, photoFileId: true } as const;
@@ -176,19 +173,12 @@ export class ContestersService {
   }
 
   /**
-   * POST /events/:eventId/photos/zip (CAT-08): each image whose file name, without extension,
-   * is a contester's full name becomes that contester's photo (cover-cropped like any other).
-   * Names are compared without case, accents or punctuation; a name shared by two contesters
-   * is ambiguous and skipped. Each photo is saved on its own, so one bad file stops nothing.
+   * POST /events/:eventId/photos/zip with target "contesters" (CAT-08): an image whose file name,
+   * without extension, is a contester's full name becomes that contester's photo. Names are
+   * compared without case, accents or punctuation; a name shared by two contesters is ambiguous.
    */
   async uploadZip(actor: AuthState, eventId: string, upload: Upload | undefined) {
     if (!actor.permissions.includes('contester.manage')) throw new AppError('FORBIDDEN');
-    if (!upload) {
-      throw new AppError('VALIDATION_FAILED', 'Choose a ZIP file.', {
-        source: 'body',
-        issues: [{ path: 'file', code: 'required', message: 'required' }],
-      });
-    }
     const contesters = await this.prisma.withContext(this.context(), async (tx) => {
       const event = await tx.votingEvent.findFirst({
         where: { id: eventId, deletedAt: null },
@@ -198,48 +188,18 @@ export class ContestersService {
       if (event.status !== 'draft') throw new AppError('EVENT_LOCKED');
       return tx.contester.findMany({ where: { eventId }, select: { id: true, fullName: true } });
     });
-    const byName = new Map<string, { id: string; fullName: string }[]>();
-    for (const contester of contesters) {
-      const key = normalizePersonName(contester.fullName);
-      byName.set(key, [...(byName.get(key) ?? []), contester]);
-    }
-
-    const entries = readZip(upload.buffer, {
-      maxEntries: PHOTO_ZIP_MAX_FILES,
-      maxEntryBytes: this.files.maxBytes,
-      maxTotalBytes: 200 * 1024 * 1024,
+    return importPhotoZip({
+      files: this.files,
+      upload,
+      kind: 'contester_photo',
+      people: contesters.map((c) => ({
+        id: c.id,
+        name: c.fullName,
+        key: normalizePersonName(c.fullName),
+      })),
+      keyOf: normalizePersonName,
+      link: (tx, id, fileId, discard) => this.linkPhoto(tx, eventId, id, fileId, discard),
     });
-    const result: PhotoZipResult = { matched: [], unmatched: [] };
-    for (const entry of entries) {
-      const fileName = entry.name;
-      if (entry.problem === 'too_large') {
-        result.unmatched.push({ fileName, problem: 'too_large' });
-        continue;
-      }
-      if (!entry.data || !detectImageType(entry.data)) {
-        result.unmatched.push({ fileName, problem: 'not_image' });
-        continue;
-      }
-      const candidates = byName.get(normalizePersonName(fileName.replace(/\.[^.]+$/, ''))) ?? [];
-      const target = candidates[0];
-      if (!target || candidates.length > 1) {
-        result.unmatched.push({ fileName, problem: target ? 'ambiguous' : 'no_match' });
-        continue;
-      }
-      const data = entry.data;
-      try {
-        await this.files.withImage(
-          'contester_photo',
-          { buffer: data, originalname: fileName, size: data.length },
-          (tx, file, discard) => this.linkPhoto(tx, eventId, target.id, file.id, discard),
-        );
-        result.matched.push({ fileName, id: target.id, name: target.fullName });
-      } catch (error: unknown) {
-        if (!(error instanceof AppError) || error.code !== 'FILE_TYPE') throw error;
-        result.unmatched.push({ fileName, problem: 'not_image' });
-      }
-    }
-    return result;
   }
 
   private async linkPhoto(

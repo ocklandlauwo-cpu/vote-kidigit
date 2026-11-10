@@ -10,3 +10,4 @@ export * from './users.js';
 export * from './events.js';
 export * from './files.js';
 export * from './categories.js';
+export * from './voters.js';

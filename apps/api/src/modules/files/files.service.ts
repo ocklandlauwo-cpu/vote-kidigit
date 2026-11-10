@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream, type ReadStream } from 'node:fs';
-import { mkdir, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { AuthState } from '../../auth/auth.types.js';
 import { EVENT_ACCESS, type EventAccess } from '../../auth/event-access.js';
@@ -123,6 +123,48 @@ export class FilesService {
     }
     await this.removeFromDisk(discarded);
     return result;
+  }
+
+  /**
+   * Like withImage for files kept as they are (CSV imports): the caller has checked the type;
+   * the size and the bytes are stored unchanged.
+   */
+  async withDocument<T>(
+    kind: 'csv_import' | 'report',
+    upload: Upload,
+    document: { mimeType: string; extension: string },
+    link: (tx: Tx, file: StoredFile) => Promise<T>,
+  ): Promise<T> {
+    const ctx = this.requestContext.getOrThrow();
+    if (!ctx.orgId) throw new AppError('NOT_FOUND');
+    const storagePath = `org/${ctx.orgId}/${kind}/${randomUUID()}.${document.extension}`;
+    await this.write(storagePath, upload.buffer);
+    try {
+      return await this.prisma.withContext(ctx, async (tx) => {
+        const file = await tx.file.create({
+          data: {
+            organizationId: ctx.orgId ?? '',
+            kind,
+            storagePath,
+            originalName: upload.originalname.slice(0, 255) || null,
+            mimeType: document.mimeType,
+            sizeBytes: upload.buffer.length,
+            sha256: createHash('sha256').update(upload.buffer).digest('hex'),
+            createdBy: ctx.userId,
+          },
+          select: fileSelect,
+        });
+        return link(tx, file);
+      });
+    } catch (error) {
+      await this.removeFromDisk([storagePath]);
+      throw error;
+    }
+  }
+
+  /** The stored bytes of a file row read in the caller's context (workers, error files). */
+  async read(storagePath: string): Promise<Buffer> {
+    return readFile(this.resolve(storagePath));
   }
 
   /** Deletes file rows inside `tx` and returns their storage paths for removeFromDisk. */

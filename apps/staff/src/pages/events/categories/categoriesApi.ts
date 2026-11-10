@@ -9,6 +9,7 @@ import {
   type CreateContesterRequest,
   EligibilityResponseSchema,
   PhotoZipResultSchema,
+  type PhotoZipTarget,
   type SetEligibilityRequest,
   type UpdateCategoryRequest,
   type UpdateContesterRequest,
@@ -182,10 +183,18 @@ export function useContesterPhoto(eventId: string) {
 export function usePhotoZip(eventId: string) {
   return useCategoryMutation(
     eventId,
-    ({ file, onProgress }: { file: File; onProgress?: (percent: number) => void }) =>
+    ({
+      file,
+      target,
+      onProgress,
+    }: {
+      file: File;
+      target: PhotoZipTarget;
+      onProgress?: (percent: number) => void;
+    }) =>
       upload(`${base(eventId)}/photos/zip`, file, {
         schema: PhotoZipResultSchema,
-        fields: { target: 'contesters' },
+        fields: { target },
         onProgress,
       }),
   );

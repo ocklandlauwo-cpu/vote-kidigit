@@ -35,6 +35,7 @@ import { IdParamPipe } from '../../common/id-param.pipe.js';
 import { zodDto } from '../../common/zod-validation.pipe.js';
 import type { Upload } from '../files/files.service.js';
 import { CategoriesService } from './categories.service.js';
+import { VotersService } from '../voters/voters.service.js';
 import { ContestersService } from './contesters.service.js';
 
 class CreateCategoryBody extends zodDto(CreateCategoryRequestSchema) {}
@@ -56,6 +57,7 @@ export class CategoriesController {
   constructor(
     private readonly categories: CategoriesService,
     private readonly contesters: ContestersService,
+    private readonly voters: VotersService,
   ) {}
 
   /** GET /api/v1/events/:eventId/categories */
@@ -228,7 +230,7 @@ export class CategoriesController {
    * POST /api/v1/events/:eventId/photos/zip — multipart "file" (ZIP up to 50 MB) and "target".
    * Backend Schema 12.6 allows contester.manage or voter.manage depending on the target, which
    * one decorator cannot say: event.view admits the user to the event and the service checks
-   * the target's permission (voters arrive in step 19).
+   * the target's permission.
    */
   @Post('photos/zip')
   @HttpCode(200)
@@ -241,9 +243,11 @@ export class CategoriesController {
   uploadZip(
     @CurrentAuth() auth: AuthState,
     @EventId() eventId: string,
-    @Body() _body: PhotoZipBody,
+    @Body() body: PhotoZipBody,
     @UploadedFile() file: Upload | undefined,
   ): Promise<PhotoZipResult> {
-    return this.contesters.uploadZip(auth, eventId, file);
+    return body.target === 'voters'
+      ? this.voters.uploadZip(auth, eventId, file)
+      : this.contesters.uploadZip(auth, eventId, file);
   }
 }

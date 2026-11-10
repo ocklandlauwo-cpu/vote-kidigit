@@ -111,6 +111,12 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${org}::uuid, 'org_logo', ${`org/${org}/org_logo/${uniqueSuffix()}.png`}, 'image/png', 1, ${'0'.repeat(64)})`,
   },
   {
+    table: 'public.voter_imports',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.voter_imports (organization_id, event_id)
+        VALUES (${org}::uuid, ${f.eventId}::uuid)`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -212,6 +218,7 @@ async function seedOrganization(
       sha256: '0'.repeat(64),
     },
   });
+  await owner.voterImport.create({ data: { organizationId: orgId, eventId: event.id } });
   await owner.categoryVoter.create({
     data: { categoryId: category.id, voterId: voter.id, organizationId: orgId },
   });

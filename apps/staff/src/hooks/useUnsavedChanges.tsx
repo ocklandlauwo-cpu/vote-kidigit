@@ -5,7 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { useBlocker } from 'react-router';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
-export function UnsavedChangesPrompt({ dirty }: { dirty: boolean }) {
+export function UnsavedChangesPrompt({
+  dirty,
+  title,
+  body,
+}: {
+  dirty: boolean;
+  /** Wording for a screen that says more than "unsaved changes" (e.g. EVT-06). */
+  title?: string;
+  body?: string;
+}) {
   const { t } = useTranslation();
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -23,8 +32,8 @@ export function UnsavedChangesPrompt({ dirty }: { dirty: boolean }) {
     <ConfirmDialog
       open={blocker.state === 'blocked'}
       tone="warning"
-      title={t('common.unsavedTitle')}
-      body={t('common.unsavedBody')}
+      title={title ?? t('common.unsavedTitle')}
+      body={body ?? t('common.unsavedBody')}
       confirmLabel={t('common.leave')}
       onConfirm={() => blocker.proceed?.()}
       onCancel={() => blocker.reset?.()}

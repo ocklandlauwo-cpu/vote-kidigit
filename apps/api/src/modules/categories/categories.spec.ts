@@ -573,7 +573,7 @@ describe('categories API', () => {
       await staff.moderator.agent
         .post(`/api/v1/events/${eventId}/photos/zip`)
         .set('X-CSRF-Token', staff.moderator.csrf)
-        .field('target', 'voters')
+        .field('target', 'members')
         .attach(UPLOAD_FIELD, zip, 'picha.zip')
         .expect(400);
     });

@@ -173,6 +173,8 @@
   --vk-photo-category-height: 56px;
   --vk-photo-contester-width: 48px;
   --vk-photo-contester-height: 67px;
+  --vk-photo-row-width: 32px;
+  --vk-photo-row-height: 45px;
   --vk-shadow-sm: 0 1px 2px rgba(13, 18, 23, 0.06), 0 4px 12px rgba(13, 18, 23, 0.08);
   --vk-shadow-md: 0 4px 8px rgba(13, 18, 23, 0.06), 0 12px 32px rgba(13, 18, 23, 0.16);
   --vk-z-base: 0;

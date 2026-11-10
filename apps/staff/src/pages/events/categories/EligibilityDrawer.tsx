@@ -1,12 +1,13 @@
-// EVT-04d Voters (App Flow 6.4, PRD RUL-07): all event voters, or selected voters. The
-// searchable voter list joins with the Voters tab (step 19); until then voters are chosen there
-// with "Assign to category", and this panel switches the mode and shows the count.
+// EVT-04d Voters (App Flow 6.4, PRD RUL-07, VTR-08): all event voters, or selected voters with
+// a searchable list (VoterPicker) once the category is in "selected" mode. The count follows the
+// choices.
 import type { Category, EligibilityMode } from '@vote-kidigit/shared';
 import { App, Button, Drawer, Flex, Radio, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { errorMessage } from '../../../api/errorMessage';
 import { useChangeEligibility, useSetEligibility } from './categoriesApi';
+import { VoterPicker } from './VoterPicker';
 
 export function EligibilityDrawer({
   eventId,
@@ -45,7 +46,16 @@ export function EligibilityDrawer({
     if (chosen === 'all') {
       setAll.mutate({ id: category.id, body: { mode: 'all' } }, { onSuccess });
     } else {
-      toSelected.mutate({ id: category.id, body: {} }, { onSuccess });
+      // Stay open: the voter list appears once the category is in "selected" mode.
+      toSelected.mutate(
+        { id: category.id, body: {} },
+        {
+          onSuccess: () => {
+            void message.success(t('categories.eligibility.saved'));
+            setMode(null);
+          },
+        },
+      );
     }
   }
 
@@ -87,10 +97,8 @@ export function EligibilityDrawer({
               {t('categories.eligibility.count', { count: category.eligibleVoters })}
             </Typography.Text>
           )}
-          {chosen === 'selected' && (
-            <Typography.Text type="secondary">
-              {t('categories.eligibility.selectedHelp')}
-            </Typography.Text>
+          {chosen === 'selected' && category.eligibility === 'selected' && (
+            <VoterPicker eventId={eventId} categoryId={category.id} readOnly={readOnly} />
           )}
           {failure && (
             <Typography.Text type="danger" role="alert">

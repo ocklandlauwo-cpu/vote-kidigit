@@ -398,3 +398,37 @@ body {
     padding: var(--vk-space-4);
   }
 }
+
+/* Table bulk action bar (Design System 8.7). */
+.vk-bulk-bar {
+  min-height: var(--vk-space-12);
+  padding: var(--vk-space-2) var(--vk-space-4);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-primary-subtle);
+}
+.vk-tabular {
+  font-variant-numeric: tabular-nums;
+}
+.vk-photo-contester.vk-photo-row {
+  width: var(--vk-photo-row-width);
+  height: var(--vk-photo-row-height);
+}
+
+/* Stat card (Design System 8.6): label on top, value in the stat type size. */
+.vk-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--vk-space-1);
+  min-width: 10rem;
+  padding: var(--vk-space-4) var(--vk-space-6);
+  border: 1px solid var(--vk-border);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface);
+}
+.vk-stat-value {
+  color: var(--vk-tone-fg);
+  font-size: var(--vk-font-stat-size);
+  font-weight: 600;
+  line-height: var(--vk-font-stat-line);
+  font-variant-numeric: tabular-nums;
+}
