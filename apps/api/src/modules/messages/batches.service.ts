@@ -364,14 +364,15 @@ export class BatchesService {
   }
 
   /**
-   * The voters a batch goes to (PRD SMS-05). "Not voted" is every voter until participation is
-   * recorded (step 22). Email batches reach only voters with an address (SMS-09).
+   * The voters a batch goes to (PRD SMS-05). "Not voted" means no participation in any category
+   * of the event. Email batches reach only voters with an address (SMS-09).
    */
   private async audience(tx: Tx, batch: NewBatch) {
     const where: Prisma.VoterWhereInput = { eventId: batch.eventId, deletedAt: null };
     if (batch.voterIds) where.id = { in: batch.voterIds };
     else if (batch.audience === 'single') where.id = batch.voterId ?? '';
     else if (batch.audience === 'not_sent') where.codeStatus = 'not_sent';
+    else if (batch.audience === 'not_voted') where.participation = { none: {} };
     else if (batch.audience === 'failed' && batch.type === 'code_delivery') {
       where.codeStatus = 'failed';
     }

@@ -12,5 +12,6 @@ import { KioskService } from './kiosk.service.js';
   imports: [AuthModule, MessagesModule, VoteModule],
   controllers: [KioskController, KioskDeviceController],
   providers: [KioskService, KioskDeviceService, KioskTokenGuard],
+  exports: [KioskService],
 })
 export class KioskModule {}

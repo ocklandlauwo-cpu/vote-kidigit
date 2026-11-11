@@ -11,5 +11,6 @@ import { ContestersService } from './contesters.service.js';
   imports: [AuthModule, FilesModule, VotersModule],
   controllers: [CategoriesController],
   providers: [CategoriesService, ContestersService],
+  exports: [CategoriesService],
 })
 export class CategoriesModule {}

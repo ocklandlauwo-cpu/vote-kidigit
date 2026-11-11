@@ -261,7 +261,7 @@ export class UsersService {
       this.assertNotSelf(actor, userId, 'You cannot deactivate yourself.');
       this.assertMayManage(actor, user);
       if (user.status === 'deactivated') throw new AppError('INVALID_TRANSITION');
-      // The rule "not the only moderator of an Open event" joins in step 26.
+      await this.assertNotOnlyModerator(tx, userId);
       await tx.user.update({ where: { id: userId }, data: { status: 'deactivated' } });
       await tx.userToken.deleteMany({ where: { userId, usedAt: null } });
       await this.audit.record(tx, {
@@ -275,6 +275,33 @@ export class UsersService {
     });
     await this.endSessions(userId);
     return detail;
+  }
+
+  /**
+   * An Open event must keep a moderator (Implementation Plan step 26): deactivating the only
+   * active moderator assigned to one is refused, naming the events.
+   */
+  private async assertNotOnlyModerator(tx: Tx, userId: string): Promise<void> {
+    const events = await tx.$queryRaw<{ name: string }[]>`
+      SELECT e.name FROM public.event_assignments a
+      JOIN public.voting_events e ON e.id = a.event_id
+      WHERE a.user_id = ${userId}::uuid AND a.type = 'moderator'
+        AND e.status = 'open' AND e.deleted_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM public.event_assignments other
+          JOIN public.users u ON u.id = other.user_id
+          WHERE other.event_id = a.event_id AND other.type = 'moderator'
+            AND other.user_id <> a.user_id AND u.status = 'active' AND u.deleted_at IS NULL)`;
+    if (events.length > 0) {
+      throw new AppError(
+        'INVALID_TRANSITION',
+        'This user is the only moderator of an open event.',
+        {
+          reason: 'ONLY_MODERATOR',
+          events: events.map((e) => e.name),
+        },
+      );
+    }
   }
 
   /** POST /users/:userId/reactivate: active again, or invited if never joined. */
