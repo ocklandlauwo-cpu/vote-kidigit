@@ -273,3 +273,111 @@
     transition: none;
   }
 }
+
+/* Kiosk (Design System 10.10): light always, voter scale × 1.125, controls 56 px, container
+   720 px, three contester columns from tablet width. The zoom scales everything at once, so the
+   sizes below are the visual size divided by 1.125. */
+.vk-kiosk {
+  zoom: 1.125;
+}
+.vk-kiosk .vk-frame-col {
+  max-width: 640px;
+}
+.vk-kiosk .vk-voter-header {
+  height: 72px;
+}
+.vk-kiosk .vk-btn {
+  min-height: 50px;
+}
+.vk-kiosk .vk-photo--large {
+  width: 142px;
+}
+@media (min-width: 768px) {
+  .vk-kiosk .vk-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.vk-keypad {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--vk-space-2);
+}
+.vk-keypad--numeric {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.vk-key {
+  min-height: 50px;
+  border: 1px solid var(--vk-border-strong);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface);
+  color: var(--vk-text);
+  font-size: var(--vk-font-h4-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+.vk-key:active {
+  background: var(--vk-surface-muted);
+}
+.vk-key:focus-visible {
+  outline: 2px solid var(--vk-focus);
+  outline-offset: 2px;
+}
+
+/* KSK-01 "Gusa kuanza": a slow fade pulse, static with reduced motion. */
+.vk-pulse {
+  animation: vk-pulse 2s ease-in-out infinite;
+}
+@keyframes vk-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vk-pulse {
+    animation: none;
+  }
+}
+
+.vk-welcome-logo {
+  max-height: 80px;
+  max-width: 280px;
+  object-fit: contain;
+}
+
+/* KSK-06: the 10-second return ring around the number. */
+.vk-return-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  font-weight: 600;
+}
+.vk-return-ring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.vk-return-ring circle {
+  fill: none;
+  stroke-width: 4;
+}
+
+.vk-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--vk-z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--vk-space-4);
+  background: var(--vk-overlay);
+}
+.vk-dialog {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--vk-space-6);
+  border-radius: var(--vk-radius-xl);
+  background: var(--vk-surface);
+  box-shadow: var(--vk-shadow-md);
+}

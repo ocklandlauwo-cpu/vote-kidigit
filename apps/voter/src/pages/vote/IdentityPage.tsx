@@ -7,7 +7,7 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { Button } from '../../components/vote/Button';
 import { IdentityCard } from '../../components/vote/VoterCards';
 import { VoterFrame } from '../../components/vote/VoterFrame';
-import { paths, useIdleTimeout, useSessionEnd } from '../../vote/flow';
+import { useFlowPaths, useIdleTimeout, useSessionEnd } from '../../vote/flow';
 import { resetVote, setVoteState, useVote } from '../../vote/store';
 import { confirmIdentity, notMe } from '../../vote/voteApi';
 
@@ -15,6 +15,7 @@ export default function IdentityPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { eventId = '' } = useParams();
+  const flow = useFlowPaths();
   const { token, identity, event } = useVote();
   const sessionEnd = useSessionEnd(eventId);
   const [busy, setBusy] = useState<'me' | 'notMe' | null>(null);
@@ -27,7 +28,7 @@ export default function IdentityPage() {
       <VoterFrame
         event={event}
         actions={
-          <Button block onClick={() => void navigate(paths.signIn(eventId), { replace: true })}>
+          <Button block onClick={() => void navigate(flow.signIn(eventId), { replace: true })}>
             {t('status.signInAgain')}
           </Button>
         }
@@ -41,7 +42,7 @@ export default function IdentityPage() {
       </VoterFrame>
     );
   }
-  if (!token || !identity) return <Navigate to={paths.signIn(eventId)} replace />;
+  if (!token || !identity) return <Navigate to={flow.signIn(eventId)} replace />;
 
   async function confirm() {
     if (!token) return;
@@ -50,7 +51,7 @@ export default function IdentityPage() {
     try {
       await confirmIdentity(token);
       setVoteState({ choices: {}, ballot: null, result: null });
-      await navigate(paths.status(eventId));
+      await navigate(flow.status(eventId));
     } catch (error) {
       if (!sessionEnd(error)) setFailed(true);
     } finally {

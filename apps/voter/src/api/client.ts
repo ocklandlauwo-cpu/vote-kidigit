@@ -22,11 +22,13 @@ interface Options<T> {
   method?: 'GET' | 'POST';
   body?: unknown;
   token?: string | null;
+  /** Extra headers, e.g. X-Kiosk-Token on a kiosk. */
+  headers?: Record<string, string>;
   schema?: z.ZodType<T>;
 }
 
 export async function voterApi<T = void>(path: string, options: Options<T> = {}): Promise<T> {
-  const headers: Record<string, string> = { Accept: 'application/json' };
+  const headers: Record<string, string> = { Accept: 'application/json', ...options.headers };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
   let response: Response;

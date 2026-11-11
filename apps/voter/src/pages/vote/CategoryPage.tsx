@@ -7,7 +7,7 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { BallotProgress, ContesterCard, YesNoChoice } from '../../components/vote/BallotParts';
 import { Button } from '../../components/vote/Button';
 import { VoterFrame } from '../../components/vote/VoterFrame';
-import { paths, useIdleTimeout } from '../../vote/flow';
+import { useFlowPaths, useIdleTimeout } from '../../vote/flow';
 import {
   type Choice,
   isSingle,
@@ -23,17 +23,18 @@ export default function CategoryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { eventId = '', index: indexParam = '1' } = useParams();
+  const flow = useFlowPaths();
   const { token, event, ballot, choices, result } = useVote();
   useIdleTimeout(eventId);
 
   // After submit, browser back never returns to the ballot (App Flow 3.8).
-  if (result) return <Navigate to={paths.received(eventId)} replace />;
-  if (!token) return <Navigate to={paths.signIn(eventId)} replace />;
-  if (!ballot) return <Navigate to={paths.status(eventId)} replace />;
+  if (result) return <Navigate to={flow.received(eventId)} replace />;
+  if (!token) return <Navigate to={flow.signIn(eventId)} replace />;
+  if (!ballot) return <Navigate to={flow.status(eventId)} replace />;
   const index = Number(indexParam);
   const total = ballot.categories.length;
   const category = ballot.categories[index - 1];
-  if (!category || !Number.isInteger(index)) return <Navigate to={paths.status(eventId)} replace />;
+  if (!category || !Number.isInteger(index)) return <Navigate to={flow.status(eventId)} replace />;
 
   const choice = choices[category.id];
   const choose = (next: Choice) => setVoteState({ choices: { ...choices, [category.id]: next } });
@@ -50,10 +51,10 @@ export default function CategoryPage() {
       : t('ballot.ruleExact', { count: max });
 
   function next() {
-    void navigate(index < total ? paths.category(eventId, index + 1) : paths.review(eventId));
+    void navigate(index < total ? flow.category(eventId, index + 1) : flow.review(eventId));
   }
   function back() {
-    void navigate(index > 1 ? paths.category(eventId, index - 1) : paths.status(eventId));
+    void navigate(index > 1 ? flow.category(eventId, index - 1) : flow.status(eventId));
   }
 
   return (

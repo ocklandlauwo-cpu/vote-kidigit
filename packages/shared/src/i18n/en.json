@@ -448,7 +448,8 @@
       "archive": "Archive",
       "deactivate": "Deactivate",
       "activate": "Activate",
-      "delete": "Delete event"
+      "delete": "Delete event",
+      "launchKiosk": "Launch kiosk on this device"
     },
     "tabs": {
       "live": "Live",
@@ -554,6 +555,19 @@
       "title": "Archive {{name}}?",
       "body": "It becomes read-only and moves to the Archived filter.",
       "done": "Event archived"
+    },
+    "kiosk": {
+      "title": "Launch kiosk",
+      "label": "Device label",
+      "labelHelp": "For example \"Hall A – Tablet 2\"",
+      "labelRequired": "Enter a device label",
+      "pin": "Staff PIN",
+      "pinHelp": "4 to 6 digits, to exit the kiosk",
+      "pinInvalid": "Enter 4 to 6 digits",
+      "pinConfirm": "Repeat PIN",
+      "pinMismatch": "The PINs do not match",
+      "confirm": "Launch kiosk",
+      "note": "This device will show only voter screens. To exit: tap the logo 5 times and enter the PIN."
     }
   },
   "files": {

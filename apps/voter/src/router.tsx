@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { createBrowserRouter, type RouteObject } from 'react-router';
+import { createBrowserRouter, type NonIndexRouteObject, type RouteObject } from 'react-router';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 
 // React Router 7 in data mode (Tech Stack 7). Public site, voter flow and results pages
@@ -7,11 +7,20 @@ import { PlaceholderPage } from './pages/PlaceholderPage';
 // gallery exists only in development: import.meta.env.DEV is false in production builds,
 // so the route and its lazy chunk are removed entirely.
 /** A lazily loaded page: each voter screen is its own chunk (Tech Stack 7.2). */
-function page(path: string, load: () => Promise<{ default: ComponentType }>): RouteObject {
+function page(path: string, load: () => Promise<{ default: ComponentType }>): NonIndexRouteObject {
   return {
     path,
     lazy: async () => ({ Component: (await load()).default }),
     // Shown for the moment the page chunk loads on the first visit.
+    HydrateFallback: () => <div className="min-h-dvh bg-bg" />,
+  };
+}
+
+/** The same, as the index route of a layout. */
+function indexPage(load: () => Promise<{ default: ComponentType }>): RouteObject {
+  return {
+    index: true,
+    lazy: async () => ({ Component: (await load()).default }),
     HydrateFallback: () => <div className="min-h-dvh bg-bg" />,
   };
 }
@@ -25,6 +34,18 @@ export const routes: RouteObject[] = [
   page('/vote/:eventId/ballot/:index', () => import('./pages/vote/CategoryPage')),
   page('/vote/:eventId/review', () => import('./pages/vote/ReviewPage')),
   page('/vote/:eventId/received', () => import('./pages/vote/ReceivedPage')),
+  {
+    // Kiosk mode (App Flow 10): the shared ballot screens under the device's token.
+    ...page('/vote/kiosk/:kioskToken', () => import('./pages/vote/kiosk/KioskLayout')),
+    children: [
+      indexPage(() => import('./pages/vote/kiosk/KioskStartPage')),
+      page('identity', () => import('./pages/vote/IdentityPage')),
+      page('status', () => import('./pages/vote/StatusPage')),
+      page('ballot/:index', () => import('./pages/vote/CategoryPage')),
+      page('review', () => import('./pages/vote/ReviewPage')),
+      page('received', () => import('./pages/vote/ReceivedPage')),
+    ],
+  },
   { path: '/results/:token', element: <PlaceholderPage screenId="RES-04" /> },
   ...(import.meta.env.DEV
     ? [

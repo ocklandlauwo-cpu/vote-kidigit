@@ -11,7 +11,7 @@ import { Button } from '../../components/vote/Button';
 import { ReviewCard, type ReviewItem } from '../../components/vote/VoterCards';
 import { VoterFrame } from '../../components/vote/VoterFrame';
 import { formatTime } from '../../format';
-import { paths, useIdleTimeout, useSessionEnd } from '../../vote/flow';
+import { useFlowPaths, useIdleTimeout, useSessionEnd } from '../../vote/flow';
 import { type Choice, ruleMet, toSelection } from '../../vote/rules';
 import { setVoteState, useVote } from '../../vote/store';
 import { submitBallot } from '../../vote/voteApi';
@@ -36,22 +36,23 @@ export default function ReviewPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { eventId = '' } = useParams();
+  const flow = useFlowPaths();
   const { token, event, ballot, choices, result } = useVote();
   const sessionEnd = useSessionEnd(eventId);
   const [phase, setPhase] = useState<'idle' | 'sending' | 'failed' | 'closed'>('idle');
   useIdleTimeout(eventId);
 
-  if (result) return <Navigate to={paths.received(eventId)} replace />;
-  if (!token) return <Navigate to={paths.signIn(eventId)} replace />;
-  if (!ballot) return <Navigate to={paths.status(eventId)} replace />;
+  if (result) return <Navigate to={flow.received(eventId)} replace />;
+  if (!token) return <Navigate to={flow.signIn(eventId)} replace />;
+  if (!ballot) return <Navigate to={flow.status(eventId)} replace />;
   const missing = ballot.categories.findIndex((c) => !ruleMet(c, choices[c.id]));
-  if (missing >= 0) return <Navigate to={paths.category(eventId, missing + 1)} replace />;
+  if (missing >= 0) return <Navigate to={flow.category(eventId, missing + 1)} replace />;
 
   const items: ReviewItem[] = ballot.categories.map((category, i) => ({
     categoryId: category.id,
     categoryName: category.name,
     chosen: chosenPeople(category, choices[category.id] as Choice, t('ballot.yes'), t('ballot.no')),
-    onChange: () => void navigate(paths.category(eventId, i + 1)),
+    onChange: () => void navigate(flow.category(eventId, i + 1)),
   }));
 
   async function send() {
@@ -62,7 +63,7 @@ export default function ReviewPage() {
       try {
         const response = await submitBallot(token, { selections });
         setVoteState({ result: response, token: null, ballot: null, choices: {} });
-        await navigate(paths.received(eventId), { replace: true });
+        await navigate(flow.received(eventId), { replace: true });
         return;
       } catch (error) {
         if (sessionEnd(error)) return;
@@ -88,7 +89,7 @@ export default function ReviewPage() {
       poweredBy={false}
       actions={
         phase === 'failed' || phase === 'closed' ? (
-          <Button block onClick={() => void navigate(paths.status(eventId))}>
+          <Button block onClick={() => void navigate(flow.status(eventId))}>
             {t('review.checkStatus')}
           </Button>
         ) : (

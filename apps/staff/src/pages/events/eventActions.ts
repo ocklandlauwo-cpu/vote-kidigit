@@ -13,7 +13,8 @@ export type EventActionKey =
   | 'reopen'
   | 'archive'
   | 'deactivate'
-  | 'activate';
+  | 'activate'
+  | 'launchKiosk';
 
 export interface EventAction {
   key: EventActionKey;
@@ -38,6 +39,10 @@ export function mainAction(status: EventStatus): EventAction | null {
 /** The "More" menu for an event in this status. */
 export function moreActions(status: EventStatus, isActive: boolean): EventAction[] {
   const actions: EventAction[] = [];
+  // App Flow 10.1: a kiosk runs only while the event is Scheduled or Open.
+  if (status === 'scheduled' || status === 'open') {
+    actions.push({ key: 'launchKiosk', permission: 'kiosk.operate', available: true });
+  }
   if (status === 'scheduled') {
     actions.push({ key: 'unpublish', permission: 'event.publish', available: true });
   }

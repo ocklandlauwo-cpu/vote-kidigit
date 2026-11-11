@@ -5,21 +5,31 @@ import { PhoneOutlined } from '@ant-design/icons';
 import type { VoterEventCard } from '@vote-kidigit/shared';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useKiosk } from '../../vote/kioskContext';
 import { LogoMark } from '../LogoMark';
 
 export function VoterHeader({ event }: { event: VoterEventCard | null }) {
   const { t } = useTranslation();
+  const kiosk = useKiosk();
+  const logo = event?.logoUrl ? (
+    <img
+      src={event.logoUrl}
+      alt={t('frame.logoAlt', { name: event.organizationName })}
+      className="vk-voter-logo"
+    />
+  ) : (
+    <LogoMark size={32} />
+  );
   return (
     <header className="vk-voter-header bg-surface">
-      <div className="mx-auto flex h-full max-w-120 items-center gap-3 px-4">
-        {event?.logoUrl ? (
-          <img
-            src={event.logoUrl}
-            alt={t('frame.logoAlt', { name: event.organizationName })}
-            className="vk-voter-logo"
-          />
+      <div className="vk-frame-col mx-auto flex h-full max-w-120 items-center gap-3 px-4">
+        {/* On a kiosk, five taps on the logo open the staff exit (App Flow 10.1). */}
+        {kiosk ? (
+          <span onClick={kiosk.onLogoTap} data-testid="kiosk-logo">
+            {logo}
+          </span>
         ) : (
-          <LogoMark size={32} />
+          logo
         )}
         <p className="truncate text-h4 font-semibold">{event?.name ?? 'Vote-Kidigit'}</p>
       </div>
@@ -51,7 +61,7 @@ export function PoweredBy() {
 export function VoterActionBar({ children }: { children: ReactNode }) {
   return (
     <div className="vk-action-bar">
-      <div className="mx-auto flex max-w-120 flex-col gap-2">{children}</div>
+      <div className="vk-frame-col mx-auto flex max-w-120 flex-col gap-2">{children}</div>
     </div>
   );
 }
@@ -69,7 +79,7 @@ export function VoterFrame({ event, children, actions, poweredBy = true }: Voter
   return (
     <div className="flex min-h-dvh flex-col bg-bg">
       <VoterHeader event={event} />
-      <main className="mx-auto flex w-full max-w-120 flex-1 flex-col gap-4 px-4 pt-6 pb-6">
+      <main className="vk-frame-col mx-auto flex w-full max-w-120 flex-1 flex-col gap-4 px-4 pt-6 pb-6">
         {children}
         <div className="mt-auto flex flex-col gap-4 pt-4">
           <HelpLine phone={event?.helpPhone} />

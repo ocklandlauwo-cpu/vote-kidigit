@@ -1,13 +1,15 @@
 // CLI for end-to-end tests only (Implementation Plan step 24): creates an organization with an
 // Open event (two categories, contesters and one voter with a known code) and prints what the
 // browser test needs as one JSON line. Refuses to run in production.
-//   node apps/api/dist/cli/seed-vote-e2e.js
+//   node apps/api/dist/cli/seed-vote-e2e.js [--kiosk]
+// With --kiosk it also launches a kiosk for the event and prints its token and PIN.
 // The event is set up as Draft and then opened through app.transition_event(), like the product.
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { randomInt, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { AppModule } from '../app.module.js';
+import { hashPassword } from '../auth/passwords.js';
 import type { Env } from '../config/env.schema.js';
 import { RequestContextService, systemContext } from '../context/request-context.js';
 import { PrismaService } from '../database/prisma.service.js';
@@ -23,6 +25,7 @@ export interface SeededVote {
   code: string;
   voterName: string;
   categories: { name: string; contesters: string[]; choose: number }[];
+  kiosk?: { token: string; pin: string };
 }
 
 async function main(): Promise<void> {
@@ -108,7 +111,32 @@ async function main(): Promise<void> {
           },
         });
         await tx.$queryRaw`SELECT id FROM app.transition_event(${event.id}::uuid, 'open'::event_status, NULL)`;
-        return { eventId: event.id, eventName, membershipId, plan };
+        let kiosk: SeededVote['kiosk'];
+        if (process.argv.includes('--kiosk')) {
+          const officer = await tx.user.create({
+            data: {
+              organizationId,
+              email: `kiosk-${tag}@example.test`,
+              fullName: 'Afisa wa Kiosk',
+              status: 'active',
+            },
+            select: { id: true },
+          });
+          const token = randomBytes(32).toString('base64url');
+          const pin = '4821';
+          await tx.kioskSession.create({
+            data: {
+              organizationId,
+              eventId: event.id,
+              deviceLabel: 'E2E Tablet',
+              tokenHash: new Uint8Array(createHash('sha256').update(token).digest()),
+              pinHash: await hashPassword(pin),
+              launchedBy: officer.id,
+            },
+          });
+          kiosk = { token, pin };
+        }
+        return { eventId: event.id, eventName, membershipId, plan, kiosk };
       }),
     );
 
@@ -120,6 +148,7 @@ async function main(): Promise<void> {
       code,
       voterName: 'Amina Hassan',
       categories: seeded.plan,
+      ...(seeded.kiosk && { kiosk: seeded.kiosk }),
     };
     process.stdout.write(`${JSON.stringify(output)}\n`);
   } finally {

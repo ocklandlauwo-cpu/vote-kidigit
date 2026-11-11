@@ -242,6 +242,14 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Brand colour: `vote/brand.ts` `applyBrand(primaryColor)` injects `<style id="vk-brand">` (Design System 12.5) once the event card or sign-in response is known.
 - End-to-end: `e2e/vote.spec.ts` seeds an Open election with `node apps/api/dist/cli/seed-vote-e2e.js` (refuses NODE_ENV=production; prints the voter's code) and Playwright also starts the built API (`playwright.config.ts`, health URL). Build the API before `pnpm e2e`.
 
+## Kiosk in code
+
+- Migration 019: `kiosk_sessions` (token only as SHA-256, PIN only as Argon2id) and `kiosk_code_sends` (never updated; the other phone only as an HMAC with `BALLOT_TOKEN_SECRET` plus its last 3 digits). `app.limit_alternate_phone()` takes an advisory lock per (event, number) before counting, so concurrent kiosks cannot pass the 3-voter limit. `app.resolve_kiosk_token()` is the bootstrap lookup.
+- `modules/kiosk/`: staff routes (`kiosk.operate`, event-scoped) and device routes under `v1/vote/kiosk` behind `KioskTokenGuard` (`X-Kiosk-Token`, actor "Kiosk"). Sign-in with that header (`VoteService.signIn`) fixes the event to the kiosk's and records channel `kiosk`.
+- Send-code rules live in Redis per kiosk session: `kiosksend:{session}:{voter}` (two sends, 60 s apart), `kioskalt:` (one other-phone send), `kioskfail:` (unknown membership IDs), `kioskpin:` (3 wrong PINs, 5 minutes). The SMS row and the code-send row are written in one transaction and the job is queued after commit, so ALT_PHONE_LIMIT sends nothing. `NewBatch.toAddress` sends a single code to another number without saving it on the voter.
+- Voter app: routes `/vote/kiosk/:kioskToken/*` reuse the web pages; pages get their step paths from `useFlowPaths()` (web or kiosk). `KioskLayout` forces light mode, beats every 60 s, adds the `vk-kiosk` scale and the 5-tap logo exit; `KioskStartPage` is KSK-01 to KSK-03a; ReceivedPage counts down 10 s on a kiosk. Idle is 60 s on a kiosk (`KIOSK_IDLE_MS`).
+- E2E: `seed-vote-e2e.js --kiosk` also launches a kiosk and prints its token and PIN.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

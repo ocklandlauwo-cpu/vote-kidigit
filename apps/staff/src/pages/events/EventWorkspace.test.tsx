@@ -81,7 +81,12 @@ describe('event workspace header', () => {
     const items = within(menu)
       .getAllByRole('menuitem')
       .map((item) => item.textContent);
-    expect(items).toEqual(['Rudisha kuwa Rasimu', 'Sitisha uchaguzi', 'Zima uchaguzi']);
+    expect(items).toEqual([
+      'Fungua kiosk kwenye kifaa hiki',
+      'Rudisha kuwa Rasimu',
+      'Sitisha uchaguzi',
+      'Zima uchaguzi',
+    ]);
     await userEvent.click(within(menu).getByText('Zima uchaguzi'));
     expect(await screen.findByText('Zima uchaguzi AGM 2027?')).toBeInTheDocument();
     const confirm = screen.getAllByRole('button', { name: 'Zima uchaguzi' }).at(-1) as HTMLElement;

@@ -27,6 +27,7 @@ import {
   useSetEventActive,
   useUnpublishEvent,
 } from './eventsApi';
+import { KioskLaunchDialog } from './KioskLaunchDialog';
 import { PublishDialog } from './PublishDialog';
 
 const TABS = [
@@ -206,6 +207,7 @@ function Workspace({ event }: { event: EventDetail }) {
         onCancel={closeDialog}
       />
       <PublishDialog event={event} open={dialog === 'publish'} onClose={closeDialog} />
+      <KioskLaunchDialog event={event} open={dialog === 'launchKiosk'} onClose={closeDialog} />
       <ConfirmDialog
         open={dialog === 'openNow'}
         tone="warning"

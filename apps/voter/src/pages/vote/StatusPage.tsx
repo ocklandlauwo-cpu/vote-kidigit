@@ -9,7 +9,7 @@ import { Button } from '../../components/vote/Button';
 import { CategoryOverview, StatusScreen } from '../../components/vote/VoterCards';
 import { VoterFrame } from '../../components/vote/VoterFrame';
 import { formatDate, formatTime, remaining } from '../../format';
-import { paths, useIdleTimeout, useSessionEnd } from '../../vote/flow';
+import { useFlowPaths, useIdleTimeout, useSessionEnd } from '../../vote/flow';
 import { resetVote, setVoteState, useVote } from '../../vote/store';
 import { fetchBallot, fetchStatus, finish } from '../../vote/voteApi';
 
@@ -36,6 +36,7 @@ export default function StatusPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { eventId = '' } = useParams();
+  const flow = useFlowPaths();
   const { token, event } = useVote();
   const sessionEnd = useSessionEnd(eventId);
   const [status, setStatus] = useState<VoterStatus | null>(null);
@@ -64,7 +65,7 @@ export default function StatusPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, reload]);
 
-  if (!token) return <Navigate to={paths.signIn(eventId)} replace />;
+  if (!token) return <Navigate to={flow.signIn(eventId)} replace />;
 
   async function startVoting() {
     if (!token) return;
@@ -76,7 +77,7 @@ export default function StatusPage() {
         setReload((n) => n + 1);
         return;
       }
-      await navigate(paths.category(eventId, 1));
+      await navigate(flow.category(eventId, 1));
     } catch (error) {
       if (!sessionEnd(error)) setFailed(true);
     } finally {
@@ -87,7 +88,7 @@ export default function StatusPage() {
   async function end() {
     if (token) await finish(token).catch(() => undefined);
     resetVote();
-    await navigate(paths.signIn(eventId), { replace: true });
+    await navigate(flow.signIn(eventId), { replace: true });
   }
 
   const card = status?.event ?? event;

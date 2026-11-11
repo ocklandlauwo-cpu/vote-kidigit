@@ -18,6 +18,9 @@ describe('voter router', () => {
   it('loads the sign-in page for /vote', async () => {
     const router = createMemoryRouter(routes, { initialEntries: ['/vote'] });
     render(<RouterProvider router={router} />);
-    expect(await screen.findByRole('heading', { level: 1, name: 'Ingia' })).toBeInTheDocument();
+    // The page is a lazy chunk: its first import can take a while when every suite runs at once.
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Ingia' }, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
 });

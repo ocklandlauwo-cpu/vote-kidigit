@@ -448,7 +448,8 @@
       "archive": "Hifadhi kwenye kumbukumbu",
       "deactivate": "Zima uchaguzi",
       "activate": "Washa uchaguzi",
-      "delete": "Futa uchaguzi"
+      "delete": "Futa uchaguzi",
+      "launchKiosk": "Fungua kiosk kwenye kifaa hiki"
     },
     "tabs": {
       "live": "Moja kwa moja",
@@ -554,6 +555,19 @@
       "title": "Weka {{name}} kwenye kumbukumbu?",
       "body": "Utabaki kusomeka tu na utahamia kichujio cha Kumbukumbu.",
       "done": "Uchaguzi umewekwa kwenye kumbukumbu"
+    },
+    "kiosk": {
+      "title": "Fungua kiosk",
+      "label": "Jina la kifaa",
+      "labelHelp": "Kwa mfano \"Ukumbi A – Tablet 2\"",
+      "labelRequired": "Weka jina la kifaa",
+      "pin": "PIN ya msimamizi",
+      "pinHelp": "Tarakimu 4 hadi 6, ya kufunga kiosk",
+      "pinInvalid": "Weka tarakimu 4 hadi 6",
+      "pinConfirm": "Rudia PIN",
+      "pinMismatch": "PIN hazilingani",
+      "confirm": "Fungua kiosk",
+      "note": "Kifaa hiki kitaonyesha skrini za wapiga kura tu. Kufunga: gusa nembo mara 5 na uweke PIN."
     }
   },
   "files": {
