@@ -36,8 +36,11 @@ export function KioskLaunchDialog({
         body: { deviceLabel: values.deviceLabel, pin: values.pin },
         schema: LaunchKioskResponseSchema,
       });
-      // The staff session stays signed in but hidden; the device now shows the kiosk.
-      window.location.assign(launched.url);
+      // Hand the device over without a staff session: a voter must not be able to reach the
+      // portal from the kiosk's browser. Staff sign in again after closing the kiosk. replace()
+      // leaves no history entry to go back to.
+      await api('/v1/auth/logout', { method: 'POST' }).catch(() => undefined);
+      window.location.replace(launched.url);
     } catch (e) {
       setError(e);
       setBusy(false);

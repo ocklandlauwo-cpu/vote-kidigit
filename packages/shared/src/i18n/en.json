@@ -567,7 +567,7 @@
       "pinConfirm": "Repeat PIN",
       "pinMismatch": "The PINs do not match",
       "confirm": "Launch kiosk",
-      "note": "This device will show only voter screens. To exit: tap the logo 5 times and enter the PIN."
+      "note": "This device will show only voter screens, and you will be signed out. To exit: tap the logo 5 times and enter the PIN, then sign in again."
     }
   },
   "files": {
