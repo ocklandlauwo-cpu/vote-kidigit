@@ -5,6 +5,7 @@ import type { Env } from '../../config/env.schema.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { PrismaService, type Tx } from '../../database/prisma.service.js';
 import { MailService } from '../../mail/mail.service.js';
+import { RedisService } from '../../redis/redis.service.js';
 import { CodesService } from '../voters/codes.service.js';
 import { MessageContent } from './message-content.js';
 import { maySend } from './send-rules.js';
@@ -19,6 +20,15 @@ const PAUSE_MIN_FINISHED = 10;
 
 /** Thrown to let the queue try the message again later (BullMQ backoff). */
 export class RetryLater extends Error {}
+
+/**
+ * One sender per message at a time. BullMQ delivers at least once: a job it thinks stalled (a
+ * busy worker) runs again while the first run may still be sending. The lock outlives the
+ * gateway's 10-second timeout; a second run that cannot take it retries later and then finds the
+ * message already sent.
+ */
+const SEND_LOCK_PREFIX = 'smslock:';
+const SEND_LOCK_MS = 60_000;
 
 const escapeHtml = (text: string) =>
   text.replace(
@@ -41,6 +51,7 @@ export class MessageSender {
     private readonly codes: CodesService,
     private readonly content: MessageContent,
     private readonly mail: MailService,
+    private readonly redis: RedisService,
     private readonly requestContext: RequestContextService,
     @Inject(SMS_GATEWAY) private readonly gateway: SmsGateway,
     config: ConfigService<Env, true>,
@@ -50,6 +61,17 @@ export class MessageSender {
 
   /** `lastAttempt`: a retryable failure now counts as final. */
   async send(messageId: string, lastAttempt: boolean): Promise<SendOutcome> {
+    const lockKey = `${SEND_LOCK_PREFIX}${messageId}`;
+    const locked = await this.redis.set(lockKey, '1', 'PX', SEND_LOCK_MS, 'NX');
+    if (!locked) throw new RetryLater('message is being sent');
+    try {
+      return await this.sendLocked(messageId, lastAttempt);
+    } finally {
+      await this.redis.del(lockKey);
+    }
+  }
+
+  private async sendLocked(messageId: string, lastAttempt: boolean): Promise<SendOutcome> {
     const ctx = this.requestContext.getOrThrow();
     const prepared = await this.prisma.withContext(ctx, (tx) => this.prepare(tx, messageId));
     if (prepared === 'held') return 'held';

@@ -30,9 +30,11 @@ import {
   uniqueSuffix,
 } from '../../testing/db.js';
 import { createTestHttpApp, testIp } from '../../testing/http.js';
+import { RequestContextService, systemContext } from '../../context/request-context.js';
 import { WorkerModule } from '../../worker.module.js';
 import { SchedulerRunner } from '../events/scheduler.js';
 import { CodesService } from '../voters/codes.service.js';
+import { MessageSender, RetryLater } from './message-sender.js';
 import { FakeSmsAdapter, SmsSendError } from './sms-gateway.js';
 
 const PASSWORD = 'Uchaguzi2027';
@@ -538,6 +540,34 @@ describe('messages', () => {
       mode: 'schedule',
       sendCodes: false,
     }).expect(200);
+  });
+
+  it('sends a message once even when two runs of its job overlap', async () => {
+    const event = await seedEvent('scheduled', 1);
+    const voter = await owner.voter.findFirstOrThrow({ where: { eventId: event.id } });
+    const message = await owner.smsMessage.create({
+      data: {
+        organizationId: orgId,
+        eventId: event.id,
+        voterId: voter.id,
+        channel: 'sms',
+        type: 'code_delivery',
+        toAddress: voter.phone,
+        bodyRedacted: `Msimbo: ${REDACTED_CODE}`,
+      },
+    });
+    const sender = worker.get(MessageSender);
+    const requestContext = worker.get(RequestContextService);
+    const run = () =>
+      requestContext.run(systemContext(randomUUID(), orgId), () => sender.send(message.id, false));
+    const before = fake.outbox.length;
+    const outcomes = await Promise.allSettled([run(), run()]);
+    expect(outcomes.filter((o) => o.status === 'fulfilled')).toHaveLength(1);
+    const refused = outcomes.find((o) => o.status === 'rejected');
+    expect(refused?.status === 'rejected' && refused.reason).toBeInstanceOf(RetryLater);
+    // The retry finds it sent and does nothing.
+    expect(await run()).toBe('skipped');
+    expect(fake.outbox.length - before).toBe(1);
   });
 
   it('refuses codes before publish and needs messages.send', async () => {
