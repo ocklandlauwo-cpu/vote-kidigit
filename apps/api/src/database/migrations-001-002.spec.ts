@@ -65,7 +65,18 @@ describe('migrations 001_helpers and 002_enums', () => {
           'set_updated_at',
         ]),
       );
-      for (const row of rows) expect(row).toMatchObject({ api: true, anyone: false });
+      // Exception (Backend Schema change log 11 Nov 2026): ballots are read and rewritten only
+      // at close, by transition_event as the owner; vk_api must not tally, freeze or seal.
+      const ownerOnly = ['freeze_results', 'seal_ballots', 'tally_event'];
+      for (const row of rows) {
+        expect(row).toMatchObject({ api: !ownerOnly.includes(row.fn), anyone: false });
+      }
+      expect(
+        rows
+          .filter((r) => ownerOnly.includes(r.fn))
+          .map((r) => r.fn)
+          .sort(),
+      ).toEqual(ownerOnly);
     });
 
     it('has the pg_trgm extension', async () => {

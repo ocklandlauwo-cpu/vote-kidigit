@@ -135,6 +135,20 @@ async function purgeVotes(tx: Prisma.TransactionClient, ids: string[]): Promise<
 
 export async function deleteOrganizations(owner: PrismaClient, ids: string[]): Promise<void> {
   if (ids.length === 0) return;
+  // Clean-up locks the vote and result tables; another test file closing an event at the same
+  // moment can deadlock with it, and PostgreSQL then aborts one of the two. Try again.
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await deleteOnce(owner, ids);
+      return;
+    } catch (error) {
+      if (attempt >= 5 || !String(error).includes('40P01')) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+    }
+  }
+}
+
+async function deleteOnce(owner: PrismaClient, ids: string[]): Promise<void> {
   await owner.$transaction(async (tx) => {
     await purgeVotes(tx, ids);
     await tx.organization.updateMany({

@@ -26,8 +26,8 @@ export interface EventAction {
 const MAIN: Partial<Record<EventStatus, EventAction>> = {
   draft: { key: 'publish', permission: 'event.publish', available: true },
   scheduled: { key: 'openNow', permission: 'event.publish', available: true },
-  open: { key: 'closeNow', permission: 'event.close', available: false },
-  closed: { key: 'publishResults', permission: 'results.publish', available: false },
+  open: { key: 'closeNow', permission: 'event.close', available: true },
+  closed: { key: 'publishResults', permission: 'results.publish', available: true },
   results_published: { key: 'downloadPdf', permission: 'reports.download', available: false },
 };
 
@@ -50,7 +50,7 @@ export function moreActions(status: EventStatus, isActive: boolean): EventAction
     actions.push({ key: 'cancel', permission: 'event.cancel', available: true });
   }
   if (status === 'closed') {
-    actions.push({ key: 'reopen', permission: 'event.reopen', available: false });
+    actions.push({ key: 'reopen', permission: 'event.reopen', available: true });
   }
   if (status === 'results_published' || status === 'cancelled') {
     actions.push({ key: 'archive', permission: 'event.archive', available: true });

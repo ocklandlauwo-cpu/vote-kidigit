@@ -34,6 +34,7 @@ export const routes: RouteObject[] = [
   page('/vote/:eventId/ballot/:index', () => import('./pages/vote/CategoryPage')),
   page('/vote/:eventId/review', () => import('./pages/vote/ReviewPage')),
   page('/vote/:eventId/received', () => import('./pages/vote/ReceivedPage')),
+  page('/vote/:eventId/results', () => import('./pages/vote/VoterResultsPage')),
   {
     // Kiosk mode (App Flow 10): the shared ballot screens under the device's token.
     ...page('/vote/kiosk/:kioskToken', () => import('./pages/vote/kiosk/KioskLayout')),
@@ -44,9 +45,10 @@ export const routes: RouteObject[] = [
       page('ballot/:index', () => import('./pages/vote/CategoryPage')),
       page('review', () => import('./pages/vote/ReviewPage')),
       page('received', () => import('./pages/vote/ReceivedPage')),
+      page('results', () => import('./pages/vote/VoterResultsPage')),
     ],
   },
-  { path: '/results/:token', element: <PlaceholderPage screenId="RES-04" /> },
+  page('/results/:token', () => import('./pages/results/PublicResultsPage')),
   ...(import.meta.env.DEV
     ? [
         {

@@ -258,6 +258,14 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Kiosk launch ends the launching staff session on the server (and ends the kiosk again if that fails).
 - Staff `pages/events/live/` (LiveTab, liveApi with `useCategorySwitch`, `useEndKiosk`); the Overview of an Open event shows turnout and links to the Live tab.
 
+## Results in code
+
+- Migrations 020–022: result tables (read-only for vk_api; nothing changes after publication, triggers raise RESULTS_PUBLISHED), `app.seal_ballots` (owner only; run by transition_event on open → closed and on open → cancelled), `app.tally_event` and `app.freeze_results` (not executable by vk_api), `app.result_hash`, `app.resolve_tie`. Thresholds compare `votes * 100 >= threshold * valid votes`; `percent` is display only.
+- Ballot immutability triggers allow DELETE only inside the seal (`app.sealing` setting); test clean-up still disables the triggers (votes and result tables) inside its own transaction.
+- `transitionEvent(tx, id, to, reason, newEndAt, resultsToken)`; `LifecycleService.close` / `reopen` (reopen queues the `event_extended` SMS to non-voters); the scheduler closes events at their end time (`SweepResult.closed`).
+- `modules/results/`: staff results (`results.view`), ties (`results.resolve_tie`), publish (typed name, queues the `results_published` SMS) and public link (`results.publish`); `GET /api/v1/results/:token` (public) and `GET /vote/results` (ballot token) honour `results_visibility` (winners only: no counts, no other contesters).
+- Staff `pages/events/results/` (ResultsTab with RES-02 drawer, RES-03 tie dialog, publish, public link); header: Close now (typed name, then the Results tab), Publish results (to the Results tab), Reopen (ReopenDialog). Voter app: `ResultsView`, `/results/:token` (RES-04) and `/vote/:eventId/results` (VTR-WEB-08).
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

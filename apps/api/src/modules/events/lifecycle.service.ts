@@ -188,7 +188,19 @@ export class LifecycleService {
    * POST /events/:eventId/reopen: Closed → Open with a later end and a reason; ballots stay, the
    * frozen results are no longer current.
    */
-  reopen(eventId: string, body: ReopenEventRequest): Promise<EventDetail> {
+  async reopen(eventId: string, body: ReopenEventRequest): Promise<EventDetail> {
+    const detail = await this.reopenIn(eventId, body);
+    // App Flow 6.11: the extension SMS, to those who can still vote.
+    await this.batches.send({
+      eventId,
+      type: 'event_extended',
+      channel: 'sms',
+      audience: 'not_voted',
+    });
+    return detail;
+  }
+
+  private reopenIn(eventId: string, body: ReopenEventRequest): Promise<EventDetail> {
     return this.prisma.withContext(this.context(), async (tx) => {
       const event = await this.find(tx, eventId);
       await transitionEvent(tx, eventId, 'open', body.reason, new Date(body.newEndAt));

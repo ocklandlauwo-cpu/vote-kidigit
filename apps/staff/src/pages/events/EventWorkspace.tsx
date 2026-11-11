@@ -22,12 +22,14 @@ import { type EventActionKey, mainAction, moreActions } from './eventActions';
 import {
   useArchiveEvent,
   useCancelEvent,
+  useCloseEvent,
   useEvent,
   usePublishEvent,
   useSetEventActive,
   useUnpublishEvent,
 } from './eventsApi';
 import { KioskLaunchDialog } from './KioskLaunchDialog';
+import { ReopenDialog } from './ReopenDialog';
 import { PublishDialog } from './PublishDialog';
 
 const TABS = [
@@ -67,6 +69,7 @@ function Workspace({ event }: { event: EventDetail }) {
   const publish = usePublishEvent(event.id);
   const unpublish = useUnpublishEvent(event.id);
   const cancel = useCancelEvent(event.id);
+  const close = useCloseEvent(event.id);
   const archive = useArchiveEvent(event.id);
   const [dialog, setDialog] = useState<EventActionKey | null>(null);
   const closeDialog = () => setDialog(null);
@@ -75,7 +78,10 @@ function Workspace({ event }: { event: EventDetail }) {
   const codesSent = event.firstCodeSentAt !== null;
 
   function run(key: EventActionKey) {
-    if (key === 'activate') {
+    if (key === 'publishResults') {
+      // Publication is done from the Results tab, after any tie is resolved (App Flow 11.2).
+      void navigate(`/events/${event.id}/results`);
+    } else if (key === 'activate') {
       setActive.mutate(true, {
         onSuccess: () => void message.success(t('events.settings.activated')),
       });
@@ -208,6 +214,28 @@ function Workspace({ event }: { event: EventDetail }) {
       />
       <PublishDialog event={event} open={dialog === 'publish'} onClose={closeDialog} />
       <KioskLaunchDialog event={event} open={dialog === 'launchKiosk'} onClose={closeDialog} />
+      <ReopenDialog event={event} open={dialog === 'reopen'} onClose={closeDialog} />
+      <ConfirmDialog
+        open={dialog === 'closeNow'}
+        tone="danger"
+        typeToConfirm={event.name}
+        title={t('events.closeConfirm.title', { name: event.name })}
+        body={t('events.closeConfirm.body')}
+        confirmLabel={t('events.actions.closeNow')}
+        loading={close.isPending}
+        onConfirm={() =>
+          close.mutate(undefined, {
+            onSuccess: () => {
+              void message.success(t('events.closeConfirm.done'));
+              closeDialog();
+              // App Flow 6.11: straight to the results.
+              void navigate(`/events/${event.id}/results`);
+            },
+            onError: failed,
+          })
+        }
+        onCancel={closeDialog}
+      />
       <ConfirmDialog
         open={dialog === 'openNow'}
         tone="warning"

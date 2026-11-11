@@ -3,6 +3,7 @@ import {
   AuditPageSchema,
   type CancelEventRequest,
   type PublishEventRequest,
+  type ReopenEventRequest,
   ChecklistResponseSchema,
   type CreateEventRequest,
   EventAssignmentsResponseSchema,
@@ -131,6 +132,18 @@ export function useUnpublishEvent(eventId: string) {
 export function useCancelEvent(eventId: string) {
   return useEventMutation((body: CancelEventRequest) =>
     api(`/v1/events/${eventId}/cancel`, { method: 'POST', body, schema: EventDetailSchema }),
+  );
+}
+
+export function useCloseEvent(eventId: string) {
+  return useEventMutation(() =>
+    api(`/v1/events/${eventId}/close`, { method: 'POST', schema: EventDetailSchema }),
+  );
+}
+
+export function useReopenEvent(eventId: string) {
+  return useEventMutation((body: ReopenEventRequest) =>
+    api(`/v1/events/${eventId}/reopen`, { method: 'POST', body, schema: EventDetailSchema }),
   );
 }
 

@@ -136,5 +136,22 @@
     "backspace": "Futa herufi",
     "clear": "Futa yote",
     "keypad": "Kibodi"
+  },
+  "results": {
+    "title": "Matokeo",
+    "closedAt": "Upigaji kura ulifungwa {{time}}",
+    "turnout": "Wamepiga kura {{voted}} kati ya {{registered}}",
+    "winner": "Mshindi",
+    "yes": "Ndiyo",
+    "no": "Hapana",
+    "votes": "kura {{votes}} · {{percent}}%",
+    "noWinner": "Hakuna mshindi",
+    "quorumNotMet": "Akidi haikutimia",
+    "tieNote": "Sare iliamuliwa: {{reason}}",
+    "check": "Alama ya uhakiki: {{hash}}",
+    "version": "Toleo {{version}}",
+    "unavailable": "Kiungo hiki hakipatikani",
+    "yourVote": "Ulipiga kura saa {{time}}",
+    "back": "Rudi"
   }
 }

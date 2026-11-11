@@ -36,9 +36,13 @@ const ALLOWED = new Set([
   'draft>cancelled',
   'scheduled>cancelled',
   'open>cancelled',
+  'open>closed',
   'results_published>archived',
   'cancelled>archived',
 ]);
+
+/** Allowed moves that need more than a reason: a new end time (reopen) or a results token. */
+const NEEDS_DETAILS = new Set(['closed>open', 'closed>results_published']);
 
 interface Fixture {
   eventId: string;
@@ -363,6 +367,8 @@ describe('events: setup lock, windows, transitions and checklist', () => {
       const result = transition(f.eventId, to);
       if (ALLOWED.has(`${from}>${to}`)) {
         await expect(result).resolves.toEqual([{ status: to }]);
+      } else if (NEEDS_DETAILS.has(`${from}>${to}`)) {
+        await expect(result).rejects.toThrow('VALIDATION_FAILED');
       } else {
         await expect(result).rejects.toThrow('INVALID_TRANSITION');
       }

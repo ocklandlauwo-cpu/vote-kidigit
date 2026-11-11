@@ -568,6 +568,19 @@
       "pinMismatch": "PIN hazilingani",
       "confirm": "Fungua kiosk",
       "note": "Kifaa hiki kitaonyesha skrini za wapiga kura tu, na utatolewa kwenye akaunti yako. Kufunga: gusa nembo mara 5 na uweke PIN, kisha ingia tena."
+    },
+    "closeConfirm": {
+      "title": "Funga upigaji kura wa {{name}}?",
+      "body": "Hakuna kura zaidi zitakazopokelewa. Matokeo yatahesabiwa mara moja.",
+      "done": "Upigaji kura umefungwa"
+    },
+    "reopen": {
+      "title": "Fungua tena {{name}}",
+      "newEnd": "Muda mpya wa kufunga",
+      "endFuture": "Chagua muda ujao",
+      "reason": "Sababu",
+      "reasonShort": "Andika sababu ya herufi 10 au zaidi",
+      "done": "Uchaguzi umefunguliwa tena"
     }
   },
   "files": {
@@ -1033,5 +1046,57 @@
     },
     "openTitle": "Upigaji kura unaendelea",
     "openLink": "Fungua chumba cha udhibiti"
+  },
+  "results": {
+    "beforeCloseTitle": "Matokeo bado",
+    "beforeClose": "Matokeo yatapatikana upigaji kura ukifungwa saa {{time}}",
+    "tiesBanner_one": "Sare {{count}} inahitaji uamuzi kabla ya kutangaza matokeo",
+    "tiesBanner_other": "Sare {{count}} zinahitaji uamuzi kabla ya kutangaza matokeo",
+    "generated": "Toleo {{version}} · limehesabiwa {{time}}",
+    "hash": "Alama ya uhakiki: {{hash}}…",
+    "seats_one": "Nafasi {{count}}",
+    "seats_other": "Nafasi {{count}}",
+    "thresholdMet": "Kiwango cha {{pct}}% kimefikiwa",
+    "thresholdNotMet": "Kiwango cha {{pct}}% hakijafikiwa",
+    "quorumMet": "Akidi ya {{pct}}% imetimia",
+    "quorumNotMet": "Akidi ya {{pct}}% haijatimia",
+    "resolveTie": "Amua sare",
+    "open": "Fungua",
+    "tieOpen": "Sare: inasubiri uamuzi",
+    "noWinner": "Hakuna mshindi",
+    "yesWins": "{{name}}: Ndiyo",
+    "votes": "kura {{votes}} · {{percent}}%",
+    "categoryTurnout": "Wamepiga kura {{voted}} kati ya {{eligible}} · waliruka {{skipped}}",
+    "publicTitle": "Kiungo cha matokeo kwa umma",
+    "publicSwitch": "Kiungo kiko wazi",
+    "linkOn": "Kiungo kimewashwa",
+    "linkOff": "Kiungo kimezimwa",
+    "rule": "Kanuni",
+    "eligible": "Wanaostahili kupiga kura",
+    "voted": "Wamepiga kura",
+    "valid": "Kura halali",
+    "skipped": "Waliruka",
+    "col": {
+      "contester": "Mgombea",
+      "votes": "Kura",
+      "rank": "Nafasi",
+      "winner": "Mshindi"
+    },
+    "yes": "Ndiyo",
+    "no": "Hapana",
+    "tieNote": "Sare iliamuliwa: {{reason}} ({{by}}, {{time}})",
+    "tie": {
+      "title": "Amua sare: {{name}}",
+      "body_one": "Nafasi {{count}} imebaki; wagombea hawa wana kura {{votes}} kila mmoja.",
+      "body_other": "Nafasi {{count}} zimebaki; wagombea hawa wana kura {{votes}} kila mmoja.",
+      "takesSeat": "Wanaochukua nafasi",
+      "noWinner": "Hakuna mshindi",
+      "reason": "Sababu (inahitajika)",
+      "save": "Hifadhi uamuzi",
+      "saved": "Uamuzi umehifadhiwa"
+    },
+    "publishTitle": "Tangaza matokeo ya {{name}}?",
+    "publishBody": "Kiungo cha umma kitafunguliwa na wapiga kura wataona matokeo. Matokeo hayawezi kubadilishwa baadaye.",
+    "publishedDone": "Matokeo yametangazwa"
   }
 }

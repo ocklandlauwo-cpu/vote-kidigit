@@ -141,7 +141,19 @@ export default function StatusPage() {
     } as const;
     const { kind, title, body } = copy[state];
     return (
-      <VoterFrame event={card} actions={finishButton}>
+      <VoterFrame
+        event={card}
+        actions={
+          <>
+            {state === 'results_published' && (
+              <Button block onClick={() => void navigate(flow.results(eventId))}>
+                {t('status.viewResults')}
+              </Button>
+            )}
+            {finishButton}
+          </>
+        }
+      >
         <StatusScreen kind={kind} title={t(title)} message={t(body)}>
           {status.votedAt && (
             <p className="text-body-sm">

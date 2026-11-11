@@ -136,5 +136,22 @@
     "backspace": "Delete character",
     "clear": "Clear",
     "keypad": "Keypad"
+  },
+  "results": {
+    "title": "Results",
+    "closedAt": "Voting closed {{time}}",
+    "turnout": "{{voted}} of {{registered}} voted",
+    "winner": "Winner",
+    "yes": "Yes",
+    "no": "No",
+    "votes": "{{votes}} votes · {{percent}}%",
+    "noWinner": "No winner",
+    "quorumNotMet": "Quorum not met",
+    "tieNote": "Tie decided: {{reason}}",
+    "check": "Check code: {{hash}}",
+    "version": "Version {{version}}",
+    "unavailable": "This link is not available",
+    "yourVote": "You voted at {{time}}",
+    "back": "Back"
   }
 }

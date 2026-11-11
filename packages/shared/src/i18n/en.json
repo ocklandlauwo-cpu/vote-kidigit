@@ -568,6 +568,19 @@
       "pinMismatch": "The PINs do not match",
       "confirm": "Launch kiosk",
       "note": "This device will show only voter screens, and you will be signed out. To exit: tap the logo 5 times and enter the PIN, then sign in again."
+    },
+    "closeConfirm": {
+      "title": "Close voting for {{name}}?",
+      "body": "No more votes will be accepted. Results are calculated at once.",
+      "done": "Voting closed"
+    },
+    "reopen": {
+      "title": "Reopen {{name}}",
+      "newEnd": "New closing time",
+      "endFuture": "Choose a time in the future",
+      "reason": "Reason",
+      "reasonShort": "Give a reason of at least 10 characters",
+      "done": "Event reopened"
     }
   },
   "files": {
@@ -1033,5 +1046,57 @@
     },
     "openTitle": "Voting is open",
     "openLink": "Open the control room"
+  },
+  "results": {
+    "beforeCloseTitle": "No results yet",
+    "beforeClose": "Results available when voting closes at {{time}}",
+    "tiesBanner_one": "{{count}} tie needs resolution before publishing",
+    "tiesBanner_other": "{{count}} ties need resolution before publishing",
+    "generated": "Version {{version}} · calculated {{time}}",
+    "hash": "Check code: {{hash}}…",
+    "seats_one": "{{count}} seat",
+    "seats_other": "{{count}} seats",
+    "thresholdMet": "{{pct}}% threshold met",
+    "thresholdNotMet": "{{pct}}% threshold not met",
+    "quorumMet": "{{pct}}% quorum met",
+    "quorumNotMet": "{{pct}}% quorum not met",
+    "resolveTie": "Resolve tie",
+    "open": "Open",
+    "tieOpen": "Tie: awaiting decision",
+    "noWinner": "No winner",
+    "yesWins": "{{name}}: Yes",
+    "votes": "{{votes}} votes · {{percent}}%",
+    "categoryTurnout": "{{voted}} of {{eligible}} voted · {{skipped}} skipped",
+    "publicTitle": "Public results link",
+    "publicSwitch": "Link is on",
+    "linkOn": "Link turned on",
+    "linkOff": "Link turned off",
+    "rule": "Rule",
+    "eligible": "Eligible voters",
+    "voted": "Voted",
+    "valid": "Valid votes",
+    "skipped": "Skipped",
+    "col": {
+      "contester": "Candidate",
+      "votes": "Votes",
+      "rank": "Rank",
+      "winner": "Winner"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "tieNote": "Tie decided: {{reason}} ({{by}}, {{time}})",
+    "tie": {
+      "title": "Resolve tie: {{name}}",
+      "body_one": "{{count}} seat remains; these candidates have {{votes}} votes each.",
+      "body_other": "{{count}} seats remain; these candidates have {{votes}} votes each.",
+      "takesSeat": "Who takes the seat",
+      "noWinner": "No winner",
+      "reason": "Reason (required)",
+      "save": "Save resolution",
+      "saved": "Resolution saved"
+    },
+    "publishTitle": "Publish the results of {{name}}?",
+    "publishBody": "The public link goes live and voters see the results. Results cannot be changed afterwards.",
+    "publishedDone": "Results published"
   }
 }

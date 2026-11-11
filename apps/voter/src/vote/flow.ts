@@ -16,6 +16,7 @@ export const paths = {
   category: (eventId: string, index: number) => `/vote/${eventId}/ballot/${index}`,
   review: (eventId: string) => `/vote/${eventId}/review`,
   received: (eventId: string) => `/vote/${eventId}/received`,
+  results: (eventId: string) => `/vote/${eventId}/results`,
 };
 
 export type FlowPaths = typeof paths;
@@ -30,6 +31,7 @@ function kioskPaths(token: string): FlowPaths {
     category: (_eventId: string, index: number) => `${base}/ballot/${index}`,
     review: () => `${base}/review`,
     received: () => `${base}/received`,
+    results: () => `${base}/results`,
   };
 }
 

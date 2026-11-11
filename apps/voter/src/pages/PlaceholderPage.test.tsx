@@ -5,10 +5,7 @@ import '../i18n';
 import { routes } from '../router';
 
 describe('voter router', () => {
-  it.each([
-    ['/', 'PUB-01'],
-    ['/results/abc123', 'RES-04'],
-  ])('renders the placeholder for %s', (path, screenId) => {
+  it.each([['/', 'PUB-01']])('renders the placeholder for %s', (path, screenId) => {
     const router = createMemoryRouter(routes, { initialEntries: [path] });
     render(<RouterProvider router={router} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Vote-Kidigit' })).toBeInTheDocument();
