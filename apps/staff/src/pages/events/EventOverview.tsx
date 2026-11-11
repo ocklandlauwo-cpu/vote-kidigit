@@ -8,12 +8,14 @@ import { Card, Collapse, Descriptions, Flex, Progress, Skeleton, Typography } fr
 import { useTranslation } from 'react-i18next';
 import { Link, useOutletContext } from 'react-router';
 import { errorMessage } from '../../api/errorMessage';
+import { hasPermission, useMe } from '../../auth/useAuth';
 import { Banner } from '../../components/Banner';
 import { useFormat } from '../../hooks/useFormat';
 import { useNow } from '../../hooks/useNow';
 import { FIX } from './checklistFix';
 import { durationText } from './countdown';
 import { useChecklist } from './eventsApi';
+import { useLive } from './live/liveApi';
 
 function Checklist({ event }: { event: EventDetail }) {
   const { t } = useTranslation();
@@ -156,6 +158,30 @@ function Cancelled({ event }: { event: EventDetail }) {
   );
 }
 
+/** Open (App Flow 6.10): turnout at a glance and the way to the control room. */
+function OpenNow({ event }: { event: EventDetail }) {
+  const { t } = useTranslation();
+  const me = useMe().data;
+  const live = useLive(event.id);
+  if (!hasPermission(me, 'turnout.view')) return null;
+  return (
+    <Card title={t('live.openTitle')} data-testid="open-summary">
+      <Flex justify="space-between" align="center" wrap gap="middle">
+        <span className="vk-stat-value">
+          {live.data
+            ? t('live.turnout', {
+                voted: live.data.turnout.voted.toLocaleString('en'),
+                registered: live.data.turnout.registered.toLocaleString('en'),
+                percent: live.data.turnout.percent,
+              })
+            : '…'}
+        </span>
+        <Link to={`/events/${event.id}/live`}>{t('live.openLink')}</Link>
+      </Flex>
+    </Card>
+  );
+}
+
 export function EventOverview() {
   const { t } = useTranslation();
   const format = useFormat();
@@ -165,6 +191,7 @@ export function EventOverview() {
       {/* EVT-03 */}
       {event.status === 'draft' && <Checklist event={event} />}
       {event.status === 'scheduled' && <Scheduled event={event} />}
+      {event.status === 'open' && <OpenNow event={event} />}
       {event.status === 'cancelled' && <Cancelled event={event} />}
       <Card title={t('events.overview.facts')}>
         <Descriptions

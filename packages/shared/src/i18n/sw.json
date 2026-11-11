@@ -987,5 +987,51 @@
     },
     "paused_one": "Utumaji umesimamishwa: ujumbe {{count}} umeshindikana. Kagua mtoa huduma wa SMS, kisha Endelea au Sitisha.",
     "paused_other": "Utumaji umesimamishwa: jumbe {{count}} zimeshindikana. Kagua mtoa huduma wa SMS, kisha Endelea au Sitisha."
+  },
+  "live": {
+    "updated_one": "Imesasishwa sekunde {{count}} zilizopita",
+    "updated_other": "Imesasishwa sekunde {{count}} zilizopita",
+    "turnout": "Wamepiga kura {{voted}} kati ya {{registered}} · {{percent}}%",
+    "closesIn": "Inafungwa baada ya {{time}}",
+    "opensIn": "Inafunguliwa baada ya {{time}}",
+    "categoriesTitle": "Nafasi",
+    "col": {
+      "category": "Nafasi",
+      "status": "Hali",
+      "countdown": "Muda",
+      "turnout": "Wamepiga kura",
+      "switch": "Fungua / Funga"
+    },
+    "switchLabel": "Fungua au funga {{name}}",
+    "categoryOpened": "Nafasi imefunguliwa",
+    "categoryClosed": "Nafasi imefungwa",
+    "closeTitle": "Funga {{name}}?",
+    "closeBody": "Ikifungwa, nafasi hii haiwezi kufunguliwa tena na hakuna kura zaidi zitakazopokelewa.",
+    "closeConfirm": "Funga nafasi",
+    "channelsTitle": "Kura kwa njia",
+    "channel": {
+      "web": "Mtandao",
+      "ussd": "USSD",
+      "kiosk": "Kiosk"
+    },
+    "messagesTitle": "Ujumbe",
+    "lastBatch": "{{type}}: {{status}} · zimetumwa {{sent}} · zimeshindikana {{failed}}",
+    "noBatch": "Bado hakuna ujumbe uliotumwa.",
+    "sendReminder_one": "Tuma kumbusho kwa mpiga kura {{count}} ambaye bado hajapiga kura",
+    "sendReminder_other": "Tuma kumbusho kwa wapiga kura {{count}} ambao bado hawajapiga kura",
+    "kiosksTitle": "Kiosk",
+    "noKiosks": "Hakuna kiosk inayoendelea.",
+    "kioskSeen": "Imefunguliwa na {{by}} · ilionekana {{seen}} iliyopita",
+    "endKiosk": "Funga kiosk",
+    "alerts": {
+      "lockouts_one": "Mpiga kura {{count}} amezuiwa kwa majaribio mengi.",
+      "lockouts_other": "Wapiga kura {{count}} wamezuiwa kwa majaribio mengi.",
+      "smsFailures_one": "Ujumbe {{count}} wa mwisho umeshindikana. Angalia kichupo cha Ujumbe.",
+      "smsFailures_other": "Jumbe {{count}} za mwisho zimeshindikana. Angalia kichupo cha Ujumbe.",
+      "closingSoon": "{{name}} inafungwa {{time}}.",
+      "theEvent": "Upigaji kura"
+    },
+    "openTitle": "Upigaji kura unaendelea",
+    "openLink": "Fungua chumba cha udhibiti"
   }
 }

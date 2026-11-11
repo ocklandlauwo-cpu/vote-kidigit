@@ -511,7 +511,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 - ☑ 23. Voter API
 - ☑ 24. Voter web app
 - ☑ 25. Kiosk
-- ☐ 26. Control room and live turnout
+- ☑ 26. Control room and live turnout
 - ☐ 27. Closing, results and publication
 - ☐ 28. Reports
 - ☐ 29. Dashboards, search and state sweep

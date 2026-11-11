@@ -987,5 +987,51 @@
     },
     "paused_one": "Sending paused: {{count}} message failed. Check the SMS provider, then Resume or Cancel.",
     "paused_other": "Sending paused: {{count}} messages failed. Check the SMS provider, then Resume or Cancel."
+  },
+  "live": {
+    "updated_one": "Updated {{count}} s ago",
+    "updated_other": "Updated {{count}} s ago",
+    "turnout": "{{voted}} of {{registered}} voted · {{percent}}%",
+    "closesIn": "Closes in {{time}}",
+    "opensIn": "Opens in {{time}}",
+    "categoriesTitle": "Categories",
+    "col": {
+      "category": "Category",
+      "status": "Status",
+      "countdown": "Time",
+      "turnout": "Voted",
+      "switch": "Open / Close"
+    },
+    "switchLabel": "Open or close {{name}}",
+    "categoryOpened": "Category opened",
+    "categoryClosed": "Category closed",
+    "closeTitle": "Close {{name}}?",
+    "closeBody": "Once closed, this category cannot open again and no more votes are accepted in it.",
+    "closeConfirm": "Close category",
+    "channelsTitle": "Ballots by channel",
+    "channel": {
+      "web": "Web",
+      "ussd": "USSD",
+      "kiosk": "Kiosk"
+    },
+    "messagesTitle": "Messages",
+    "lastBatch": "{{type}}: {{status}} · sent {{sent}} · failed {{failed}}",
+    "noBatch": "No messages sent yet.",
+    "sendReminder_one": "Send reminder to {{count}} voter who hasn’t voted",
+    "sendReminder_other": "Send reminder to {{count}} voters who haven’t voted",
+    "kiosksTitle": "Kiosks",
+    "noKiosks": "No kiosk is running.",
+    "kioskSeen": "Launched by {{by}} · seen {{seen}} ago",
+    "endKiosk": "End kiosk",
+    "alerts": {
+      "lockouts_one": "{{count}} voter is locked out after failed attempts.",
+      "lockouts_other": "{{count}} voters are locked out after failed attempts.",
+      "smsFailures_one": "{{count}} message of the last batch failed. Check the Messages tab.",
+      "smsFailures_other": "{{count}} messages of the last batch failed. Check the Messages tab.",
+      "closingSoon": "{{name}} closes at {{time}}.",
+      "theEvent": "Voting"
+    },
+    "openTitle": "Voting is open",
+    "openLink": "Open the control room"
   }
 }

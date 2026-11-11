@@ -250,6 +250,14 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Voter app: routes `/vote/kiosk/:kioskToken/*` reuse the web pages; pages get their step paths from `useFlowPaths()` (web or kiosk). `KioskLayout` forces light mode, beats every 60 s, adds the `vk-kiosk` scale and the 5-tap logo exit; `KioskStartPage` is KSK-01 to KSK-03a; ReceivedPage counts down 10 s on a kiosk. Idle is 60 s on a kiosk (`KIOSK_IDLE_MS`).
 - E2E: `seed-vote-e2e.js --kiosk` also launches a kiosk and prints its token and PIN.
 
+## Control room in code
+
+- `modules/live/`: `GET /events/:eventId/live` (`turnout.view`). Turnout is counted from `voter_participation` (distinct voters overall, rows per category, distinct voters per channel), never from ballots; categories come from `CategoriesService.list` (status, windows, eligible counts). Kiosks are listed only for `kiosk.operate` (null otherwise). Alerts: 3+ `voter.locked` audit entries, a paused or failing last batch, a category or the event closing within 5 minutes. The response must never carry contester ids (tested).
+- Batches with audience `not_voted` go to voters without any participation.
+- Deactivating the only active moderator of an Open event is refused (INVALID_TRANSITION, `reason: ONLY_MODERATOR`, `events`).
+- Kiosk launch ends the launching staff session on the server (and ends the kiosk again if that fails).
+- Staff `pages/events/live/` (LiveTab, liveApi with `useCategorySwitch`, `useEndKiosk`); the Overview of an Open event shows turnout and links to the Live tab.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.
