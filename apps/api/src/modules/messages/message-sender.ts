@@ -94,6 +94,18 @@ export class MessageSender {
     return outcome;
   }
 
+  /** Whether the message's batch is still paused (a held job checks this after parking). */
+  async isHeld(messageId: string): Promise<boolean> {
+    const ctx = this.requestContext.getOrThrow();
+    const message = await this.prisma.withContext(ctx, (tx) =>
+      tx.smsMessage.findUnique({
+        where: { id: messageId },
+        select: { batch: { select: { status: true } } },
+      }),
+    );
+    return message?.batch?.status === 'paused';
+  }
+
   private async prepare(tx: Tx, messageId: string) {
     const message = await tx.smsMessage.findUnique({
       where: { id: messageId },

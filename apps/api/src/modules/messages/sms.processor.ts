@@ -31,6 +31,13 @@ export class SmsProcessor extends WorkerHost {
     );
     if (outcome === 'held') {
       await job.moveToDelayed(Date.now() + HELD_RECHECK_MS, token);
+      // Resume may have run while this job was still active (it promotes only delayed jobs):
+      // look once more now that the job is delayed, and go again at once if so.
+      const stillHeld = await this.requestContext.run(
+        systemContext(requestId, organizationId),
+        () => this.sender.isHeld(messageId),
+      );
+      if (!stillHeld) await job.promote();
       throw new DelayedError();
     }
   }
