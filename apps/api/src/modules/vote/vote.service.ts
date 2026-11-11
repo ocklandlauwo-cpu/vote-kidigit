@@ -34,7 +34,7 @@ import { RedisService } from '../../redis/redis.service.js';
 import { type OpenedFile, FilesService } from '../files/files.service.js';
 import { BatchesService } from '../messages/batches.service.js';
 import { CodesService } from '../voters/codes.service.js';
-import { seededOrder, signFileLink } from './vote-links.js';
+import { codeCheck, seededOrder, signFileLink } from './vote-links.js';
 import type { BallotSession } from './vote-session.js';
 import { VoteSessions } from './vote-session.js';
 
@@ -163,12 +163,14 @@ export class VoteService {
   async signIn(body: VoterSignInRequest, meta: SignInMeta): Promise<VoterSignInResponse> {
     const membership = normalizeMembershipId(body.membershipId);
     const code = normalizeVotingCode(body.code);
-    const failKey = this.failKey(body.eventId ?? null, meta.ip, membership);
-
-    // Locked by IP + membership ID (works before the event is known)?
-    const redisFails = Number((await this.redis.get(failKey)) ?? 0);
-    if (redisFails >= VOTER_MAX_ATTEMPTS) {
-      throw this.locked(await this.lockEnd(failKey));
+    // Redis counters: per IP + membership ID, and, without an event in the link, per membership
+    // ID from any IP (changing IP must not reset it). With an event the voter row counts.
+    const failKeys = [this.failKey(`ip:${body.eventId ?? 'any'}:${meta.ip ?? '-'}:${membership}`)];
+    if (!body.eventId) failKeys.push(this.failKey(`member:any:${membership}`));
+    for (const key of failKeys) {
+      if (Number((await this.redis.get(key)) ?? 0) >= VOTER_MAX_ATTEMPTS) {
+        throw this.locked(await this.lockEnd(key));
+      }
     }
 
     let eventOrg: string | null = null;
@@ -199,7 +201,7 @@ export class VoteService {
       : [];
 
     if (matches.length === 0) {
-      return this.failSignIn(failKey, body.eventId ?? null, eventOrg, membership);
+      return this.failSignIn(failKeys, body.eventId ?? null, eventOrg, membership);
     }
     if (matches.length > 1) {
       // Only possible without an event in the link (one membership ID per event).
@@ -224,6 +226,7 @@ export class VoteService {
           fullName: true,
           membershipId: true,
           photoFileId: true,
+          codeHmac: true,
           lockedUntil: true,
           failedAttempts: true,
         },
@@ -245,8 +248,9 @@ export class VoteService {
     });
     if (result.locked) throw this.locked(result.locked);
 
-    await this.redis.del(failKey);
+    await this.redis.del(...failKeys);
     const token = await this.sessions.create({
+      codeCheck: codeCheck(result.voter.codeHmac),
       voterId: match.voter_id,
       eventId: match.event_id,
       orgId: match.organization_id,
@@ -268,14 +272,17 @@ export class VoteService {
    * is known, for that voter (database). The fifth locks sign-in for 15 minutes.
    */
   private async failSignIn(
-    failKey: string,
+    failKeys: string[],
     eventId: string | null,
     eventOrg: string | null,
     membership: string,
   ): Promise<never> {
-    const count = await this.redis.incr(failKey);
-    if (count === 1 || count >= VOTER_MAX_ATTEMPTS) {
-      await this.redis.expire(failKey, VOTER_LOCK_MINUTES * 60);
+    let count = 0;
+    let lockKey = failKeys[0] ?? '';
+    for (const key of failKeys) {
+      const n = await this.redis.incr(key);
+      if (n === 1 || n >= VOTER_MAX_ATTEMPTS) await this.redis.expire(key, VOTER_LOCK_MINUTES * 60);
+      if (n > count) [count, lockKey] = [n, key];
     }
     let dbAttempts = 0;
     let lockedUntil: Date | null = null;
@@ -313,7 +320,7 @@ export class VoteService {
     }
     const used = Math.max(count, dbAttempts);
     if (used >= VOTER_MAX_ATTEMPTS) {
-      throw this.locked(lockedUntil ?? (await this.lockEnd(failKey)));
+      throw this.locked(lockedUntil ?? (await this.lockEnd(lockKey)));
     }
     // Never says which of the two was wrong (App Flow 13.1).
     throw new AppError('INVALID_CREDENTIALS', 'Membership ID or code is incorrect.', {
@@ -612,11 +619,9 @@ export class VoteService {
     return { ...this.requestContext.getOrThrow(), orgId: null, isPlatformAdmin: false };
   }
 
-  private failKey(eventId: string | null, ip: string | null, membership: string): string {
-    const subject = createHmac('sha256', this.secret)
-      .update(`fail:${eventId ?? 'any'}:${ip ?? '-'}:${membership}`)
-      .digest('hex');
-    return `${FAIL_PREFIX}${subject}`;
+  /** Redis keys hold an HMAC, never the membership ID or IP themselves. */
+  private failKey(subject: string): string {
+    return `${FAIL_PREFIX}${createHmac('sha256', this.secret).update(`fail:${subject}`).digest('hex')}`;
   }
 
   private async lockEnd(failKey: string): Promise<Date> {

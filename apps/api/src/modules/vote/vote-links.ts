@@ -1,5 +1,14 @@
-// Small pure helpers of the voter API: signed picture links and the seeded contester order.
-import { createHmac, timingSafeEqual } from 'node:crypto';
+// Small pure helpers of the voter API: signed picture links, the seeded contester order and the
+// code check of a ballot session.
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
+
+/**
+ * What a ballot session remembers of the voter's code: a hash of its fingerprint. A regenerated
+ * code changes it, which ends sessions started with the old one.
+ */
+export function codeCheck(codeHmac: Uint8Array | null): string {
+  return codeHmac ? createHash('sha256').update(codeHmac).digest('hex').slice(0, 32) : '';
+}
 
 /**
  * Contester photos and category pictures are shown with <img>, which cannot send the ballot

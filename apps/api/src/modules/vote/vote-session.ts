@@ -17,6 +17,8 @@ export interface BallotSession {
   seed: string;
   /** Set by "Ndiyo, ni mimi"; the ballot needs it. */
   identityConfirmed: boolean;
+  /** codeCheck() of the voter's code at sign-in; the guard compares it on every request. */
+  codeCheck: string;
 }
 
 export const BALLOT_PREFIX = 'ballot:';

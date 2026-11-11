@@ -272,10 +272,53 @@ describe('voter API', () => {
     await client
       .post('/sign-in', { membershipId: voter.membershipId, code: voter.code })
       .expect(423);
-    // Another IP is not blocked by this counter.
+    // Another IP is blocked too: without an event the membership ID itself is counted.
     await fromIp()
       .post('/sign-in', { membershipId: voter.membershipId, code: voter.code })
+      .expect(423);
+    // With the event in the link, the voter row decides (not locked): signs in.
+    await fromIp()
+      .post('/sign-in', { eventId, membershipId: voter.membershipId, code: voter.code })
       .expect(200);
+  });
+
+  it('without an event, also locks the membership ID across IPs', async () => {
+    const eventId = await createEvent('open');
+    const voter = await createVoter(eventId);
+    for (let i = 0; i < 4; i += 1) {
+      await fromIp()
+        .post('/sign-in', { membershipId: voter.membershipId, code: 'CCCCCCCC' })
+        .expect(401);
+    }
+    await fromIp()
+      .post('/sign-in', { membershipId: voter.membershipId, code: 'CCCCCCCC' })
+      .expect(423);
+    await fromIp()
+      .post('/sign-in', { membershipId: voter.membershipId, code: voter.code })
+      .expect(423);
+  });
+
+  it('ends a session when the code is regenerated or the event is deactivated', async () => {
+    const eventId = await createEvent('open');
+    const voter = await createVoter(eventId);
+    const first = await signIn(eventId, voter);
+    await first.client.get('/status', first.token).expect(200);
+    await owner.voter.update({
+      where: { id: voter.id },
+      data: { codeHmac: codes.fingerprint('NEWC0DE2'.replace('0', 'Q')) },
+    });
+    await first.client.get('/status', first.token).expect(401);
+
+    // Open events cannot be deactivated (CHECK); a Scheduled one can.
+    const scheduled = await createEvent('scheduled', {
+      startAt: new Date(Date.now() + 86_400_000),
+      endAt: new Date(Date.now() + 2 * 86_400_000),
+    });
+    const other = await createVoter(scheduled);
+    const second = await signIn(scheduled, other);
+    await second.client.get('/status', second.token).expect(200);
+    await owner.votingEvent.update({ where: { id: scheduled }, data: { isActive: false } });
+    await second.client.get('/status', second.token).expect(401);
   });
 
   it('asks the voter to choose when the pair matches several events', async () => {
