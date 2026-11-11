@@ -163,6 +163,38 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${org}::uuid, ${f.eventId}::uuid, ${f.kioskSessionId}::uuid, ${f.voterId}::uuid, false)`,
   },
   {
+    table: 'public.result_snapshots',
+    appendOnly: true,
+    insertRefusal: /permission denied/,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.result_snapshots (organization_id, event_id, version, is_current, registered_voters, voters_voted, content_hash)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, 99, false, 0, 0, repeat('0', 64))`,
+  },
+  {
+    table: 'public.result_category_stats',
+    appendOnly: true,
+    insertRefusal: /permission denied/,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.result_category_stats (snapshot_id, organization_id, category_id, eligible_voters, voters_voted, valid_votes, skipped, has_tie)
+        VALUES (${f.snapshotId}::uuid, ${org}::uuid, ${f.spareCategoryId}::uuid, 0, 0, 0, 0, false)`,
+  },
+  {
+    table: 'public.result_rows',
+    appendOnly: true,
+    insertRefusal: /permission denied/,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.result_rows (snapshot_id, organization_id, category_id, contester_id, choice, votes, percent, rank, is_winner)
+        VALUES (${f.snapshotId}::uuid, ${org}::uuid, ${f.categoryId}::uuid, ${f.contesterId}::uuid, 'yes', 0, 0, 1, false)`,
+  },
+  {
+    table: 'public.tie_resolutions',
+    appendOnly: true,
+    insertRefusal: /permission denied/,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.tie_resolutions (organization_id, snapshot_id, category_id, outcome, winner_contester_ids, reason, resolved_by)
+        VALUES (${org}::uuid, ${f.snapshotId}::uuid, ${f.spareCategoryId}::uuid, 'no_winner', '{}', 'Intruder reason', ${f.userId}::uuid)`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -229,8 +261,13 @@ async function seedOrganization(
     data: { organizationId: orgId, eventId: event.id, name: 'Chair', displayOrder: 1 },
     select: { id: true },
   });
-  await owner.contester.create({
+  const contester = await owner.contester.create({
     data: { organizationId: orgId, eventId: event.id, categoryId: category.id, fullName: 'Asha' },
+    select: { id: true },
+  });
+  const spareCategory = await owner.category.create({
+    data: { organizationId: orgId, eventId: event.id, name: 'Secretary', displayOrder: 2 },
+    select: { id: true },
   });
   const voter = await owner.voter.create({
     data: {
@@ -321,9 +358,59 @@ async function seedOrganization(
       votedAt: new Date(),
     },
   });
+  const snapshot = await owner.resultSnapshot.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      version: 1,
+      isCurrent: true,
+      registeredVoters: 2,
+      votersVoted: 1,
+      contentHash: '0'.repeat(64),
+    },
+  });
+  await owner.resultCategoryStat.create({
+    data: {
+      snapshotId: snapshot.id,
+      organizationId: orgId,
+      categoryId: category.id,
+      eligibleVoters: 2,
+      votersVoted: 1,
+      validVotes: 1,
+      skipped: 0,
+      hasTie: false,
+    },
+  });
+  await owner.resultRow.create({
+    data: {
+      snapshotId: snapshot.id,
+      organizationId: orgId,
+      categoryId: category.id,
+      contesterId: contester.id,
+      choice: 'contester',
+      votes: 1,
+      percent: 100,
+      rank: 1,
+      isWinner: true,
+    },
+  });
+  await owner.tieResolution.create({
+    data: {
+      organizationId: orgId,
+      snapshotId: snapshot.id,
+      categoryId: category.id,
+      outcome: 'no_winner',
+      winnerContesterIds: [],
+      reason: 'Seeded resolution',
+      resolvedBy: userId,
+    },
+  });
   return {
     userId,
     spareUserId,
+    snapshotId: snapshot.id,
+    contesterId: contester.id,
+    spareCategoryId: spareCategory.id,
     roleId: role.id,
     customRoleId: customRole.id,
     permissionKey,

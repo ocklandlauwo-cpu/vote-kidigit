@@ -89,6 +89,10 @@ const VOTE_TABLES: [table: string, trigger: string][] = [
   ['public.voter_participation', 'participation_immutable'],
   ['ballot.ballots', 'ballots_immutable'],
   ['ballot.ballot_selections', 'selections_immutable'],
+  ['public.result_snapshots', 'result_snapshots_published'],
+  ['public.result_category_stats', 'result_category_stats_published'],
+  ['public.result_rows', 'result_rows_published'],
+  ['public.tie_resolutions', 'tie_resolutions_published'],
 ];
 
 /**
@@ -104,7 +108,9 @@ async function purgeVotes(tx: Prisma.TransactionClient, ids: string[]): Promise<
       AND EXISTS (SELECT 1 FROM ballot.ballots b WHERE b.event_id = e.id)`;
   const [voted] = await tx.$queryRaw<{ n: bigint }[]>`
     SELECT count(*) AS n FROM public.voter_participation WHERE organization_id = ANY (${ids}::uuid[])`;
-  if (Number(found?.n ?? 0) === 0 && Number(voted?.n ?? 0) === 0) return;
+  const [frozen] = await tx.$queryRaw<{ n: bigint }[]>`
+    SELECT count(*) AS n FROM public.result_snapshots WHERE organization_id = ANY (${ids}::uuid[])`;
+  if (Number(found?.n ?? 0) + Number(voted?.n ?? 0) + Number(frozen?.n ?? 0) === 0) return;
   await tx.$executeRawUnsafe(
     `LOCK TABLE ${VOTE_TABLES.map(([table]) => table).join(', ')} IN ACCESS EXCLUSIVE MODE`,
   );
@@ -119,6 +125,9 @@ async function purgeVotes(tx: Prisma.TransactionClient, ids: string[]): Promise<
     WHERE b.event_id = e.id AND e.organization_id = ANY (${ids}::uuid[])`;
   await tx.$executeRaw`
     DELETE FROM public.voter_participation WHERE organization_id = ANY (${ids}::uuid[])`;
+  // Stats, rows and tie resolutions go with their snapshot (cascade).
+  await tx.$executeRaw`
+    DELETE FROM public.result_snapshots WHERE organization_id = ANY (${ids}::uuid[])`;
   for (const [table, trigger] of VOTE_TABLES) {
     await tx.$executeRawUnsafe(`ALTER TABLE ${table} ENABLE TRIGGER ${trigger}`);
   }

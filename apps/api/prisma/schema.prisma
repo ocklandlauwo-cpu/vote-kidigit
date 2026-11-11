@@ -93,6 +93,7 @@ model User {
   batchesCreated     SmsBatch[]        @relation("BatchCreator")
   kiosksLaunched     KioskSession[]    @relation("KioskLauncher")
   kiosksEnded        KioskSession[]    @relation("KioskEnder")
+  tiesResolved       TieResolution[]
 
   @@unique([emailNormalized], map: "users_email_normalized_key", where: raw("deleted_at IS NULL"))
   /// Target of composite foreign keys from organization-owned child tables.
@@ -183,18 +184,19 @@ model VotingEvent {
   updatedAt                  DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt                  DateTime?         @map("deleted_at") @db.Timestamptz(6)
 
-  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  creator        User?             @relation("EventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  assignments    EventAssignment[]
-  categories     Category[]
-  voters         Voter[]
-  voterImports   VoterImport[]
-  smsTemplates   SmsTemplate[]
-  smsBatches     SmsBatch[]
-  smsMessages    SmsMessage[]
-  ballots        Ballot[]
-  kioskSessions  KioskSession[]
-  kioskCodeSends KioskCodeSend[]
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  creator         User?             @relation("EventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  assignments     EventAssignment[]
+  categories      Category[]
+  voters          Voter[]
+  voterImports    VoterImport[]
+  smsTemplates    SmsTemplate[]
+  smsBatches      SmsBatch[]
+  smsMessages     SmsMessage[]
+  ballots         Ballot[]
+  kioskSessions   KioskSession[]
+  kioskCodeSends  KioskCodeSend[]
+  resultSnapshots ResultSnapshot[]
 
   @@unique([publicResultsToken], map: "voting_events_public_results_token_key")
   /// Target of composite foreign keys from the event's children.
@@ -259,6 +261,9 @@ model Category {
   voters           CategoryVoter[]
   participation    VoterParticipation[]
   ballotSelections BallotSelection[]
+  resultStats      ResultCategoryStat[]
+  resultRows       ResultRow[]
+  tieResolutions   TieResolution[]
 
   @@unique([eventId, name], map: "categories_event_id_name_key")
   @@unique([eventId, displayOrder], map: "categories_event_id_display_order_key")
@@ -288,6 +293,7 @@ model Contester {
   category         Category          @relation(fields: [categoryId, eventId, organizationId], references: [id, eventId, organizationId], onDelete: Cascade)
   photo            File?             @relation("ContesterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
   ballotSelections BallotSelection[]
+  resultRows       ResultRow[]
 
   @@index([categoryId])
   @@index([eventId])
@@ -983,5 +989,98 @@ model KioskCodeSend {
   @@index([kioskSessionId])
   @@index([organizationId])
   @@map("kiosk_code_sends")
+  @@schema("public")
+}
+
+// Backend Schema 6.4: frozen results, written by app.freeze_results() at close. A reopened and
+// re-closed event gets a new version; only the latest is current. Read-only for vk_api.
+model ResultSnapshot {
+  id               String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId   String    @map("organization_id") @db.Uuid
+  eventId          String    @map("event_id") @db.Uuid
+  version          Int       @db.SmallInt
+  isCurrent        Boolean   @map("is_current")
+  generatedAt      DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
+  registeredVoters Int       @map("registered_voters")
+  votersVoted      Int       @map("voters_voted")
+  contentHash      String    @map("content_hash") @db.Char(64)
+  publishedAt      DateTime? @map("published_at") @db.Timestamptz(6)
+
+  event VotingEvent          @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  stats ResultCategoryStat[]
+  rows  ResultRow[]
+  ties  TieResolution[]
+
+  @@unique([eventId, version], map: "result_snapshots_event_id_version_key")
+  @@unique([eventId], map: "result_snapshots_one_current_key", where: raw("is_current"))
+  @@unique([id, organizationId], map: "result_snapshots_id_organization_id_key")
+  @@index([organizationId])
+  @@map("result_snapshots")
+  @@schema("public")
+}
+
+// Backend Schema 6.5
+model ResultCategoryStat {
+  snapshotId     String   @map("snapshot_id") @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  categoryId     String   @map("category_id") @db.Uuid
+  eligibleVoters Int      @map("eligible_voters")
+  votersVoted    Int      @map("voters_voted")
+  validVotes     Int      @map("valid_votes")
+  skipped        Int
+  quorumMet      Boolean? @map("quorum_met")
+  thresholdMet   Boolean? @map("threshold_met")
+  hasTie         Boolean  @map("has_tie")
+
+  snapshot ResultSnapshot @relation(fields: [snapshotId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  category Category       @relation(fields: [categoryId, organizationId], references: [id, organizationId], onDelete: Restrict)
+
+  @@id([snapshotId, categoryId])
+  @@index([organizationId])
+  @@map("result_category_stats")
+  @@schema("public")
+}
+
+// Backend Schema 6.6
+model ResultRow {
+  snapshotId     String     @map("snapshot_id") @db.Uuid
+  organizationId String     @map("organization_id") @db.Uuid
+  categoryId     String     @map("category_id") @db.Uuid
+  contesterId    String     @map("contester_id") @db.Uuid
+  choice         ChoiceKind
+  votes          Int
+  percent        Decimal    @db.Decimal(5, 1)
+  rank           Int        @db.SmallInt
+  isWinner       Boolean    @map("is_winner")
+
+  snapshot  ResultSnapshot @relation(fields: [snapshotId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  category  Category       @relation(fields: [categoryId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  contester Contester      @relation(fields: [contesterId], references: [id], onDelete: Restrict)
+
+  @@id([snapshotId, categoryId, contesterId, choice])
+  @@index([organizationId])
+  @@map("result_rows")
+  @@schema("public")
+}
+
+// Backend Schema 6.7: how a tie at the last seat was decided, with the reason.
+model TieResolution {
+  id                 String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId     String     @map("organization_id") @db.Uuid
+  snapshotId         String     @map("snapshot_id") @db.Uuid
+  categoryId         String     @map("category_id") @db.Uuid
+  outcome            TieOutcome
+  winnerContesterIds String[]   @map("winner_contester_ids") @db.Uuid
+  reason             String
+  resolvedBy         String     @map("resolved_by") @db.Uuid
+  resolvedAt         DateTime   @default(now()) @map("resolved_at") @db.Timestamptz(6)
+
+  snapshot ResultSnapshot @relation(fields: [snapshotId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  category Category       @relation(fields: [categoryId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  resolver User           @relation(fields: [resolvedBy], references: [id], onDelete: Restrict)
+
+  @@unique([snapshotId, categoryId], map: "tie_resolutions_snapshot_id_category_id_key")
+  @@index([organizationId])
+  @@map("tie_resolutions")
   @@schema("public")
 }

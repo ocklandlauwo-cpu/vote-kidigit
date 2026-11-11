@@ -6,6 +6,7 @@ Nov 3, 2026 · @Smartone
 
 | Date | Change |
 |---|---|
+| 11 Nov 2026 | Ballots are sealed when an event closes (owner decision after the step 22 review, Implementation Plan step 27): app.seal_ballots() rewrites the event's ballots and selections as fresh rows in random order inside the close transaction, so nothing a database administrator can read (transaction ids, physical order) links a ballot to the participation row written with it. Only transition_event() calls it; the ballot immutability triggers allow its rewrite and nothing else. app.tally_event() and app.freeze_results() are not executable by vk_api, so no running count can be read before close. |
 | 10 Nov 2026 | SMS provider is Beem Africa instead of NextSMS (owner decision, Implementation Plan step 21): delivery reports arrive at POST /webhooks/beem/dlr checked with BEEM_DLR_SECRET; provider_message_id holds the Beem request id; sms_sender_id is the sender ID registered with Beem. |
 | 5 Nov 2026 | Added 4.10 platform_settings (PLT-04 needed storage for the default session timeout, USSD short code and support contact; migration 009_platform_settings, Implementation Plan step 12). |
 | 5 Nov 2026 | Added GET /users/roles (12.4): the invite and edit forms of USR-02/03 need the role list, which GET /roles keeps for roles.manage; each role says whether the caller may give it (Implementation Plan step 14). |
@@ -1083,7 +1084,7 @@ app.transition_event(p_event_id uuid, p_to event_status, p_reason text DEFAULT N
 | draft → scheduled | app.publish_checklist() all OK; start_at > now() | — |
 | draft / scheduled → open | Checklist OK (from draft) | opened_at = now() |
 | scheduled → draft | first_code_sent_at IS NULL | — |
-| open → closed | — | closed_at = now(), set closed_at on every category still open, PERFORM app.freeze_results(p_event_id) |
+| open → closed | — | closed_at = now(), set closed_at on every category still open, PERFORM app.seal_ballots(p_event_id), PERFORM app.freeze_results(p_event_id) |
 | closed → open (reopen) | p_new_end_at > now(), p_reason ≥ 10 characters | end_at = p_new_end_at, reopen_count + 1, clear closed_at on event and categories, mark current snapshot is_current = false |
 | closed → results_published | Current snapshot has no has_tie category without a tie_resolutions row; p_results_token present | results_published_at = now(), store token, snapshot published_at = now(), recompute final content_hash (includes tie resolutions) |
 | draft / scheduled / open → cancelled | p_reason ≥ 10 characters | cancelled_at, cancel_reason |
@@ -1119,6 +1120,8 @@ app.freeze_results(p_event_id uuid) RETURNS uuid creates the next result_snapsho
    - Threshold: as plurality, but only contesters whose percent ≥ threshold_pct; threshold_met = false if fewer than seats reach it.
    - Quorum: quorum_met = voters_voted / eligible_voters * 100 ≥ quorum_pct; if not met, no winners.
 5. **Hash:** content_hash = encode(sha256(convert_to(canonical_json, 'UTF8')), 'hex'), where canonical_json is jsonb_build_object of the event ID, version and all stats and rows ordered by category display order and contester ID.
+
+app.seal_ballots(p_event_id uuid) (SECURITY DEFINER, executable only by the owner) runs first in the open → closed transition: it copies the event's ballots and their selections into new rows (new random ids, same received_hour) inserted in random order, then deletes the originals. Cast and participation rows are written in one transaction, so until close a database administrator could match them through system columns (xmin) or physical order; after the seal the ballots carry only the close transaction's id. Dead row versions remain until VACUUM; run VACUUM on the ballot tables after close (operations runbook).
 
 app.resolve_tie(p_snapshot_id, p_category_id, p_outcome, p_winner_ids uuid[], p_reason text) (SECURITY DEFINER) inserts tie_resolutions (with resolved_by = app.current_user_id()) and sets is_winner on the chosen tied contesters; it validates that the chosen IDs are in the tied group and fit the remaining seats.
 
