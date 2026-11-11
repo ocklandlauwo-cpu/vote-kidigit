@@ -194,9 +194,20 @@ export class FilesService {
    * belongs to. Everything else, including files missing on disk, is NOT_FOUND.
    */
   async open(auth: AuthState, fileId: string): Promise<OpenedFile> {
+    return this.openWith(fileId, (tx, row) => this.mayRead(tx, auth, row));
+  }
+
+  /**
+   * A file of the context's organization that `mayRead` allows (staff rules above, or the voter
+   * API's own rule); everything else, including files missing on disk, is NOT_FOUND.
+   */
+  async openWith(
+    fileId: string,
+    mayRead: (tx: Tx, file: StoredFile) => Promise<boolean>,
+  ): Promise<OpenedFile> {
     const file = await this.prisma.withContext(this.requestContext.getOrThrow(), async (tx) => {
       const row = await tx.file.findUnique({ where: { id: fileId }, select: fileSelect });
-      return row && (await this.mayRead(tx, auth, row)) ? row : null;
+      return row && (await mayRead(tx, row)) ? row : null;
     });
     if (!file) throw new AppError('NOT_FOUND');
     const absolute = this.resolve(file.storagePath);

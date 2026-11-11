@@ -222,6 +222,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Participation and ballots are immutable for everyone, the owner included (UPDATE, DELETE and TRUNCATE raise IMMUTABLE_RECORD). Test clean-up (`deleteOrganizations`) disables those triggers inside its own transaction after locking the tables; never do that outside test helpers.
 - Fixtures: an event with `status: 'cancelled'` needs `cancelledAt` and `cancelReason` (CHECK constraint).
 
+## Voter API in code
+
+- `modules/vote/` serves Backend Schema 12.11 under `v1/vote`. Every route is `@Public()`; after sign-in `BallotTokenGuard` (`@UseGuards`) loads the session and puts the voter's organization into the request context as actor Voter. Read it with `@CurrentVoter()`.
+- Ballot tokens: `VoteSessions` (Redis `ballot:{HMAC(BALLOT_TOKEN_SECRET, token)}`, idle expiry `VOTER_IDLE_MINUTES`), holding voterId, eventId, orgId, channel, the shuffle seed and `identityConfirmed`. The ballot needs the identity confirmed; submit, "Si mimi" and finish end the session.
+- Bootstrap functions (migration 018): `app.resolve_event`, `app.find_voter_by_credentials`, `app.resolve_results_token`; Draft, deactivated and deleted events never resolve. Sign-in calls them with `orgId: null`, then acts in the organization they return.
+- Failed sign-ins count twice: Redis `vfail:{HMAC}` per IP + membership ID (works without an event) and `voters.failed_attempts` when the event is known; 5 lock for 15 minutes (`voter.locked` audited for the control room).
+- Pictures for voters go through signed links (`vote-links.ts`: `/api/v1/vote/files/:id?e&x&s`, 4 hours) because `<img>` cannot send the token; the organization logo is public at `/vote/events/:eventId/logo`. `FilesService.openWith(fileId, check)` serves a file with a caller-supplied rule.
+- Submit: `app.cast_ballot()` in the voter's context, then the token is ended, Redis `turnout:{eventId}` counts the voter's first vote, and a `vote_confirmation` SMS is queued (a failure there is logged, never undoes the vote). Rejections return the category name and reason.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

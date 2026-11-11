@@ -508,7 +508,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 **Phase 3 — Voting and results**
 
 - ☑ 22. Secret ballot in the database
-- ☐ 23. Voter API
+- ☑ 23. Voter API
 - ☐ 24. Voter web app
 - ☐ 25. Kiosk
 - ☐ 26. Control room and live turnout
