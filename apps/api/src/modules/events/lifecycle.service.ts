@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   type CancelEventRequest,
+  type ReopenEventRequest,
   ChecklistItemSchema,
   type EventDetail,
   type PublishEventRequestSchema,
@@ -23,15 +24,19 @@ export async function transitionEvent(
   eventId: string,
   to: EventStatus,
   reason: string | null = null,
+  newEndAt: Date | null = null,
+  resultsToken: string | null = null,
 ): Promise<void> {
-  await tx.$queryRaw`SELECT id FROM app.transition_event(${eventId}::uuid, ${to}::event_status, ${reason})`;
+  await tx.$queryRaw`
+    SELECT id FROM app.transition_event(${eventId}::uuid, ${to}::event_status, ${reason},
+                                        ${newEndAt}::timestamptz, ${resultsToken})`;
 }
 
 /**
  * Event lifecycle actions of the header and More menu (Backend Schema 12.5, App Flow 6.8, 6.11):
  * publish (schedule or open now), unpublish, cancel and archive. The database decides whether a
  * move is allowed; the checks here only explain why not (failing checklist items, codes sent,
- * start time passed). Close, reopen and results arrive with step 27.
+ * start time passed). Close freezes the results (and seals the ballots); reopen sets a new end.
  */
 @Injectable()
 export class LifecycleService {
@@ -152,6 +157,48 @@ export class LifecycleService {
         eventId,
         before: { status: event.status },
         after: { status: 'cancelled' },
+        reason: body.reason,
+      });
+      return this.events.detailIn(tx, eventId);
+    });
+  }
+
+  /** POST /events/:eventId/close (App Flow 6.11 "Close now"): seals ballots and freezes results. */
+  close(eventId: string): Promise<EventDetail> {
+    return this.prisma.withContext(
+      this.context(),
+      async (tx) => {
+        const event = await this.find(tx, eventId);
+        await transitionEvent(tx, eventId, 'closed');
+        await this.audit.record(tx, {
+          action: 'event.close',
+          entityType: 'voting_events',
+          entityId: eventId,
+          eventId,
+          before: { status: event.status },
+          after: { status: 'closed' },
+        });
+        return this.events.detailIn(tx, eventId);
+      },
+      { timeout: 120_000 },
+    );
+  }
+
+  /**
+   * POST /events/:eventId/reopen: Closed → Open with a later end and a reason; ballots stay, the
+   * frozen results are no longer current.
+   */
+  reopen(eventId: string, body: ReopenEventRequest): Promise<EventDetail> {
+    return this.prisma.withContext(this.context(), async (tx) => {
+      const event = await this.find(tx, eventId);
+      await transitionEvent(tx, eventId, 'open', body.reason, new Date(body.newEndAt));
+      await this.audit.record(tx, {
+        action: 'event.reopen',
+        entityType: 'voting_events',
+        entityId: eventId,
+        eventId,
+        before: { status: event.status, endAt: event.endAt },
+        after: { status: 'open', endAt: body.newEndAt },
         reason: body.reason,
       });
       return this.events.detailIn(tx, eventId);

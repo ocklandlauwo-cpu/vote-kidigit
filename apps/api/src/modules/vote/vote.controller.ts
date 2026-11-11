@@ -24,6 +24,7 @@ import {
   type VoterEventCard,
   VoterSignInRequestSchema,
   type VoterSignInResponse,
+  type VoterResults,
   type VoterStatus,
 } from '@vote-kidigit/shared';
 import type { Request, Response } from 'express';
@@ -36,6 +37,7 @@ import type { OpenedFile } from '../files/files.service.js';
 import { BallotTokenGuard, CurrentVoter, type VoterRequest } from './ballot-token.guard.js';
 import { KIOSK_HEADER } from '../kiosk/kiosk-token.guard.js';
 import { verifyFileLink } from './vote-links.js';
+import { ResultsService } from '../results/results.service.js';
 import { VoteService } from './vote.service.js';
 
 class SignInBody extends zodDto(VoterSignInRequestSchema) {}
@@ -60,6 +62,7 @@ export class VoteController {
 
   constructor(
     private readonly vote: VoteService,
+    private readonly results: ResultsService,
     config: ConfigService<Env, true>,
   ) {
     this.secret = config.get('BALLOT_TOKEN_SECRET', { infer: true });
@@ -152,6 +155,14 @@ export class VoteController {
     @Body() body: SubmitBody,
   ): Promise<SubmitBallotResponse> {
     return this.vote.submit(voter.token, voter.session, body);
+  }
+
+  /** GET /api/v1/vote/results (VTR-WEB-08) */
+  @Get('results')
+  @Public()
+  @UseGuards(BallotTokenGuard)
+  voterResults(@CurrentVoter() voter: VoterRequest): Promise<VoterResults> {
+    return this.results.voterResults(voter.session.eventId, voter.session.voterId);
   }
 
   /** POST /api/v1/vote/finish — "Maliza". */

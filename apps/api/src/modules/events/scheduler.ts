@@ -27,6 +27,7 @@ type Due = z.infer<typeof DueSchema>;
 
 export interface SweepResult {
   opened: number;
+  closed: number;
   closedCategories: number;
   reminders: number;
   failed: number;
@@ -58,14 +59,20 @@ export class SchedulerRunner {
         ),
       ),
     );
-    const result: SweepResult = { opened: 0, closedCategories: 0, reminders: 0, failed: 0 };
+    const result: SweepResult = {
+      opened: 0,
+      closed: 0,
+      closedCategories: 0,
+      reminders: 0,
+      failed: 0,
+    };
     for (const item of due) {
-      if (item.action === 'close_event') continue; // step 27
       try {
         await this.requestContext.run(systemContext(requestId, item.organization_id), () =>
           this.apply(item),
         );
         if (item.action === 'open_event') result.opened += 1;
+        else if (item.action === 'close_event') result.closed += 1;
         else if (item.action === 'close_category') result.closedCategories += 1;
         else result.reminders += 1;
       } catch (error: unknown) {
@@ -78,7 +85,13 @@ export class SchedulerRunner {
         });
       }
     }
-    if (result.opened || result.closedCategories || result.reminders || result.failed) {
+    if (
+      result.opened ||
+      result.closed ||
+      result.closedCategories ||
+      result.reminders ||
+      result.failed
+    ) {
       this.logger.log({ message: 'Scheduler sweep', ...result });
     }
     return result;
@@ -105,6 +118,19 @@ export class SchedulerRunner {
           eventId: item.event_id,
           before: { status: 'scheduled' },
           after: { status: 'open', by: 'schedule' },
+        });
+        return;
+      }
+      if (item.action === 'close_event') {
+        // The end time has come: close, seal and freeze (Backend Schema 11.5).
+        await transitionEvent(tx, item.event_id, 'closed');
+        await this.audit.record(tx, {
+          action: 'event.close',
+          entityType: 'voting_events',
+          entityId: item.event_id,
+          eventId: item.event_id,
+          before: { status: 'open' },
+          after: { status: 'closed', by: 'schedule' },
         });
         return;
       }

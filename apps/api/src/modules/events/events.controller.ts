@@ -22,6 +22,7 @@ import {
   ReplaceEventAssignmentsRequestSchema,
   UpdateEventRequestSchema,
   CancelEventRequestSchema,
+  ReopenEventRequestSchema,
   PublishEventRequestSchema,
 } from '@vote-kidigit/shared';
 import type { AuthState } from '../../auth/auth.types.js';
@@ -39,6 +40,7 @@ class ReplaceAssignmentsBody extends zodDto(ReplaceEventAssignmentsRequestSchema
 class EventAuditQuery extends zodDto(OrgAuditQuerySchema) {}
 class PublishEventBody extends zodDto(PublishEventRequestSchema) {}
 class CancelEventBody extends zodDto(CancelEventRequestSchema) {}
+class ReopenBody extends zodDto(ReopenEventRequestSchema) {}
 
 /**
  * Events (Backend Schema 12.5). Event-scoped permissions also need the event to be assigned to
@@ -156,6 +158,25 @@ export class EventsController {
     @Body() body: CancelEventBody,
   ): Promise<EventDetail> {
     return this.lifecycle.cancel(eventId, body);
+  }
+
+  /** POST /api/v1/events/:eventId/close */
+  @Post(':eventId/close')
+  @HttpCode(200)
+  @RequirePermission('event.close')
+  close(@Param('eventId', IdParamPipe) eventId: string): Promise<EventDetail> {
+    return this.lifecycle.close(eventId);
+  }
+
+  /** POST /api/v1/events/:eventId/reopen */
+  @Post(':eventId/reopen')
+  @HttpCode(200)
+  @RequirePermission('event.reopen')
+  reopen(
+    @Param('eventId', IdParamPipe) eventId: string,
+    @Body() body: ReopenBody,
+  ): Promise<EventDetail> {
+    return this.lifecycle.reopen(eventId, body);
   }
 
   /** POST /api/v1/events/:eventId/archive */

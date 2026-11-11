@@ -19,6 +19,7 @@ import { FilesModule } from './modules/files/files.module.js';
 import { MessagesModule } from './modules/messages/messages.module.js';
 import { KioskModule } from './modules/kiosk/kiosk.module.js';
 import { LiveModule } from './modules/live/live.module.js';
+import { ResultsModule } from './modules/results/results.module.js';
 import { VoteModule } from './modules/vote/vote.module.js';
 import { VotersModule } from './modules/voters/voters.module.js';
 import { OrganizationModule } from './modules/organization/organization.module.js';
@@ -56,6 +57,7 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
     VoteModule,
     KioskModule,
     LiveModule,
+    ResultsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

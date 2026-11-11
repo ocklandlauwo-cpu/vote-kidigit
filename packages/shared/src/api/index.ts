@@ -15,3 +15,4 @@ export * from './messages.js';
 export * from './vote.js';
 export * from './kiosk.js';
 export * from './live.js';
+export * from './results.js';
