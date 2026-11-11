@@ -91,6 +91,8 @@ model User {
   filesCreated       File[]            @relation("FileCreator")
   importsCreated     VoterImport[]     @relation("ImportCreator")
   batchesCreated     SmsBatch[]        @relation("BatchCreator")
+  kiosksLaunched     KioskSession[]    @relation("KioskLauncher")
+  kiosksEnded        KioskSession[]    @relation("KioskEnder")
 
   @@unique([emailNormalized], map: "users_email_normalized_key", where: raw("deleted_at IS NULL"))
   /// Target of composite foreign keys from organization-owned child tables.
@@ -181,16 +183,18 @@ model VotingEvent {
   updatedAt                  DateTime          @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt                  DateTime?         @map("deleted_at") @db.Timestamptz(6)
 
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  creator      User?             @relation("EventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  assignments  EventAssignment[]
-  categories   Category[]
-  voters       Voter[]
-  voterImports VoterImport[]
-  smsTemplates SmsTemplate[]
-  smsBatches   SmsBatch[]
-  smsMessages  SmsMessage[]
-  ballots      Ballot[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  creator        User?             @relation("EventCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  assignments    EventAssignment[]
+  categories     Category[]
+  voters         Voter[]
+  voterImports   VoterImport[]
+  smsTemplates   SmsTemplate[]
+  smsBatches     SmsBatch[]
+  smsMessages    SmsMessage[]
+  ballots        Ballot[]
+  kioskSessions  KioskSession[]
+  kioskCodeSends KioskCodeSend[]
 
   @@unique([publicResultsToken], map: "voting_events_public_results_token_key")
   /// Target of composite foreign keys from the event's children.
@@ -317,11 +321,12 @@ model Voter {
   updatedAt              DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt              DateTime?  @map("deleted_at") @db.Timestamptz(6)
 
-  event         VotingEvent          @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
-  photo         File?                @relation("VoterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
-  messages      SmsMessage[]
-  categories    CategoryVoter[]
-  participation VoterParticipation[]
+  event          VotingEvent          @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  photo          File?                @relation("VoterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
+  messages       SmsMessage[]
+  categories     CategoryVoter[]
+  participation  VoterParticipation[]
+  kioskCodeSends KioskCodeSend[]
 
   @@unique([eventId, membershipIdNormalized], map: "voters_event_id_membership_id_normalized_key", where: raw("deleted_at IS NULL"))
   @@unique([eventId, codeHmac], map: "voters_event_id_code_hmac_key", where: raw("code_hmac IS NOT NULL AND deleted_at IS NULL"))
@@ -650,9 +655,10 @@ model SmsMessage {
   createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime       @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  event VotingEvent @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
-  batch SmsBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
-  voter Voter?      @relation(fields: [voterId], references: [id], onDelete: SetNull)
+  event          VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  batch          SmsBatch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  voter          Voter?          @relation(fields: [voterId], references: [id], onDelete: SetNull)
+  kioskCodeSends KioskCodeSend[]
 
   @@index([batchId, status])
   @@index([voterId, createdAt(sort: Desc)])
@@ -925,4 +931,57 @@ model BallotSelection {
   @@index([categoryId, contesterId])
   @@map("ballot_selections")
   @@schema("ballot")
+}
+
+// Backend Schema 7.4: a device running kiosk mode for one event. The token in the device URL is
+// stored only as its SHA-256; the staff PIN only as Argon2id.
+model KioskSession {
+  id             String    @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  eventId        String    @map("event_id") @db.Uuid
+  deviceLabel    String    @map("device_label")
+  tokenHash      Bytes     @unique @map("token_hash")
+  pinHash        String    @map("pin_hash")
+  launchedBy     String    @map("launched_by") @db.Uuid
+  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  lastSeenAt     DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz(6)
+  endedBy        String?   @map("ended_by") @db.Uuid
+
+  event     VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  launcher  User            @relation("KioskLauncher", fields: [launchedBy], references: [id], onDelete: Restrict)
+  ender     User?           @relation("KioskEnder", fields: [endedBy], references: [id], onDelete: Restrict)
+  codeSends KioskCodeSend[]
+
+  @@unique([id, organizationId], map: "kiosk_sessions_id_organization_id_key")
+  @@index([eventId])
+  @@index([organizationId])
+  @@map("kiosk_sessions")
+  @@schema("public")
+}
+
+// Backend Schema 7.5: each code sent from a kiosk. The other phone (KSK-03a) is kept only as an
+// HMAC, for the 3-voters-per-number limit, and its last 3 digits for the audit log.
+model KioskCodeSend {
+  id                  String   @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId      String   @map("organization_id") @db.Uuid
+  eventId             String   @map("event_id") @db.Uuid
+  kioskSessionId      String   @map("kiosk_session_id") @db.Uuid
+  voterId             String   @map("voter_id") @db.Uuid
+  usedAlternatePhone  Boolean  @map("used_alternate_phone")
+  alternatePhoneHmac  Bytes?   @map("alternate_phone_hmac")
+  alternatePhoneLast3 String?  @map("alternate_phone_last3") @db.Char(3)
+  smsMessageId        String?  @map("sms_message_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  event   VotingEvent  @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  session KioskSession @relation(fields: [kioskSessionId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  voter   Voter        @relation(fields: [voterId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  message SmsMessage?  @relation(fields: [smsMessageId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, alternatePhoneHmac])
+  @@index([kioskSessionId])
+  @@index([organizationId])
+  @@map("kiosk_code_sends")
+  @@schema("public")
 }

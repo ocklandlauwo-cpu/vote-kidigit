@@ -134,6 +134,8 @@ export async function deleteOrganizations(owner: PrismaClient, ids: string[]): P
     });
     // Messages, batches and voters restrict their event, and events restrict their
     // organization; the rest cascades.
+    await tx.kioskCodeSend.deleteMany({ where: { organizationId: { in: ids } } });
+    await tx.kioskSession.deleteMany({ where: { organizationId: { in: ids } } });
     await tx.smsMessage.deleteMany({ where: { organizationId: { in: ids } } });
     await tx.smsBatch.deleteMany({ where: { organizationId: { in: ids } } });
     await tx.voter.deleteMany({ where: { organizationId: { in: ids } } });

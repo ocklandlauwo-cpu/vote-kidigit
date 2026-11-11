@@ -39,6 +39,11 @@ export interface NewBatch {
   voterId?: string;
   /** Exactly these voters (resend of failed messages). */
   voterIds?: string[];
+  /**
+   * For audience "single" by SMS: send to this number instead of the voter's (kiosk, someone
+   * else's phone approved by staff). It is not saved on the voter.
+   */
+  toAddress?: string;
 }
 
 /** Codes go out only once the event is published (Scheduled or Open). */
@@ -114,7 +119,10 @@ export class BatchesService {
         voterId: voter.id,
         channel: batch.channel,
         type: batch.type,
-        toAddress: batch.channel === 'sms' ? voter.phone : (voter.email ?? ''),
+        toAddress:
+          batch.channel === 'sms'
+            ? (batch.audience === 'single' && batch.toAddress) || voter.phone
+            : (voter.email ?? ''),
         bodyRedacted: renderTemplate(template.body, values),
       });
     }

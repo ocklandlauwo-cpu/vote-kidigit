@@ -29,9 +29,10 @@ import { AppError } from '../../common/app-error.js';
 import type { Env } from '../../config/env.schema.js';
 import { RequestContextService } from '../../context/request-context.js';
 import { type DbContext, PrismaService, type Tx } from '../../database/prisma.service.js';
-import type { EventStatus } from '../../generated/prisma/enums.js';
+import type { EventStatus, VoteChannel } from '../../generated/prisma/enums.js';
 import { RedisService } from '../../redis/redis.service.js';
 import { type OpenedFile, FilesService } from '../files/files.service.js';
+import { resolveKiosk } from '../kiosk/kiosk-token.guard.js';
 import { BatchesService } from '../messages/batches.service.js';
 import { CodesService } from '../voters/codes.service.js';
 import { codeCheck, seededOrder, signFileLink } from './vote-links.js';
@@ -46,6 +47,8 @@ export const TURNOUT_PREFIX = 'turnout:';
 
 interface SignInMeta {
   ip: string | null;
+  /** X-Kiosk-Token: sign-in on a kiosk records the kiosk channel (Backend Schema 8.3). */
+  kioskToken?: string | null;
 }
 
 interface EventRow {
@@ -160,7 +163,16 @@ export class VoteService {
   }
 
   /** POST /vote/sign-in (Backend Schema 8.3). */
-  async signIn(body: VoterSignInRequest, meta: SignInMeta): Promise<VoterSignInResponse> {
+  async signIn(request: VoterSignInRequest, meta: SignInMeta): Promise<VoterSignInResponse> {
+    let body = request;
+    let channel: VoteChannel = 'web';
+    if (meta.kioskToken) {
+      const kiosk = await resolveKiosk(this.prisma, this.requestContext, meta.kioskToken);
+      if (!kiosk) throw new AppError('UNAUTHENTICATED');
+      // A kiosk serves one event: its voters only.
+      body = { ...request, eventId: kiosk.eventId };
+      channel = 'kiosk';
+    }
     const membership = normalizeMembershipId(body.membershipId);
     const code = normalizeVotingCode(body.code);
     // Redis counters: per IP + membership ID, and, without an event in the link, per membership
@@ -254,7 +266,7 @@ export class VoteService {
       voterId: match.voter_id,
       eventId: match.event_id,
       orgId: match.organization_id,
-      channel: 'web',
+      channel,
     });
     return {
       token,

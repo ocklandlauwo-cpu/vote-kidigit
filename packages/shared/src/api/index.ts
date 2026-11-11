@@ -13,3 +13,4 @@ export * from './categories.js';
 export * from './voters.js';
 export * from './messages.js';
 export * from './vote.js';
+export * from './kiosk.js';

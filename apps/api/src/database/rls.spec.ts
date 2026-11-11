@@ -148,6 +148,21 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${f.voterId}::uuid, ${f.categoryId}::uuid, ${f.eventId}::uuid, ${org}::uuid, 'web', now())`,
   },
   {
+    table: 'public.kiosk_sessions',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.kiosk_sessions (organization_id, event_id, device_label, token_hash, pin_hash, launched_by)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, 'Intruder', decode(md5(random()::text), 'hex'), 'x', ${f.userId}::uuid)`,
+  },
+  {
+    table: 'public.kiosk_code_sends',
+    // Code sends name voters: no platform read; never updated.
+    platformCanRead: false,
+    immutable: true,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.kiosk_code_sends (organization_id, event_id, kiosk_session_id, voter_id, used_alternate_phone)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, ${f.kioskSessionId}::uuid, ${f.voterId}::uuid, false)`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -277,6 +292,25 @@ async function seedOrganization(
   await owner.categoryVoter.create({
     data: { categoryId: category.id, voterId: voter.id, organizationId: orgId },
   });
+  const kioskSession = await owner.kioskSession.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      deviceLabel: 'Seeded kiosk',
+      tokenHash: new Uint8Array(randomBytes(32)),
+      pinHash: 'x',
+      launchedBy: userId,
+    },
+  });
+  await owner.kioskCodeSend.create({
+    data: {
+      organizationId: orgId,
+      eventId: event.id,
+      kioskSessionId: kioskSession.id,
+      voterId: voter.id,
+      usedAlternatePhone: false,
+    },
+  });
   await owner.voterParticipation.create({
     data: {
       voterId: voter.id,
@@ -296,6 +330,7 @@ async function seedOrganization(
     eventId: event.id,
     categoryId: category.id,
     voterId: voter.id,
+    kioskSessionId: kioskSession.id,
     spareVoterId: spareVoter.id,
   };
 }

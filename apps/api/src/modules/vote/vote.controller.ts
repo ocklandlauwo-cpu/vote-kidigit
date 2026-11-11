@@ -34,6 +34,7 @@ import { zodDto } from '../../common/zod-validation.pipe.js';
 import type { Env } from '../../config/env.schema.js';
 import type { OpenedFile } from '../files/files.service.js';
 import { BallotTokenGuard, CurrentVoter, type VoterRequest } from './ballot-token.guard.js';
+import { KIOSK_HEADER } from '../kiosk/kiosk-token.guard.js';
 import { verifyFileLink } from './vote-links.js';
 import { VoteService } from './vote.service.js';
 
@@ -100,7 +101,11 @@ export class VoteController {
   @Public()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   signIn(@Body() body: SignInBody, @Req() req: Request): Promise<VoterSignInResponse> {
-    return this.vote.signIn(body, { ip: req.ip ?? null });
+    const kioskToken = req.headers[KIOSK_HEADER];
+    return this.vote.signIn(body, {
+      ip: req.ip ?? null,
+      kioskToken: typeof kioskToken === 'string' ? kioskToken : null,
+    });
   }
 
   /** POST /api/v1/vote/confirm-identity — "Ndiyo, ni mimi". */
