@@ -35,6 +35,7 @@ const details = (res: request.Response) =>
 
 interface Staff {
   id: string;
+  email: string;
   agent: TestAgent;
   csrf: string;
 }
@@ -71,7 +72,7 @@ describe('kiosk', () => {
     });
     const agent = request.agent(server()).set('X-Forwarded-For', testIp());
     const res = await agent.post('/api/v1/auth/login').send({ email, password: PASSWORD });
-    return { id, agent, csrf: (res.body as MeResponse).csrfToken };
+    return { id, email, agent, csrf: (res.body as MeResponse).csrfToken };
   }
 
   async function seedEvent(status: EventStatus = 'open') {
@@ -133,7 +134,13 @@ describe('kiosk', () => {
     return { id: voter.id, membershipId, code, codeHmac: voter.codeHmac };
   }
 
-  async function launch(eventId: string, as: Staff = staff.moderator) {
+  /** Launching ends the staff session (the device becomes a kiosk): sign in afresh each time. */
+  async function launch(eventId: string, who: Staff = staff.moderator) {
+    const agent = request.agent(server()).set('X-Forwarded-For', testIp());
+    const login = await agent
+      .post('/api/v1/auth/login')
+      .send({ email: who.email, password: PASSWORD });
+    const as = { ...who, agent, csrf: (login.body as MeResponse).csrfToken };
     const res = await as.agent
       .post(`/api/v1/events/${eventId}/kiosk-sessions`)
       .set('X-CSRF-Token', as.csrf)
@@ -174,6 +181,8 @@ describe('kiosk', () => {
     expect(res.status).toBe(201);
     const launched = res.body as LaunchKioskResponse;
     expect(launched.url).toMatch(new RegExp(`/vote/kiosk/${launched.token}$`));
+    // The launching staff session ended with the launch.
+    expect(String(res.headers['set-cookie'] ?? '')).toMatch(/vk\.sid=;/);
     // Only the hash of the token and of the PIN are stored.
     const row = await owner.kioskSession.findUniqueOrThrow({ where: { id: launched.id } });
     expect(row.pinHash).toMatch(/^\$argon2id\$/);

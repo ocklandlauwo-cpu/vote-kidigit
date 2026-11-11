@@ -30,6 +30,7 @@ import { UserTokensService } from './user-tokens.service.js';
     { provide: EVENT_ACCESS, useClass: PrismaEventAccess },
   ],
   exports: [
+    AuthService,
     EVENT_ACCESS,
     TokensService,
     AuthStateService,

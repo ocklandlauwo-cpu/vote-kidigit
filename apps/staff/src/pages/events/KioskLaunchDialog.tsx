@@ -36,10 +36,8 @@ export function KioskLaunchDialog({
         body: { deviceLabel: values.deviceLabel, pin: values.pin },
         schema: LaunchKioskResponseSchema,
       });
-      // Hand the device over without a staff session: a voter must not be able to reach the
-      // portal from the kiosk's browser. Staff sign in again after closing the kiosk. replace()
-      // leaves no history entry to go back to.
-      await api('/v1/auth/logout', { method: 'POST' }).catch(() => undefined);
+      // The server ended this staff session with the launch (a voter must not reach the portal
+      // from the kiosk's browser); replace() leaves no history entry to go back to.
       window.location.replace(launched.url);
     } catch (e) {
       setError(e);

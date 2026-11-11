@@ -1,7 +1,7 @@
 // Kiosk routes (Backend Schema 12.9): staff launch, list and end kiosks for an event; the device
 // itself (X-Kiosk-Token, no staff session) reads its session, beats, exits with the PIN and sends
 // voters their codes.
-import { Body, Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   KioskExitRequestSchema,
@@ -12,7 +12,11 @@ import {
   LaunchKioskRequestSchema,
   type LaunchKioskResponse,
 } from '@vote-kidigit/shared';
-import { Public, RequirePermission } from '../../auth/decorators.js';
+import type { Request, Response } from 'express';
+import { AuthService } from '../../auth/auth.service.js';
+import type { AuthState } from '../../auth/auth.types.js';
+import { CurrentAuth, Public, RequirePermission } from '../../auth/decorators.js';
+import { SESSION_COOKIE } from '../../auth/session.service.js';
 import { IdParamPipe } from '../../common/id-param.pipe.js';
 import { zodDto } from '../../common/zod-validation.pipe.js';
 import { KioskDeviceService } from './kiosk-device.service.js';
@@ -27,13 +31,34 @@ const EventId = () => Param('eventId', IdParamPipe);
 
 @Controller('v1/events/:eventId/kiosk-sessions')
 export class KioskController {
-  constructor(private readonly kiosks: KioskService) {}
+  constructor(
+    private readonly kiosks: KioskService,
+    private readonly auth: AuthService,
+  ) {}
 
-  /** POST /api/v1/events/:eventId/kiosk-sessions (KSK-00) */
+  /**
+   * POST /api/v1/events/:eventId/kiosk-sessions (KSK-00). The device is handed to voters, so
+   * the staff session that launched it ends in the same request; if that fails, the new kiosk is
+   * ended too (fail closed) and the error returned.
+   */
   @Post()
   @RequirePermission('kiosk.operate')
-  launch(@EventId() eventId: string, @Body() body: LaunchBody): Promise<LaunchKioskResponse> {
-    return this.kiosks.launch(eventId, body);
+  async launch(
+    @CurrentAuth() auth: AuthState,
+    @EventId() eventId: string,
+    @Body() body: LaunchBody,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LaunchKioskResponse> {
+    const launched = await this.kiosks.launch(eventId, body);
+    try {
+      await this.auth.logout(auth, req);
+    } catch (error) {
+      await this.kiosks.end(eventId, launched.id);
+      throw error;
+    }
+    res.clearCookie(SESSION_COOKIE, { path: '/' });
+    return launched;
   }
 
   /** GET /api/v1/events/:eventId/kiosk-sessions */
