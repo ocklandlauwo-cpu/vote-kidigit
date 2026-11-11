@@ -190,6 +190,7 @@ model VotingEvent {
   smsTemplates SmsTemplate[]
   smsBatches   SmsBatch[]
   smsMessages  SmsMessage[]
+  ballots      Ballot[]
 
   @@unique([publicResultsToken], map: "voting_events_public_results_token_key")
   /// Target of composite foreign keys from the event's children.
@@ -248,10 +249,12 @@ model Category {
   createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime            @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  event      VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
-  picture    File?           @relation("CategoryPicture", fields: [pictureFileId], references: [id], onDelete: SetNull)
-  contesters Contester[]
-  voters     CategoryVoter[]
+  event            VotingEvent          @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  picture          File?                @relation("CategoryPicture", fields: [pictureFileId], references: [id], onDelete: SetNull)
+  contesters       Contester[]
+  voters           CategoryVoter[]
+  participation    VoterParticipation[]
+  ballotSelections BallotSelection[]
 
   @@unique([eventId, name], map: "categories_event_id_name_key")
   @@unique([eventId, displayOrder], map: "categories_event_id_display_order_key")
@@ -278,8 +281,9 @@ model Contester {
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime        @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  category Category @relation(fields: [categoryId, eventId, organizationId], references: [id, eventId, organizationId], onDelete: Cascade)
-  photo    File?    @relation("ContesterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
+  category         Category          @relation(fields: [categoryId, eventId, organizationId], references: [id, eventId, organizationId], onDelete: Cascade)
+  photo            File?             @relation("ContesterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
+  ballotSelections BallotSelection[]
 
   @@index([categoryId])
   @@index([eventId])
@@ -313,10 +317,11 @@ model Voter {
   updatedAt              DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
   deletedAt              DateTime?  @map("deleted_at") @db.Timestamptz(6)
 
-  event      VotingEvent     @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
-  photo      File?           @relation("VoterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
-  messages   SmsMessage[]
-  categories CategoryVoter[]
+  event         VotingEvent          @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  photo         File?                @relation("VoterPhoto", fields: [photoFileId], references: [id], onDelete: SetNull)
+  messages      SmsMessage[]
+  categories    CategoryVoter[]
+  participation VoterParticipation[]
 
   @@unique([eventId, membershipIdNormalized], map: "voters_event_id_membership_id_normalized_key", where: raw("deleted_at IS NULL"))
   @@unique([eventId, codeHmac], map: "voters_event_id_code_hmac_key", where: raw("code_hmac IS NOT NULL AND deleted_at IS NULL"))
@@ -866,4 +871,58 @@ model AuditLog {
   @@index([action])
   @@map("audit_log")
   @@schema("audit")
+}
+
+// Backend Schema 6.1: who has voted, per category. Written only by app.cast_ballot(); never
+// updated or deleted. No link to the ballot tables: that missing link is the secret ballot.
+model VoterParticipation {
+  voterId        String      @map("voter_id") @db.Uuid
+  categoryId     String      @map("category_id") @db.Uuid
+  eventId        String      @map("event_id") @db.Uuid
+  organizationId String      @map("organization_id") @db.Uuid
+  channel        VoteChannel
+  votedAt        DateTime    @map("voted_at") @db.Timestamptz(6)
+
+  voter    Voter    @relation(fields: [voterId, organizationId], references: [id, organizationId], onDelete: Restrict)
+  category Category @relation(fields: [categoryId, eventId, organizationId], references: [id, eventId, organizationId], onDelete: Restrict)
+
+  @@id([voterId, categoryId])
+  @@index([eventId, categoryId])
+  @@index([organizationId])
+  @@map("voter_participation")
+  @@schema("public")
+}
+
+// Backend Schema 6.2: one row per submission. Only the event and the hour: no organization,
+// voter, code, channel, device or exact time. Reachable only through app.cast_ballot() and
+// app.tally_event(); vk_api has no access to the ballot schema.
+model Ballot {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId      String   @map("event_id") @db.Uuid
+  receivedHour DateTime @map("received_hour") @db.Timestamptz(6)
+
+  event      VotingEvent       @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  selections BallotSelection[]
+
+  @@map("ballots")
+  @@schema("ballot")
+}
+
+// Backend Schema 6.3: the choices of a ballot. contester_id is NULL only for "skipped".
+model BallotSelection {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ballotId    String     @map("ballot_id") @db.Uuid
+  categoryId  String     @map("category_id") @db.Uuid
+  contesterId String?    @map("contester_id") @db.Uuid
+  choice      ChoiceKind
+
+  ballot    Ballot     @relation(fields: [ballotId], references: [id], onDelete: Restrict)
+  category  Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  contester Contester? @relation(fields: [contesterId], references: [id], onDelete: Restrict)
+
+  // NULLS NOT DISTINCT is added in the migration SQL (Prisma cannot express it).
+  @@unique([ballotId, categoryId, contesterId], map: "ballot_selections_ballot_category_contester_key")
+  @@index([categoryId, contesterId])
+  @@map("ballot_selections")
+  @@schema("ballot")
 }

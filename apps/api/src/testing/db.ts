@@ -8,7 +8,7 @@ import { hashPassword } from '../auth/passwords.js';
 import '../config/config.module.js'; // loads apps/api/.env into process.env (CI sets real env vars)
 import type { Env } from '../config/env.schema.js';
 import { type DbContext, PrismaService } from '../database/prisma.service.js';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { type Prisma, PrismaClient } from '../generated/prisma/client.js';
 
 function requireEnv(name: 'DATABASE_URL' | 'MIGRATION_DATABASE_URL'): string {
   const value = process.env[name];
@@ -85,9 +85,49 @@ export async function createUser(
  * Removes test organizations and everything in them (as owner). Organizations are soft-deleted
  * first, which exempts them from the last-super-admin rule, then rows are deleted bottom-up.
  */
+const VOTE_TABLES: [table: string, trigger: string][] = [
+  ['public.voter_participation', 'participation_immutable'],
+  ['ballot.ballots', 'ballots_immutable'],
+  ['ballot.ballot_selections', 'selections_immutable'],
+];
+
+/**
+ * Test clean-up only: votes are immutable for everyone, so the owner (who owns the tables)
+ * switches the immutability triggers off inside this transaction. The tables are locked first
+ * and the triggers are back on before commit; DDL is transactional, so no other session ever
+ * sees them off. The product itself keeps votes forever (PRD 8.6).
+ */
+async function purgeVotes(tx: Prisma.TransactionClient, ids: string[]): Promise<void> {
+  const [found] = await tx.$queryRaw<{ n: bigint }[]>`
+    SELECT count(*) AS n FROM public.voting_events e
+    WHERE e.organization_id = ANY (${ids}::uuid[])
+      AND EXISTS (SELECT 1 FROM ballot.ballots b WHERE b.event_id = e.id)`;
+  const [voted] = await tx.$queryRaw<{ n: bigint }[]>`
+    SELECT count(*) AS n FROM public.voter_participation WHERE organization_id = ANY (${ids}::uuid[])`;
+  if (Number(found?.n ?? 0) === 0 && Number(voted?.n ?? 0) === 0) return;
+  await tx.$executeRawUnsafe(
+    `LOCK TABLE ${VOTE_TABLES.map(([table]) => table).join(', ')} IN ACCESS EXCLUSIVE MODE`,
+  );
+  for (const [table, trigger] of VOTE_TABLES) {
+    await tx.$executeRawUnsafe(`ALTER TABLE ${table} DISABLE TRIGGER ${trigger}`);
+  }
+  await tx.$executeRaw`
+    DELETE FROM ballot.ballot_selections s USING ballot.ballots b, public.voting_events e
+    WHERE s.ballot_id = b.id AND b.event_id = e.id AND e.organization_id = ANY (${ids}::uuid[])`;
+  await tx.$executeRaw`
+    DELETE FROM ballot.ballots b USING public.voting_events e
+    WHERE b.event_id = e.id AND e.organization_id = ANY (${ids}::uuid[])`;
+  await tx.$executeRaw`
+    DELETE FROM public.voter_participation WHERE organization_id = ANY (${ids}::uuid[])`;
+  for (const [table, trigger] of VOTE_TABLES) {
+    await tx.$executeRawUnsafe(`ALTER TABLE ${table} ENABLE TRIGGER ${trigger}`);
+  }
+}
+
 export async function deleteOrganizations(owner: PrismaClient, ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   await owner.$transaction(async (tx) => {
+    await purgeVotes(tx, ids);
     await tx.organization.updateMany({
       where: { id: { in: ids } },
       data: { deletedAt: new Date() },

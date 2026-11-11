@@ -137,6 +137,17 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${org}::uuid, ${f.eventId}::uuid, 'sms', 'code_delivery', '+255700000000', 'Intruder')`,
   },
   {
+    table: 'public.voter_participation',
+    // Written only by app.cast_ballot(): vk_api reads it and nothing else. Platform admins
+    // never see individual voters (Backend Schema 10.2).
+    platformCanRead: false,
+    appendOnly: true,
+    insertRefusal: /permission denied/,
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.voter_participation (voter_id, category_id, event_id, organization_id, channel, voted_at)
+        VALUES (${f.voterId}::uuid, ${f.categoryId}::uuid, ${f.eventId}::uuid, ${org}::uuid, 'web', now())`,
+  },
+  {
     table: 'audit.audit_log',
     appendOnly: true,
     insertFor: (tx, org) =>
@@ -266,6 +277,16 @@ async function seedOrganization(
   await owner.categoryVoter.create({
     data: { categoryId: category.id, voterId: voter.id, organizationId: orgId },
   });
+  await owner.voterParticipation.create({
+    data: {
+      voterId: voter.id,
+      categoryId: category.id,
+      eventId: event.id,
+      organizationId: orgId,
+      channel: 'web',
+      votedAt: new Date(),
+    },
+  });
   return {
     userId,
     spareUserId,
@@ -274,6 +295,7 @@ async function seedOrganization(
     permissionKey,
     eventId: event.id,
     categoryId: category.id,
+    voterId: voter.id,
     spareVoterId: spareVoter.id,
   };
 }

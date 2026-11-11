@@ -215,6 +215,13 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - "Send codes now" on publish needs `messages.send` as well as `event.publish` (checked in LifecycleService). Staff: `pages/events/messages/` (MessagesTab, TemplateDrawer, SendDialog, BatchDrawer); message statuses reuse the Code / SMS badge (queued shows as Not sent); batch status is plain text (Design System 3.3 has no batch row).
 - In tests, filter the fake outbox by event name: test files and tests share phone numbers.
 
+## Ballot in code
+
+- Migration 017: `public.voter_participation` (who voted, per category; PK voter + category) and `ballot.ballots` / `ballot.ballot_selections` (what was voted: only event, hour and choices). No key links the two sides. The ballot tables are Prisma models only so migrations do not drift: application code never queries them (vk_api has no access to the schema; tests read them through `ownerClient()`).
+- Votes go in only through `SELECT app.cast_ballot(voter, event, selections::jsonb, channel::vote_channel)` inside `withContext`. It returns `{ recorded, rejected: [{ categoryId, reason }], votedAt }`; whole-call errors are VOTING_CLOSED (not Open, ended), NOT_FOUND (voter not in this event and organization) and VALIDATION_FAILED (not a list). Never log the selections argument.
+- Participation and ballots are immutable for everyone, the owner included (UPDATE, DELETE and TRUNCATE raise IMMUTABLE_RECORD). Test clean-up (`deleteOrganizations`) disables those triggers inside its own transaction after locking the tables; never do that outside test helpers.
+- Fixtures: an event with `status: 'cancelled'` needs `cancelledAt` and `cancelReason` (CHECK constraint).
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.
