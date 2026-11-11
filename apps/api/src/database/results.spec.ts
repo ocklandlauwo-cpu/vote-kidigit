@@ -322,6 +322,36 @@ describe('results', () => {
     expect(winners(secretary.id, secretary.contesters)).toEqual(['Y']);
   });
 
+  it('compares a threshold with the exact share, not the rounded percent', async () => {
+    // 2 of 3 is 66.67 %, shown as 66.7; a 66.7 % threshold is not reached.
+    const e = await setupEvent([{ name: 'Katibu', contesters: ['X', 'Y'], thresholdPct: 66.7 }], 3);
+    const [cat] = e.categories as [(typeof e.categories)[number]];
+    for (const [i, name] of ['X', 'X', 'Y'].entries()) {
+      await vote(e.eventId, e.voterIds[i] ?? '', [pick(cat.id, [cat.contesters[name] ?? ''])]);
+    }
+    await transition(e.eventId, 'closed');
+    const { snapshot, winners, stat } = await current(e.eventId);
+    expect(Number(snapshot.rows.find((r) => r.contesterId === cat.contesters.X)?.percent)).toBe(
+      66.7,
+    );
+    expect(winners(cat.id, cat.contesters)).toEqual([]);
+    expect(stat(cat.id)?.thresholdMet).toBe(false);
+  });
+
+  it('seals ballots when an Open event is cancelled too', async () => {
+    const e = await setupEvent([{ name: 'Mwenyekiti', contesters: ['Asha', 'Juma'] }], 2);
+    const [chair] = e.categories as [(typeof e.categories)[number]];
+    for (const voterId of e.voterIds)
+      await vote(e.eventId, voterId, [pick(chair.id, [chair.contesters.Juma ?? ''])]);
+    await transition(e.eventId, 'cancelled', { reason: 'Mkutano umeahirishwa kabisa' });
+    const [linked] = await owner.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*) AS n FROM ballot.ballots b
+      JOIN public.voter_participation p ON p.xmin = b.xmin
+      WHERE b.event_id = ${e.eventId}::uuid AND p.event_id = ${e.eventId}::uuid`;
+    expect(Number(linked?.n)).toBe(0);
+    expect(await owner.ballot.count({ where: { eventId: e.eventId } })).toBe(2);
+  });
+
   it('gives vk_api no way to count ballots before close', async () => {
     const e = await setupEvent([{ name: 'Mwenyekiti', contesters: ['Asha', 'Juma'] }], 1);
     for (const fn of ['app.tally_event', 'app.freeze_results', 'app.seal_ballots']) {
