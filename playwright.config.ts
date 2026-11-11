@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export const STAFF_URL = 'http://localhost:5173/app/';
 export const VOTER_URL = 'http://localhost:5174/';
+export const API_HEALTH_URL = 'http://localhost:3000/api/health';
 
 const isCI = Boolean(process.env.CI);
 
@@ -14,6 +15,12 @@ export default defineConfig({
   use: { trace: 'on-first-retry' },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
+    {
+      // The built API (pnpm build runs first in CI); locally a running `pnpm dev` is reused.
+      command: 'pnpm --filter @vote-kidigit/api start',
+      url: API_HEALTH_URL,
+      reuseExistingServer: !isCI,
+    },
     {
       command: 'pnpm --filter @vote-kidigit/staff dev',
       url: STAFF_URL,

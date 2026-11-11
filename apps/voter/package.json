@@ -13,10 +13,13 @@
   "dependencies": {
     "@ant-design/icons": "6.3.4",
     "@vote-kidigit/shared": "workspace:*",
+    "i18next": "26.7.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-i18next": "17.1.11",
     "react-router": "7.18.5",
-    "tailwindcss": "4.3.4"
+    "tailwindcss": "4.3.4",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.4",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { messages } from './index.js';
+import { messages, voterMessages } from './index.js';
 
 function keys(value: unknown, prefix = ''): string[] {
   if (typeof value !== 'object' || value === null) return [prefix];
@@ -46,6 +46,15 @@ describe('UI strings', () => {
         expect(text).not.toMatch(/!/);
         expect(text).not.toMatch(/\b(token|payload|null|error 500|click here|invalid input)\b/i);
       }
+    }
+  });
+});
+
+describe('voter UI strings', () => {
+  it('has the same keys in Swahili and English, none empty', () => {
+    expect(keys(voterMessages.en).sort()).toEqual(keys(voterMessages.sw).sort());
+    for (const language of ['sw', 'en'] as const) {
+      expect(values(voterMessages[language]).filter((v) => v.trim() === '')).toEqual([]);
     }
   });
 });

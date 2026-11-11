@@ -1,0 +1,106 @@
+{
+  "frame": {
+    "help": "Msaada: {{phone}}",
+    "poweredBy": "Inaendeshwa na Vote-Kidigit",
+    "logoAlt": "Nembo ya {{name}}"
+  },
+  "signIn": {
+    "title": "Ingia",
+    "intro": "Weka namba yako ya uanachama na msimbo wa uthibitisho uliotumiwa kwa SMS",
+    "membership": "Namba ya uanachama",
+    "code": "Msimbo wa uthibitisho",
+    "codeHelp": "Herufi 8, kwa mfano K7M4-Q9XR",
+    "continue": "Endelea",
+    "window": "{{start}} – {{end}}",
+    "required": "Jaza sehemu hii",
+    "chooseTitle": "Chagua uchaguzi",
+    "chooseIntro": "Namba yako inapatikana katika chaguzi zaidi ya mmoja. Chagua unaotaka kupigia kura."
+  },
+  "errors": {
+    "invalid": "Namba ya uanachama au msimbo si sahihi. Majaribio yaliyobaki: {{count}}",
+    "locked": "Umezuiwa kwa dakika 15. Jaribu tena saa {{time}}",
+    "sessionEnded": "Muda umeisha. Tafadhali ingia tena",
+    "eventClosed": "Upigaji kura umefungwa saa {{time}}. Kura yako haikuhesabiwa.",
+    "unavailable": "Huduma haipatikani kwa sasa. Tafadhali jaribu tena baadaye.",
+    "notFound": "Uchaguzi huu haupatikani. Angalia kiungo ulichotumiwa kwa SMS."
+  },
+  "identity": {
+    "title": "Thibitisha utambulisho",
+    "check": "Hakikisha taarifa hizi ni zako",
+    "isMe": "Huyu ni mimi",
+    "notMe": "Si mimi",
+    "contact": "Tafadhali wasiliana na msimamizi wa uchaguzi: {{phone}}",
+    "contactNoPhone": "Tafadhali wasiliana na msimamizi wa uchaguzi."
+  },
+  "overview": {
+    "title": "Kura yako",
+    "statusTitle": "Hali yako",
+    "now_one": "Utapiga kura katika nafasi {{count}} sasa",
+    "now_other": "Utapiga kura katika nafasi {{count}} sasa",
+    "start": "Anza kupiga kura",
+    "vote": "Piga kura",
+    "noCategories": "Hujapangiwa nafasi yoyote katika uchaguzi huu. Wasiliana na msimamizi.",
+    "state": {
+      "open": "Wazi",
+      "opens_later": "Itafunguliwa {{time}}",
+      "closed": "Imefungwa",
+      "voted": "Umeshapiga kura"
+    }
+  },
+  "ballot": {
+    "progress": "Nafasi {{current}} kati ya {{total}}",
+    "ruleExact_one": "Chagua mgombea {{count}}",
+    "ruleExact_other": "Chagua wagombea {{count}}",
+    "ruleRange": "Chagua kati ya {{min}} na {{max}}",
+    "ruleYesNo": "Chagua Ndiyo au Hapana",
+    "chosen": "Umechagua {{count}} kati ya {{max}}",
+    "next": "Inayofuata",
+    "back": "Rudi",
+    "skip": "Ruka nafasi hii",
+    "yes": "Ndiyo",
+    "no": "Hapana",
+    "removed": "Nafasi {{name}} imeondolewa"
+  },
+  "review": {
+    "title": "Hakiki kura yako",
+    "skipped": "Umeruka",
+    "change": "Badilisha",
+    "changeLabel": "Badilisha {{name}}",
+    "warning": "Ukishatuma, huwezi kubadilisha kura",
+    "submit": "Tuma kura",
+    "sending": "Tunajaribu kutuma kura yako…",
+    "failed": "Imeshindikana kutuma. Angalia hali yako kabla ya kujaribu tena",
+    "checkStatus": "Angalia hali"
+  },
+  "received": {
+    "title": "Kura yako imepokelewa",
+    "thanks": "Asante {{name}}, kura yako imepokelewa saa {{time}}",
+    "resultsLater": "Matokeo yatatangazwa hapa baada ya upigaji kura kufungwa",
+    "later_one": "Nafasi {{count}} itafunguliwa baadaye. Rudi saa {{time}}",
+    "later_other": "Nafasi {{count}} zitafunguliwa baadaye. Rudi saa {{time}}",
+    "categoryClosed": "Nafasi {{name}} ilifungwa kabla hujatuma. Kura yako kwa nafasi hiyo haikuhesabiwa.",
+    "finish": "Maliza"
+  },
+  "status": {
+    "scheduledTitle": "Upigaji kura bado haujaanza",
+    "scheduled": "Upigaji kura utaanza {{date}} saa {{time}}",
+    "remaining": "Zimebaki {{text}}",
+    "days_one": "siku {{count}}",
+    "days_other": "siku {{count}}",
+    "hours_one": "saa {{count}}",
+    "hours_other": "saa {{count}}",
+    "minutes_one": "dakika {{count}}",
+    "minutes_other": "dakika {{count}}",
+    "closedTitle": "Upigaji kura umefungwa",
+    "closed": "Upigaji kura umefungwa. Matokeo bado hayajatangazwa",
+    "cancelledTitle": "Uchaguzi umesitishwa",
+    "cancelled": "Uchaguzi huu umesitishwa",
+    "votedTitle": "Umeshapiga kura",
+    "voted": "Umeshapiga kura saa {{time}}",
+    "resultsTitle": "Matokeo yametangazwa",
+    "results": "Matokeo ya uchaguzi huu yametangazwa.",
+    "lockedTitle": "Umezuiwa kwa muda",
+    "viewResults": "Angalia matokeo",
+    "signInAgain": "Ingia tena"
+  }
+}

@@ -2,6 +2,7 @@
    so only the token colours exist; spacing keeps Tailwind's 4 px unit (p-4 = 16 px). */
 @import 'tailwindcss';
 @import '@vote-kidigit/shared/design/tokens.css';
+@import './voter.css';
 
 @theme inline {
   --color-*: initial;

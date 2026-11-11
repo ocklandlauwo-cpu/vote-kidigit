@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { Logo, type LogoLockup } from '../components/Logo';
 import { LogoMark } from '../components/LogoMark';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { VoterComponents } from './VoterComponents';
 import { useEffectiveTheme } from '../hooks/useEffectiveTheme';
 
 const LOCKUPS: LogoLockup[] = ['horizontal-large', 'horizontal-small', 'mark', 'stacked'];
@@ -191,6 +192,8 @@ export default function ComponentGallery() {
           <Label>ThemeToggle (40 px icon button)</Label>
         </div>
       </Section>
+
+      <VoterComponents />
     </main>
   );
 }

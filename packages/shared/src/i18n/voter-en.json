@@ -1,0 +1,106 @@
+{
+  "frame": {
+    "help": "Help: {{phone}}",
+    "poweredBy": "Powered by Vote-Kidigit",
+    "logoAlt": "{{name}} logo"
+  },
+  "signIn": {
+    "title": "Sign in",
+    "intro": "Enter your membership number and the verification code sent to you by SMS",
+    "membership": "Membership number",
+    "code": "Verification code",
+    "codeHelp": "8 characters, for example K7M4-Q9XR",
+    "continue": "Continue",
+    "window": "{{start}} – {{end}}",
+    "required": "Fill in this field",
+    "chooseTitle": "Choose the election",
+    "chooseIntro": "Your number is in more than one election. Choose the one you want to vote in."
+  },
+  "errors": {
+    "invalid": "Membership number or code is incorrect. Attempts left: {{count}}",
+    "locked": "Blocked for 15 minutes. Try again at {{time}}",
+    "sessionEnded": "Time is up. Please sign in again",
+    "eventClosed": "Voting closed at {{time}}. Your vote was not counted.",
+    "unavailable": "Service unavailable. Please try again later.",
+    "notFound": "This election is not available. Check the link you received by SMS."
+  },
+  "identity": {
+    "title": "Confirm identity",
+    "check": "Check these details are yours",
+    "isMe": "This is me",
+    "notMe": "Not me",
+    "contact": "Please contact the election officer: {{phone}}",
+    "contactNoPhone": "Please contact the election officer."
+  },
+  "overview": {
+    "title": "Your ballot",
+    "statusTitle": "Your status",
+    "now_one": "You will vote in {{count}} position now",
+    "now_other": "You will vote in {{count}} positions now",
+    "start": "Start voting",
+    "vote": "Vote",
+    "noCategories": "You are not assigned to any position in this election. Contact the officer.",
+    "state": {
+      "open": "Open",
+      "opens_later": "Opens at {{time}}",
+      "closed": "Closed",
+      "voted": "Already voted"
+    }
+  },
+  "ballot": {
+    "progress": "Position {{current}} of {{total}}",
+    "ruleExact_one": "Choose {{count}} candidate",
+    "ruleExact_other": "Choose {{count}} candidates",
+    "ruleRange": "Choose between {{min}} and {{max}}",
+    "ruleYesNo": "Choose Yes or No",
+    "chosen": "You chose {{count}} of {{max}}",
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip this position",
+    "yes": "Yes",
+    "no": "No",
+    "removed": "Position {{name}} was removed"
+  },
+  "review": {
+    "title": "Review your ballot",
+    "skipped": "Skipped",
+    "change": "Change",
+    "changeLabel": "Change {{name}}",
+    "warning": "After you submit, you cannot change your vote",
+    "submit": "Submit vote",
+    "sending": "Trying to send your vote…",
+    "failed": "Sending failed. Check your status before trying again",
+    "checkStatus": "Check status"
+  },
+  "received": {
+    "title": "Your vote was received",
+    "thanks": "Thank you {{name}}, your vote was received at {{time}}",
+    "resultsLater": "Results will be announced here after voting closes",
+    "later_one": "{{count}} position opens later. Come back at {{time}}",
+    "later_other": "{{count}} positions open later. Come back at {{time}}",
+    "categoryClosed": "Position {{name}} closed before you submitted. Your vote for it was not counted.",
+    "finish": "Finish"
+  },
+  "status": {
+    "scheduledTitle": "Voting has not started yet",
+    "scheduled": "Voting starts on {{date}} at {{time}}",
+    "remaining": "{{text}} left",
+    "days_one": "{{count}} day",
+    "days_other": "{{count}} days",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "closedTitle": "Voting has closed",
+    "closed": "Voting has closed. Results not yet announced",
+    "cancelledTitle": "Election cancelled",
+    "cancelled": "This election has been cancelled",
+    "votedTitle": "Already voted",
+    "voted": "You voted at {{time}}",
+    "resultsTitle": "Results announced",
+    "results": "The results of this election have been announced.",
+    "lockedTitle": "Temporarily blocked",
+    "viewResults": "View results",
+    "signInAgain": "Sign in again"
+  }
+}

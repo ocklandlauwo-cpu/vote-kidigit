@@ -231,6 +231,17 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Pictures for voters go through signed links (`vote-links.ts`: `/api/v1/vote/files/:id?e&x&s`, 4 hours) because `<img>` cannot send the token; the organization logo is public at `/vote/events/:eventId/logo`. `FilesService.openWith(fileId, check)` serves a file with a caller-supplied rule.
 - Submit: `app.cast_ballot()` in the voter's context, then the token is ended, Redis `turnout:{eventId}` counts the voter's first vote, and a `vote_confirmation` SMS is queued (a failure there is logged, never undoes the vote). Rejections return the category name and reason.
 
+## Voter app in code
+
+- Routes in `apps/voter/src/router.tsx`: every voter screen is its own lazy chunk (`page(path, load)`), with a blank `HydrateFallback`. Pages live in `pages/vote/` with the screen ID in their top comment.
+- Strings: `voter-sw.json` / `voter-en.json` in the shared package (`voterMessages`), not the staff files; parity is tested in `i18n.test.ts`. `apps/voter/src/i18n.ts` initialises them.
+- Data: `voterApi(path, { method, body, token, schema })` (no data library, Tech Stack 7.2) and `vote/voteApi.ts`. Visit state is the external store `vote/store.ts` (`useVote`, `setVoteState`, `resetVote`): token, identity, event and result survive a refresh in sessionStorage; choices only in memory.
+- `vote/flow.ts`: `paths`, `useSessionEnd` (401 → sign-in with "Muda umeisha"), `useIdleTimeout` (10 minutes). After submit the store keeps `result` and the ballot pages redirect to VTR-WEB-06, so browser back never reopens the ballot.
+- Selection rules for the screen are `vote/rules.ts` (`ruleMet`, `toggle`, `limitReached`, `toSelection`); the database re-checks everything.
+- Components in `components/vote/` (VoterFrame, Button, Photo, BallotParts, VoterCards); their CSS is `src/voter.css` (spec px only where no token exists). Gallery: `dev/VoterComponents.tsx` with sample data from `dev/fixtures.ts` (tests import fixtures from there too; `test/vote.tsx` holds only helpers).
+- Brand colour: `vote/brand.ts` `applyBrand(primaryColor)` injects `<style id="vk-brand">` (Design System 12.5) once the event card or sign-in response is known.
+- End-to-end: `e2e/vote.spec.ts` seeds an Open election with `node apps/api/dist/cli/seed-vote-e2e.js` (refuses NODE_ENV=production; prints the voter's code) and Playwright also starts the built API (`playwright.config.ts`, health URL). Build the API before `pnpm e2e`.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

@@ -509,7 +509,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 
 - ☑ 22. Secret ballot in the database
 - ☑ 23. Voter API
-- ☐ 24. Voter web app
+- ☑ 24. Voter web app
 - ☐ 25. Kiosk
 - ☐ 26. Control room and live turnout
 - ☐ 27. Closing, results and publication

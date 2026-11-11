@@ -1,0 +1,275 @@
+/* Voter components that Tailwind utilities cannot express (Design System 5.4, 10.1–10.9).
+   Colours, radii, spacing and durations come from the tokens; plain px only for the spec's own
+   border widths and fixed sizes, which have no token. */
+
+.vk-voter-header {
+  height: 64px;
+  border-bottom: 4px solid var(--vk-brand);
+}
+
+.vk-voter-logo {
+  max-height: 40px;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+.vk-action-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: var(--vk-z-sticky);
+  padding: var(--vk-space-3) var(--vk-space-4) calc(var(--vk-space-3) + env(safe-area-inset-bottom));
+  background: var(--vk-surface);
+  border-top: 1px solid var(--vk-border);
+}
+
+/* Buttons (L: 48 px tall on voter screens, Design System 13.1: tap targets ≥ 48 px) */
+.vk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vk-space-2);
+  min-height: 48px;
+  padding: 0 var(--vk-space-5);
+  border-radius: var(--vk-radius-md);
+  font-size: var(--vk-font-body-lg-size);
+  font-weight: 600;
+  transition:
+    background-color var(--vk-duration-fast) var(--vk-ease-standard),
+    border-color var(--vk-duration-fast) var(--vk-ease-standard);
+  cursor: pointer;
+}
+.vk-btn--s {
+  min-height: 36px;
+  padding: 0 var(--vk-space-3);
+  font-size: var(--vk-font-body-sm-size);
+}
+.vk-btn--primary {
+  background: var(--vk-brand);
+  color: var(--vk-on-brand);
+}
+.vk-btn--primary:hover:not(:disabled) {
+  background: var(--vk-brand-hover);
+}
+.vk-btn--secondary {
+  background: var(--vk-surface);
+  color: var(--vk-text);
+  border: 1px solid var(--vk-border-strong);
+}
+.vk-btn--secondary:hover:not(:disabled),
+.vk-btn--tertiary:hover:not(:disabled) {
+  background: var(--vk-surface-muted);
+}
+.vk-btn--tertiary {
+  background: transparent;
+  color: var(--vk-brand);
+}
+.vk-btn:disabled {
+  cursor: not-allowed;
+  background: var(--vk-surface-muted);
+  color: var(--vk-text-disabled);
+  border-color: var(--vk-border);
+}
+.vk-btn:focus-visible,
+.vk-card:focus-visible,
+.vk-yesno:focus-visible,
+.vk-input:focus-visible {
+  outline: 2px solid var(--vk-focus);
+  outline-offset: 2px;
+}
+
+.vk-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--vk-space-3);
+  border: 1px solid var(--vk-border-strong);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface);
+  color: var(--vk-text);
+  font-size: var(--vk-font-body-lg-size);
+}
+.vk-input[aria-invalid='true'] {
+  border-color: var(--vk-danger-border);
+}
+.vk-input--code {
+  font-family: var(--vk-font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Ballot progress (10.2) */
+.vk-progress {
+  height: 6px;
+  border-radius: var(--vk-radius-full);
+  background: var(--vk-surface-muted);
+  overflow: hidden;
+}
+.vk-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--vk-brand);
+  transition: width var(--vk-duration-base) var(--vk-ease-standard);
+}
+
+/* Contester card (10.3) */
+.vk-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--vk-space-3);
+}
+.vk-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: var(--vk-space-3);
+  border: 1.5px solid var(--vk-border-strong);
+  border-radius: var(--vk-radius-lg);
+  background: var(--vk-surface);
+  color: var(--vk-text);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--vk-duration-base) var(--vk-ease-standard),
+    background-color var(--vk-duration-base) var(--vk-ease-standard);
+}
+/* Hover and press never override the selected look. */
+.vk-card:hover:not([aria-disabled='true']):not([aria-checked='true']) {
+  border-color: var(--vk-text-secondary);
+}
+.vk-card:active:not([aria-disabled='true']):not([aria-checked='true']) {
+  background: var(--vk-surface-muted);
+}
+.vk-card[aria-checked='true'] {
+  border: 2.5px solid var(--vk-brand);
+  background: var(--vk-brand-subtle);
+  font-weight: 700;
+}
+.vk-card[aria-disabled='true'] {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.vk-card__tick {
+  position: absolute;
+  top: calc(var(--vk-space-3) + var(--vk-space-2));
+  right: calc(var(--vk-space-3) + var(--vk-space-2));
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--vk-radius-full);
+  background: var(--vk-surface);
+  color: var(--vk-brand);
+  font-size: 24px;
+}
+
+.vk-photo {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: var(--vk-radius-md);
+  object-fit: cover;
+}
+.vk-photo--initials {
+  display: grid;
+  place-items: center;
+  background: var(--vk-neutral-bg);
+  color: var(--vk-neutral-fg);
+  font-size: 32px;
+  font-weight: 600;
+}
+.vk-photo--large {
+  width: 120px;
+}
+.vk-photo--row {
+  width: 32px;
+  font-size: var(--vk-font-caption-size);
+}
+
+/* Yes / No (10.4) */
+.vk-yesno {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vk-space-2);
+  height: 64px;
+  border: 1.5px solid var(--vk-border-strong);
+  border-radius: var(--vk-radius-lg);
+  background: var(--vk-surface);
+  color: var(--vk-text);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.vk-yesno[aria-checked='true'] {
+  border: 2.5px solid var(--vk-brand);
+  background: var(--vk-brand-subtle);
+}
+
+/* Lists in cards (10.6, 10.7) */
+.vk-list-card {
+  border: 1px solid var(--vk-border);
+  border-radius: var(--vk-radius-lg);
+  background: var(--vk-surface);
+}
+.vk-list-card > * + * {
+  border-top: 1px solid var(--vk-border);
+}
+.vk-row {
+  min-height: 64px;
+}
+
+/* Status screens (10.9) */
+.vk-status-icon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--vk-radius-full);
+  font-size: 48px;
+}
+.vk-status-icon[data-tone='info'] {
+  background: var(--vk-info-bg);
+  color: var(--vk-info-fg);
+}
+.vk-status-icon[data-tone='warning'] {
+  background: var(--vk-warning-bg);
+  color: var(--vk-warning-fg);
+}
+.vk-status-icon[data-tone='success'] {
+  background: var(--vk-success-bg);
+  color: var(--vk-success-fg);
+}
+.vk-status-icon[data-tone='danger'] {
+  background: var(--vk-danger-bg);
+  color: var(--vk-danger-fg);
+}
+.vk-status-icon[data-tone='neutral'] {
+  background: var(--vk-neutral-bg);
+  color: var(--vk-neutral-fg);
+}
+
+.vk-alert {
+  padding: var(--vk-space-3) var(--vk-space-4);
+  border-radius: var(--vk-radius-md);
+  border: 1px solid var(--vk-warning-border);
+  background: var(--vk-warning-bg);
+  color: var(--vk-warning-fg);
+}
+.vk-alert[data-tone='danger'] {
+  border-color: var(--vk-danger-border);
+  background: var(--vk-danger-bg);
+  color: var(--vk-danger-fg);
+}
+.vk-alert[data-tone='info'] {
+  border-color: var(--vk-info-border);
+  background: var(--vk-info-bg);
+  color: var(--vk-info-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vk-card,
+  .vk-progress > span,
+  .vk-btn {
+    transition: none;
+  }
+}
