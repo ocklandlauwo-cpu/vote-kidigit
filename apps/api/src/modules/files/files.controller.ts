@@ -25,10 +25,12 @@ export class FilesController {
       'X-Content-Type-Options': 'nosniff',
       ETag: `"${file.sha256}"`,
     });
+    // Reports download under their own name; pictures show inline.
+    const name = (file.originalName ?? 'report').replace(/[^\w.-]/g, '_');
     return new StreamableFile(stream, {
       type: file.mimeType,
       length,
-      disposition: 'inline',
+      disposition: file.kind === 'report' ? `attachment; filename="${name}"` : 'inline',
     });
   }
 }

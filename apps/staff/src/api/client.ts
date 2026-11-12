@@ -82,8 +82,11 @@ export async function api<T = void>(path: string, options: RequestOptions<T> = {
   if (!response.ok) {
     throw toApiError(response.status, response.statusText, await response.json().catch(() => null));
   }
-  if (response.status === 204 || response.status === 202) return undefined as T;
-  const json: unknown = await response.json();
+  if (response.status === 204) return undefined as T;
+  // 202 Accepted may carry a body (a queued report job) or none (queued imports).
+  const text = await response.text();
+  if (response.status === 202 && text === '') return undefined as T;
+  const json: unknown = JSON.parse(text);
   return options.schema ? options.schema.parse(json) : (json as T);
 }
 

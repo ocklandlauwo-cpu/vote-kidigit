@@ -117,6 +117,12 @@ const TENANT_TABLES: TenantTableCase[] = [
         VALUES (${org}::uuid, ${f.eventId}::uuid)`,
   },
   {
+    table: 'public.report_jobs',
+    insertFor: (tx, org, f) =>
+      tx.$executeRaw`INSERT INTO public.report_jobs (organization_id, event_id, type)
+        VALUES (${org}::uuid, ${f.eventId}::uuid, 'voters_pdf')`,
+  },
+  {
     table: 'public.sms_templates',
     insertFor: (tx, org) =>
       tx.$executeRaw`INSERT INTO public.sms_templates (organization_id, type, channel, body)
@@ -302,6 +308,9 @@ async function seedOrganization(
     },
   });
   await owner.voterImport.create({ data: { organizationId: orgId, eventId: event.id } });
+  await owner.reportJob.create({
+    data: { organizationId: orgId, eventId: event.id, type: 'voters_pdf' },
+  });
   await owner.smsTemplate.create({
     data: { organizationId: orgId, type: 'code_delivery', channel: 'sms', body: 'Msimbo wako' },
   });

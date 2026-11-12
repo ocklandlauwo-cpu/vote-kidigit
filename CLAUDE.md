@@ -266,6 +266,17 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - `modules/results/`: staff results (`results.view`), ties (`results.resolve_tie`), publish (typed name, queues the `results_published` SMS) and public link (`results.publish`); `GET /api/v1/results/:token` (public) and `GET /vote/results` (ballot token) honour `results_visibility` (winners only: no counts, no other contesters).
 - Staff `pages/events/results/` (ResultsTab with RES-02 drawer, RES-03 tie dialog, publish, public link); header: Close now (typed name, then the Results tab), Publish results (to the Results tab), Reopen (ReopenDialog). Voter app: `ResultsView`, `/results/:token` (RES-04) and `/vote/:eventId/results` (VTR-WEB-08).
 
+## Reports in code
+
+- Migration 023: `report_jobs` (params = audit filters, progress 0–100, error = an error code). `modules/reports/`: `ReportsService` creates the row and audit entry, queues `report-<id>` on the `reports` queue after commit and, for events up to `INSTANT_REPORT_MAX_VOTERS` (5,000), polls the row for up to 25 s, so small reports come back completed (200) and larger ones queued (202).
+- Worker: `ReportsWorkerModule` (`ReportsProcessor` concurrency 2, `ReportRunner`, `PdfRenderer`). One shared headless Chromium (`headless: 'shell'`), JavaScript off and every non-`data:` request aborted; fonts and the logo are embedded as data URIs. The finished file is stored with `FilesService.withDocument('report', …)` in the same transaction that completes the job.
+- Templates are pure functions in `reports/templates/` (`resultsReportHtml`, `votersReportHtml`, `votersWorkbook`, `auditWorkbook`, words in `report-text.ts`, sw/en by the requester's language); `templates.spec.ts` keeps HTML snapshots. Escape every database value with `esc`. Colours come from `tokens` (shared `design/tokens.ts`).
+- The results PDF reads the frozen snapshot (`results/snapshot.ts`, shared with ResultsService), never ballots; before close it is INVALID_TRANSITION with `details.reason: RESULTS_NOT_READY`. The voters report gets eligibility from `app.voter_is_eligible()` and voted from `voter_participation`; its row type has no field for codes or choices.
+- Report files are read through `GET /files/:id` with the permission of the job's type (reports.download, audit.view.event, audit.view.org) and served as attachments. Audit exports have their own routes, so event activity export needs only audit.view.event.
+- Puppeteer downloads Chrome for Testing into `~/.cache/puppeteer` at install. On this PC the download kept resetting; `chrome-headless-shell` 148.0.7778.97 was fetched in ranges into `~/.cache/puppeteer/chrome-headless-shell/win64-148.0.7778.97/`.
+- Staff: `pages/reports/` (`reportsApi.ts`: `useEventReport`, `useAuditExport`, `useRecentReports`; `ReportParts.tsx`: `ReportProgress`, `RecentDownloads`; `download.ts` `startDownload`, mocked in tests). The header's Download PDF opens the Results tab with `?download=pdf`. `api()` reads a 202 body when there is one.
+- In tests, a category with one contester is a Yes/No vote: give report fixtures two contesters or ballots are refused (RULE_NOT_MET).
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

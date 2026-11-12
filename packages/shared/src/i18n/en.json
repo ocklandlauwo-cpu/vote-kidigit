@@ -22,7 +22,6 @@
     "unsavedBody": "Changes you have not saved will be lost.",
     "leave": "Leave",
     "stay": "Stay",
-    "exportSoon": "Export is coming soon",
     "loadError": "Couldn’t load this.",
     "view": "View",
     "duration": {
@@ -1098,5 +1097,33 @@
     "publishTitle": "Publish the results of {{name}}?",
     "publishBody": "The public link goes live and voters see the results. Results cannot be changed afterwards.",
     "publishedDone": "Results published"
+  },
+  "reports": {
+    "downloadPdf": "Download PDF",
+    "download": "Download",
+    "preparingPdf": "Preparing PDF…",
+    "preparingFile": "Preparing file…",
+    "failedPdf": "We couldn’t create the PDF. Try again.",
+    "failedFile": "We couldn’t create the file. Try again.",
+    "notReady": "Results are not ready yet. The PDF is available after close.",
+    "recentTitle": "Recent downloads",
+    "recentEmpty": "No reports downloaded yet.",
+    "requested": "{{name}} · {{time}}",
+    "system": "System",
+    "types": {
+      "results_pdf": "Results (PDF)",
+      "voters_pdf": "Voters (PDF)",
+      "voters_xlsx": "Voters (Excel)",
+      "audit_xlsx": "Audit log (Excel)"
+    },
+    "status": {
+      "queued": "Waiting",
+      "running": "Preparing",
+      "completed": "Ready",
+      "failed": "Failed"
+    },
+    "exportVoters": "Export",
+    "asPdf": "PDF",
+    "asExcel": "Excel"
   }
 }

@@ -16,3 +16,4 @@ export * from './vote.js';
 export * from './kiosk.js';
 export * from './live.js';
 export * from './results.js';
+export * from './reports.js';

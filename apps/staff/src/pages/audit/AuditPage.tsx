@@ -1,11 +1,11 @@
 // SYS-01 Audit log (App Flow 7.3): filters by date range, user and action type; rows show time,
 // user, action, item and IP, and expand to the before/after values. Filters live in the URL.
-// The event Activity tab (App Flow 6.9) shows the same view for one event. Excel export arrives
-// with report jobs (step 39).
+// The event Activity tab (App Flow 6.9) shows the same view for one event. Export to Excel takes
+// the current filters (a report job, App Flow 11.3).
 import { DownloadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { type AuditEntry, AuditPageSchema } from '@vote-kidigit/shared';
-import { Button, DatePicker, Descriptions, Flex, Select, Skeleton, Table, Tooltip } from 'antd';
+import { Button, DatePicker, Descriptions, Flex, Select, Skeleton, Table } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { api } from '../../api/client';
@@ -15,6 +15,8 @@ import { Banner } from '../../components/Banner';
 import { EmptyState } from '../../components/EmptyState';
 import { PageHeader } from '../../components/PageHeader';
 import { useFormat } from '../../hooks/useFormat';
+import { ReportProgress } from '../reports/ReportParts';
+import { useAuditExport } from '../reports/reportsApi';
 import { useUsers } from '../users/usersApi';
 
 const ACTION_GROUPS = ['event', 'auth', 'user', 'role', 'org', 'me'] as const;
@@ -52,13 +54,18 @@ export function AuditPage() {
   return <AuditView endpoint="/v1/audit" withHeader />;
 }
 
-/** The filters and table of the audit log, read from `endpoint`. */
+/**
+ * The filters and table of the audit log, read from `endpoint`. The export covers the
+ * organization, or the event `exportEventId` (event Activity tab).
+ */
 export function AuditView({
   endpoint,
   withHeader = false,
+  exportEventId,
 }: {
   endpoint: string;
   withHeader?: boolean;
+  exportEventId?: string;
 }) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -72,6 +79,19 @@ export function AuditView({
   const sizeParam = Number(params.get('pageSize') ?? '50');
   const pageSize = (PAGE_SIZES as readonly number[]).includes(sizeParam) ? sizeParam : 50;
   const filtered = Boolean(action || actorUserId || from || to);
+  const exported = useAuditExport(exportEventId);
+  const runExport = () =>
+    void exported.start({
+      ...(action && { action }),
+      ...(actorUserId && { actorUserId }),
+      ...(from && { from }),
+      ...(to && { to }),
+    });
+  const exportButton = (
+    <Button icon={<DownloadOutlined />} loading={exported.preparing} onClick={runExport}>
+      {t('audit.export')}
+    </Button>
+  );
 
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries({ action, actorUserId, from, to })) {
@@ -191,18 +211,7 @@ export function AuditView({
   return (
     <>
       {/* SYS-01 */}
-      {withHeader && (
-        <PageHeader
-          title={t('audit.title')}
-          actions={
-            <Tooltip title={t('common.exportSoon')}>
-              <Button icon={<DownloadOutlined />} disabled>
-                {t('audit.export')}
-              </Button>
-            </Tooltip>
-          }
-        />
-      )}
+      {withHeader && <PageHeader title={t('audit.title')} actions={exportButton} />}
       <Flex wrap gap="middle" style={{ marginBottom: 'var(--vk-space-4)' }}>
         <DatePicker.RangePicker
           aria-label={t('audit.dateRange')}
@@ -246,7 +255,9 @@ export function AuditView({
             update({ action: value ? `${value}.` : undefined, page: undefined })
           }
         />
+        {!withHeader && exportButton}
       </Flex>
+      <ReportProgress report={exported} kind="excel" onRetry={runExport} />
       {body()}
     </>
   );

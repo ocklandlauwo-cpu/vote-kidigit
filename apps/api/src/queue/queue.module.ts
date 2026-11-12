@@ -7,6 +7,7 @@ import type { Env } from '../config/env.schema.js';
 /** Queue names (Backend Schema 7.9: sms, email, reports, imports, schedule). */
 export const EMAIL_QUEUE = 'email';
 export const IMPORTS_QUEUE = 'imports';
+export const REPORTS_QUEUE = 'reports';
 export const SCHEDULE_QUEUE = 'schedule';
 export const SMS_QUEUE = 'sms';
 
@@ -51,6 +52,11 @@ export function redisOptionsFromUrl(url: string): RedisOptions {
     // Validation and import are deterministic: a failure is recorded on the import, not retried.
     BullModule.registerQueue({
       name: IMPORTS_QUEUE,
+      defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
+    }),
+    // A failed report is recorded on its row; staff ask again.
+    BullModule.registerQueue({
+      name: REPORTS_QUEUE,
       defaultJobOptions: { attempts: 1, removeOnComplete: true, removeOnFail: true },
     }),
     // One job per message (PRD SMS-07): up to 3 automatic retries with growing waits.

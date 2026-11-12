@@ -1,0 +1,247 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`results report HTML matches the snapshot (English, not yet published) 1`] = `
+"<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Election results · Uchaguzi Mkuu 2027</title>
+<style>
+@page { size: A4; margin: 16mm 14mm 18mm; }
+* { box-sizing: border-box; }
+html { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #161D24; }
+body { margin: 0; }
+h1 { font-size: 18pt; margin: 0 0 2pt; font-weight: 600; }
+h2 { font-size: 13pt; margin: 0 0 4pt; font-weight: 600; }
+p { margin: 0; }
+.muted { color: #4C5864; }
+.small { font-size: 9pt; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8.5pt; word-break: break-all; }
+header.report { display: flex; align-items: center; gap: 12pt; padding-bottom: 8pt;
+  border-bottom: 2pt solid #0B6A8A; margin-bottom: 12pt; }
+header.report img { max-height: 48pt; max-width: 120pt; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2pt 12pt; margin: 0 0 12pt; }
+dl.facts dt { color: #4C5864; }
+dl.facts dd { margin: 0; }
+section.category { break-inside: avoid; border: 0.75pt solid #D6DDE3; border-radius: 4pt;
+  padding: 8pt 10pt; margin-bottom: 10pt; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; font-size: 9pt; color: #4C5864;
+  border-bottom: 0.75pt solid #B8C3CC; padding: 3pt 4pt; }
+td { padding: 3pt 4pt; border-bottom: 0.5pt solid #E9EDF1; vertical-align: top; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.winner { font-weight: 600; }
+.badge { display: inline-block; font-size: 8.5pt; font-weight: 600; color: #166534;
+  border: 0.75pt solid #15803D; border-radius: 3pt; padding: 0 3pt; }
+.warn { color: #B91C1C; }
+.notes { margin-top: 4pt; font-size: 9pt; color: #4C5864; }
+.signatures { break-inside: avoid; margin-top: 16pt; }
+.signatures .lines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14pt; margin-top: 8pt; }
+.signatures .line { border-top: 0.75pt solid #36414B; padding-top: 3pt; margin-top: 28pt;
+  font-size: 9pt; color: #4C5864; }
+.verify { break-inside: avoid; display: flex; gap: 12pt; align-items: center; margin-top: 16pt;
+  padding-top: 8pt; border-top: 0.75pt solid #D6DDE3; }
+.verify svg { width: 84pt; height: 84pt; flex: none; }
+</style>
+</head>
+<body>
+<header class="report"><img src="data:image/png;base64,AAAA" alt=""><div><p class="muted">Chama cha Walimu</p>
+<h1>Election results</h1><p>Uchaguzi Mkuu 2027</p></div></header>
+<dl class="facts"><dt>Status</dt><dd>Closed</dd><dt>Voting window</dt><dd>20 Nov 2026, 08:00 – 20 Nov 2026, 16:00</dd><dt>Voting opened</dt><dd>20 Nov 2026, 08:00</dd><dt>Voting closed</dt><dd>20 Nov 2026, 16:00</dd><dt>Turnout</dt><dd>3,214 of 5,000 (64.3%)</dd></dl>
+<section class="category">
+<h2>Mwenyekiti <span class="muted small">1 seat</span></h2>
+<table><thead><tr><th>Contester</th><th class="num">Votes</th>
+<th class="num">%</th></tr></thead><tbody>
+<tr><td class="winner">Asha Mollel <span class="badge">Winner</span></td>
+<td class="num">1,575</td><td class="num">50.0</td></tr>
+<tr><td class="">Juma &lt;Ali&gt; <span class="muted small">Timu &amp; Wenzake</span></td>
+<td class="num">1,575</td><td class="num">50.0</td></tr>
+</tbody></table>
+<div class="notes">Eligible: 5,000 · Voted: 3,200 · Skipped: 50<br>Quorum 50.0%: met<br>Tie resolved by Neema Mushi (20 Nov 2026, 16:30): Kura ya bahati mbele ya wagombea wote</div>
+</section>
+<section class="category">
+<h2>Katiba mpya <span class="muted small">1 seat</span></h2>
+<table><thead><tr><th>Contester</th><th class="num">Votes</th>
+<th class="num">%</th></tr></thead><tbody>
+<tr><td class="">Katiba mpya · Yes</td>
+<td class="num">1,800</td><td class="num">58.1</td></tr>
+<tr><td class="">Katiba mpya · No</td>
+<td class="num">1,300</td><td class="num">41.9</td></tr>
+</tbody></table>
+<div class="notes">Eligible: 5,000 · Voted: 3,100 · Skipped: 0<br>Threshold 66.7%: not met<br>No winner</div>
+</section>
+<div class="signatures"><h2>Signatures</h2><div class="lines"><div><strong>Returning officer</strong>
+<div class="line">Name</div><div class="line">Signature</div>
+<div class="line">Date</div></div>
+<div><strong>Witness 1</strong>
+<div class="line">Name</div><div class="line">Signature</div>
+<div class="line">Date</div></div>
+<div><strong>Witness 2</strong>
+<div class="line">Name</div><div class="line">Signature</div>
+<div class="line">Date</div></div></div></div>
+<div class="verify"><div>
+<p><strong>Verify these results</strong></p>
+<p class="small">These results are not yet published.</p>
+<p class="small">Version 2 · Verification hash (SHA-256)</p>
+<p class="mono">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</p>
+<p class="small muted">Generated 20 Nov 2026, 18:00 by Neema Mushi</p>
+</div></div>
+</body>
+</html>
+"
+`;
+
+exports[`results report HTML matches the snapshot (Swahili) 1`] = `
+"<!doctype html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<title>Matokeo ya uchaguzi · Uchaguzi Mkuu 2027</title>
+<style>
+@page { size: A4; margin: 16mm 14mm 18mm; }
+* { box-sizing: border-box; }
+html { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #161D24; }
+body { margin: 0; }
+h1 { font-size: 18pt; margin: 0 0 2pt; font-weight: 600; }
+h2 { font-size: 13pt; margin: 0 0 4pt; font-weight: 600; }
+p { margin: 0; }
+.muted { color: #4C5864; }
+.small { font-size: 9pt; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8.5pt; word-break: break-all; }
+header.report { display: flex; align-items: center; gap: 12pt; padding-bottom: 8pt;
+  border-bottom: 2pt solid #0B6A8A; margin-bottom: 12pt; }
+header.report img { max-height: 48pt; max-width: 120pt; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2pt 12pt; margin: 0 0 12pt; }
+dl.facts dt { color: #4C5864; }
+dl.facts dd { margin: 0; }
+section.category { break-inside: avoid; border: 0.75pt solid #D6DDE3; border-radius: 4pt;
+  padding: 8pt 10pt; margin-bottom: 10pt; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; font-size: 9pt; color: #4C5864;
+  border-bottom: 0.75pt solid #B8C3CC; padding: 3pt 4pt; }
+td { padding: 3pt 4pt; border-bottom: 0.5pt solid #E9EDF1; vertical-align: top; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.winner { font-weight: 600; }
+.badge { display: inline-block; font-size: 8.5pt; font-weight: 600; color: #166534;
+  border: 0.75pt solid #15803D; border-radius: 3pt; padding: 0 3pt; }
+.warn { color: #B91C1C; }
+.notes { margin-top: 4pt; font-size: 9pt; color: #4C5864; }
+.signatures { break-inside: avoid; margin-top: 16pt; }
+.signatures .lines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14pt; margin-top: 8pt; }
+.signatures .line { border-top: 0.75pt solid #36414B; padding-top: 3pt; margin-top: 28pt;
+  font-size: 9pt; color: #4C5864; }
+.verify { break-inside: avoid; display: flex; gap: 12pt; align-items: center; margin-top: 16pt;
+  padding-top: 8pt; border-top: 0.75pt solid #D6DDE3; }
+.verify svg { width: 84pt; height: 84pt; flex: none; }
+</style>
+</head>
+<body>
+<header class="report"><img src="data:image/png;base64,AAAA" alt=""><div><p class="muted">Chama cha Walimu</p>
+<h1>Matokeo ya uchaguzi</h1><p>Uchaguzi Mkuu 2027</p></div></header>
+<dl class="facts"><dt>Hali</dt><dd>Matokeo yametangazwa</dd><dt>Muda wa kupiga kura</dt><dd>20 Nov 2026, saa 08:00 – 20 Nov 2026, saa 16:00</dd><dt>Upigaji kura ulifunguliwa</dt><dd>20 Nov 2026, saa 08:00</dd><dt>Upigaji kura ulifungwa</dt><dd>20 Nov 2026, saa 16:00</dd><dt>Matokeo yalitangazwa</dt><dd>20 Nov 2026, saa 17:00</dd><dt>Waliopiga kura</dt><dd>3,214 kati ya 5,000 (64.3%)</dd></dl>
+<section class="category">
+<h2>Mwenyekiti <span class="muted small">Nafasi 1</span></h2>
+<table><thead><tr><th>Mgombea</th><th class="num">Kura</th>
+<th class="num">%</th></tr></thead><tbody>
+<tr><td class="winner">Asha Mollel <span class="badge">Mshindi</span></td>
+<td class="num">1,575</td><td class="num">50.0</td></tr>
+<tr><td class="">Juma &lt;Ali&gt; <span class="muted small">Timu &amp; Wenzake</span></td>
+<td class="num">1,575</td><td class="num">50.0</td></tr>
+</tbody></table>
+<div class="notes">Wanaostahili: 5,000 · Walipiga kura: 3,200 · Hawakuchagua: 50<br>Akidi ya 50.0%: imetimia<br>Sare iliamuliwa na Neema Mushi (20 Nov 2026, saa 16:30): Kura ya bahati mbele ya wagombea wote</div>
+</section>
+<section class="category">
+<h2>Katiba mpya <span class="muted small">Nafasi 1</span></h2>
+<table><thead><tr><th>Mgombea</th><th class="num">Kura</th>
+<th class="num">%</th></tr></thead><tbody>
+<tr><td class="">Katiba mpya · Ndiyo</td>
+<td class="num">1,800</td><td class="num">58.1</td></tr>
+<tr><td class="">Katiba mpya · Hapana</td>
+<td class="num">1,300</td><td class="num">41.9</td></tr>
+</tbody></table>
+<div class="notes">Wanaostahili: 5,000 · Walipiga kura: 3,100 · Hawakuchagua: 0<br>Kiwango cha 66.7%: hakijafikiwa<br>Hakuna mshindi</div>
+</section>
+<div class="signatures"><h2>Sahihi</h2><div class="lines"><div><strong>Msimamizi wa uchaguzi</strong>
+<div class="line">Jina</div><div class="line">Sahihi</div>
+<div class="line">Tarehe</div></div>
+<div><strong>Shahidi 1</strong>
+<div class="line">Jina</div><div class="line">Sahihi</div>
+<div class="line">Tarehe</div></div>
+<div><strong>Shahidi 2</strong>
+<div class="line">Jina</div><div class="line">Sahihi</div>
+<div class="line">Tarehe</div></div></div></div>
+<div class="verify"><svg data-qr="1"></svg><div>
+<p><strong>Hakiki matokeo haya</strong></p>
+<p class="small">Changanua msimbo huu kuona matokeo kwenye ukurasa rasmi.</p><p class="mono">https://vote.example.test/results/abc123</p>
+<p class="small">Toleo 2 · Alama ya uhakiki (SHA-256)</p>
+<p class="mono">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</p>
+<p class="small muted">Imetolewa 20 Nov 2026, saa 18:00 na Neema Mushi</p>
+</div></div>
+</body>
+</html>
+"
+`;
+
+exports[`voters report matches the snapshot 1`] = `
+"<!doctype html>
+<html lang="sw">
+<head>
+<meta charset="utf-8">
+<title>Orodha ya wapiga kura · Uchaguzi Mkuu 2027</title>
+<style>
+@page { size: A4; margin: 16mm 14mm 18mm; }
+* { box-sizing: border-box; }
+html { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #161D24; }
+body { margin: 0; }
+h1 { font-size: 18pt; margin: 0 0 2pt; font-weight: 600; }
+h2 { font-size: 13pt; margin: 0 0 4pt; font-weight: 600; }
+p { margin: 0; }
+.muted { color: #4C5864; }
+.small { font-size: 9pt; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 8.5pt; word-break: break-all; }
+header.report { display: flex; align-items: center; gap: 12pt; padding-bottom: 8pt;
+  border-bottom: 2pt solid #0B6A8A; margin-bottom: 12pt; }
+header.report img { max-height: 48pt; max-width: 120pt; }
+dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2pt 12pt; margin: 0 0 12pt; }
+dl.facts dt { color: #4C5864; }
+dl.facts dd { margin: 0; }
+section.category { break-inside: avoid; border: 0.75pt solid #D6DDE3; border-radius: 4pt;
+  padding: 8pt 10pt; margin-bottom: 10pt; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; font-size: 9pt; color: #4C5864;
+  border-bottom: 0.75pt solid #B8C3CC; padding: 3pt 4pt; }
+td { padding: 3pt 4pt; border-bottom: 0.5pt solid #E9EDF1; vertical-align: top; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.winner { font-weight: 600; }
+.badge { display: inline-block; font-size: 8.5pt; font-weight: 600; color: #166534;
+  border: 0.75pt solid #15803D; border-radius: 3pt; padding: 0 3pt; }
+.warn { color: #B91C1C; }
+.notes { margin-top: 4pt; font-size: 9pt; color: #4C5864; }
+.signatures { break-inside: avoid; margin-top: 16pt; }
+.signatures .lines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14pt; margin-top: 8pt; }
+.signatures .line { border-top: 0.75pt solid #36414B; padding-top: 3pt; margin-top: 28pt;
+  font-size: 9pt; color: #4C5864; }
+.verify { break-inside: avoid; display: flex; gap: 12pt; align-items: center; margin-top: 16pt;
+  padding-top: 8pt; border-top: 0.75pt solid #D6DDE3; }
+.verify svg { width: 84pt; height: 84pt; flex: none; }
+</style>
+</head>
+<body>
+<header class="report"><div><p class="muted">Chama cha Walimu</p>
+<h1>Orodha ya wapiga kura</h1><p>Uchaguzi Mkuu 2027</p></div></header>
+<p>Jumla 2 · walipiga kura 1</p>
+<p class="small muted">Imetolewa 20 Nov 2026, saa 18:00 na Neema Mushi</p>
+<table class="small" style="margin-top: 8pt"><thead><tr><th>Jina</th><th>Namba ya uanachama</th><th>Jinsia</th><th>Simu</th><th>Nafasi</th><th>Hali</th><th>SMS ya namba</th></tr></thead><tbody>
+<tr><td>Asha Mollel</td><td>M-001</td><td>Mwanamke</td><td>•••••••••456</td><td>Zote</td><td>Amepiga kura</td><td>Imefika</td></tr>
+<tr><td>=HYPERLINK(&quot;x&quot;)</td><td>M-002</td><td>Mwanaume</td><td>•••••••••789</td><td>Mwenyekiti</td><td>Hajapiga kura</td><td>Imeshindikana</td></tr>
+</tbody></table>
+</body>
+</html>
+"
+`;

@@ -47,6 +47,7 @@ model Organization {
   userTokens      UserToken[]
   votingEvents    VotingEvent[]
   files           File[]
+  reportJobs      ReportJob[]
   logoFile        File?             @relation("OrganizationLogo", fields: [logoFileId], references: [id], onDelete: SetNull)
 
   @@unique([slug], map: "organizations_slug_key", where: raw("deleted_at IS NULL"))
@@ -90,6 +91,7 @@ model User {
   assignmentsCreated EventAssignment[] @relation("AssignmentCreator")
   filesCreated       File[]            @relation("FileCreator")
   importsCreated     VoterImport[]     @relation("ImportCreator")
+  reportsRequested   ReportJob[]       @relation("ReportRequester")
   batchesCreated     SmsBatch[]        @relation("BatchCreator")
   kiosksLaunched     KioskSession[]    @relation("KioskLauncher")
   kiosksEnded        KioskSession[]    @relation("KioskEnder")
@@ -190,6 +192,7 @@ model VotingEvent {
   categories      Category[]
   voters          Voter[]
   voterImports    VoterImport[]
+  reportJobs      ReportJob[]
   smsTemplates    SmsTemplate[]
   smsBatches      SmsBatch[]
   smsMessages     SmsMessage[]
@@ -783,6 +786,7 @@ model File {
   pictureOf         Category[]     @relation("CategoryPicture")
   photoOfContesters Contester[]    @relation("ContesterPhoto")
   photoOfVoters     Voter[]        @relation("VoterPhoto")
+  reportJobs        ReportJob[]
   voterImports      VoterImport[]
 
   @@index([organizationId])
@@ -823,6 +827,38 @@ model VoterImport {
   @@index([fileId])
   @@index([createdBy])
   @@map("voter_imports")
+  @@schema("public")
+}
+
+/// A generated report (Backend Schema 7.7): results PDF, registered voters PDF / XLSX, audit XLSX.
+model ReportJob {
+  id             String     @id @default(dbgenerated("uuidv7()")) @db.Uuid
+  organizationId String     @map("organization_id") @db.Uuid
+  /// NULL for an organization-wide audit export.
+  eventId        String?    @map("event_id") @db.Uuid
+  type           ReportType
+  status         JobStatus  @default(queued)
+  /// Audit export filters; empty for the other reports.
+  params         Json       @default("{}")
+  /// 0–100, for "Tunaandaa PDF…".
+  progress       Int        @default(0) @db.SmallInt
+  fileId         String?    @map("file_id") @db.Uuid
+  requestedBy    String?    @map("requested_by") @db.Uuid
+  error          String?
+  completedAt    DateTime?  @map("completed_at") @db.Timestamptz(6)
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime   @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event        VotingEvent? @relation(fields: [eventId, organizationId], references: [id, organizationId], onDelete: Cascade)
+  file         File?        @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  requester    User?        @relation("ReportRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([eventId, createdAt(sort: Desc)])
+  @@index([fileId])
+  @@index([requestedBy])
+  @@map("report_jobs")
   @@schema("public")
 }
 

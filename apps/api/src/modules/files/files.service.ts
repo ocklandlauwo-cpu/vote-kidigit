@@ -28,6 +28,7 @@ export interface StoredFile {
   width: number | null;
   height: number | null;
   sha256: string;
+  originalName: string | null;
 }
 
 /** Inside withImage: deletes a replaced file's row now and its bytes after the commit. */
@@ -49,6 +50,7 @@ const fileSelect = {
   width: true,
   height: true,
   sha256: true,
+  originalName: true,
 } as const;
 
 /**
@@ -247,8 +249,21 @@ export class FilesService {
         });
         return this.mayReadEventFile(tx, auth, 'voter.view', rows);
       }
+      case 'report': {
+        // A report is read with the permission of its kind (Backend Schema 12.10).
+        const job = await tx.reportJob.findFirst({
+          where: { fileId: file.id },
+          select: { type: true, eventId: true },
+        });
+        if (!job) return false;
+        if (!job.eventId) {
+          return job.type === 'audit_xlsx' && auth.permissions.includes('audit.view.org');
+        }
+        const permission = job.type === 'audit_xlsx' ? 'audit.view.event' : 'reports.download';
+        return this.mayReadEventFile(tx, auth, permission, [{ eventId: job.eventId }]);
+      }
       default:
-        // CSV imports (step 19) and reports (step 26) get their rules with their tables.
+        // CSV imports are read only by the import worker and the errors.csv route.
         return false;
     }
   }

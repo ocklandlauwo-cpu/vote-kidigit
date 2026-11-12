@@ -3,6 +3,7 @@ import { AppModule } from './app.module.js';
 import { EmailModule } from './mail/email.module.js';
 import { ScheduleWorkerModule } from './modules/events/schedule-worker.module.js';
 import { MessagesWorkerModule } from './modules/messages/messages-worker.module.js';
+import { ReportsWorkerModule } from './modules/reports/reports-worker.module.js';
 import { ImportsWorkerModule } from './modules/voters/imports-worker.module.js';
 
 /** Worker entry (vk-worker): BullMQ processors and the 1-minute scheduler, no HTTP. */
@@ -13,6 +14,7 @@ import { ImportsWorkerModule } from './modules/voters/imports-worker.module.js';
     ImportsWorkerModule,
     ScheduleWorkerModule,
     MessagesWorkerModule,
+    ReportsWorkerModule,
   ],
 })
 export class WorkerModule {}

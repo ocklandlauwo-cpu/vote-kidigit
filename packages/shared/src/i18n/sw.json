@@ -22,7 +22,6 @@
     "unsavedBody": "Mabadiliko ambayo hujahifadhi yatapotea.",
     "leave": "Ondoka",
     "stay": "Baki",
-    "exportSoon": "Kupakua kutapatikana hivi karibuni",
     "loadError": "Hatukuweza kupakia hii.",
     "view": "Angalia",
     "duration": {
@@ -1098,5 +1097,33 @@
     "publishTitle": "Tangaza matokeo ya {{name}}?",
     "publishBody": "Kiungo cha umma kitafunguliwa na wapiga kura wataona matokeo. Matokeo hayawezi kubadilishwa baadaye.",
     "publishedDone": "Matokeo yametangazwa"
+  },
+  "reports": {
+    "downloadPdf": "Pakua PDF",
+    "download": "Pakua",
+    "preparingPdf": "Tunaandaa PDF…",
+    "preparingFile": "Tunaandaa faili…",
+    "failedPdf": "Hatukuweza kuandaa PDF. Jaribu tena.",
+    "failedFile": "Hatukuweza kuandaa faili. Jaribu tena.",
+    "notReady": "Matokeo bado hayajawa tayari. PDF inapatikana baada ya kufunga.",
+    "recentTitle": "Vilivyopakuliwa hivi karibuni",
+    "recentEmpty": "Bado hakuna ripoti iliyopakuliwa.",
+    "requested": "{{name}} · {{time}}",
+    "system": "Mfumo",
+    "types": {
+      "results_pdf": "Matokeo (PDF)",
+      "voters_pdf": "Wapiga kura (PDF)",
+      "voters_xlsx": "Wapiga kura (Excel)",
+      "audit_xlsx": "Kumbukumbu (Excel)"
+    },
+    "status": {
+      "queued": "Inasubiri",
+      "running": "Inaandaliwa",
+      "completed": "Tayari",
+      "failed": "Imeshindikana"
+    },
+    "exportVoters": "Pakua orodha",
+    "asPdf": "PDF",
+    "asExcel": "Excel"
   }
 }

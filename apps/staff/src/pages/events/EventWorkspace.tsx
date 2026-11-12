@@ -81,6 +81,9 @@ function Workspace({ event }: { event: EventDetail }) {
     if (key === 'publishResults') {
       // Publication is done from the Results tab, after any tie is resolved (App Flow 11.2).
       void navigate(`/events/${event.id}/results`);
+    } else if (key === 'downloadPdf') {
+      // The Results tab prepares the PDF and shows its progress (App Flow 11.3).
+      void navigate(`/events/${event.id}/results?download=pdf`);
     } else if (key === 'activate') {
       setActive.mutate(true, {
         onSuccess: () => void message.success(t('events.settings.activated')),

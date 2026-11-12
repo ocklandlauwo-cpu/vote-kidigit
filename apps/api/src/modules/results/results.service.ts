@@ -9,7 +9,6 @@ import type {
   PublicResults,
   PublishResultsRequest,
   ResolveTieRequest,
-  ResultSnapshot,
   VoterResults,
 } from '@vote-kidigit/shared';
 import { randomBytes } from 'node:crypto';
@@ -21,14 +20,10 @@ import { PrismaService, type Tx } from '../../database/prisma.service.js';
 import { transitionEvent } from '../events/lifecycle.service.js';
 import { BatchesService } from '../messages/batches.service.js';
 import { signFileLink } from '../vote/vote-links.js';
+import { currentSnapshot, snapshotInclude, toSnapshot } from './snapshot.js';
 
 const RESULT_STATES = ['closed', 'results_published', 'archived'];
 
-const snapshotInclude = {
-  stats: { include: { category: true } },
-  rows: { include: { contester: true } },
-  ties: { include: { resolver: { select: { fullName: true } } } },
-} as const;
 
 @Injectable()
 export class ResultsService {
@@ -64,9 +59,9 @@ export class ResultsService {
       ) {
         return { state: 'not_closed', snapshot: null, unresolvedTies: 0, ...base };
       }
-      const snapshot = await this.currentSnapshot(tx, eventId);
+      const snapshot = await currentSnapshot(tx, eventId);
       if (!snapshot) return { state: 'not_closed', snapshot: null, unresolvedTies: 0, ...base };
-      const view = this.toSnapshot(snapshot, (fileId) =>
+      const view = toSnapshot(snapshot, (fileId) =>
         fileId ? `/api/v1/files/${fileId}` : null,
       );
       return {
@@ -81,7 +76,7 @@ export class ResultsService {
   /** POST /events/:eventId/results/ties (RES-03). */
   async resolveTie(eventId: string, body: ResolveTieRequest): Promise<EventResults> {
     await this.prisma.withContext(this.context(), async (tx) => {
-      const snapshot = await this.currentSnapshot(tx, eventId);
+      const snapshot = await currentSnapshot(tx, eventId);
       if (!snapshot) throw new AppError('NOT_FOUND');
       await tx.$executeRaw`
         SELECT app.resolve_tie(${snapshot.id}::uuid, ${body.categoryId}::uuid,
@@ -214,7 +209,7 @@ export class ResultsService {
     });
     if (!snapshot) throw new AppError('NOT_FOUND');
     const full = event.resultsVisibility === 'full';
-    const view = this.toSnapshot(snapshot, (fileId) => signFileLink(this.secret, fileId, eventId));
+    const view = toSnapshot(snapshot, (fileId) => signFileLink(this.secret, fileId, eventId));
     return {
       event: {
         name: event.name,
@@ -248,74 +243,6 @@ export class ResultsService {
             isWinner: row.isWinner,
           })),
       })),
-    };
-  }
-
-  private currentSnapshot(tx: Tx, eventId: string) {
-    return tx.resultSnapshot.findFirst({
-      where: { eventId, isCurrent: true },
-      include: snapshotInclude,
-    });
-  }
-
-  private toSnapshot(
-    snapshot: NonNullable<Awaited<ReturnType<ResultsService['currentSnapshot']>>>,
-    photo: (fileId: string | null) => string | null,
-  ): ResultSnapshot {
-    const stats = [...snapshot.stats].sort(
-      (a, b) => a.category.displayOrder - b.category.displayOrder,
-    );
-    return {
-      id: snapshot.id,
-      version: snapshot.version,
-      generatedAt: snapshot.generatedAt.toISOString(),
-      publishedAt: snapshot.publishedAt?.toISOString() ?? null,
-      registeredVoters: snapshot.registeredVoters,
-      votersVoted: snapshot.votersVoted,
-      contentHash: snapshot.contentHash,
-      categories: stats.map((stat) => {
-        const tie = snapshot.ties.find((t) => t.categoryId === stat.categoryId);
-        return {
-          id: stat.categoryId,
-          name: stat.category.name,
-          seats: stat.category.seats,
-          thresholdPct:
-            stat.category.thresholdPct === null ? null : Number(stat.category.thresholdPct),
-          quorumPct: stat.category.quorumPct === null ? null : Number(stat.category.quorumPct),
-          eligibleVoters: stat.eligibleVoters,
-          votersVoted: stat.votersVoted,
-          validVotes: stat.validVotes,
-          skipped: stat.skipped,
-          quorumMet: stat.quorumMet,
-          thresholdMet: stat.thresholdMet,
-          hasTie: stat.hasTie,
-          tie: tie
-            ? {
-                outcome: tie.outcome,
-                winnerIds: tie.winnerContesterIds,
-                reason: tie.reason,
-                resolvedBy: tie.resolver.fullName,
-                resolvedAt: tie.resolvedAt.toISOString(),
-              }
-            : null,
-          rows: snapshot.rows
-            .filter((row) => row.categoryId === stat.categoryId)
-            .sort(
-              (a, b) => a.rank - b.rank || a.contester.fullName.localeCompare(b.contester.fullName),
-            )
-            .map((row) => ({
-              contesterId: row.contesterId,
-              name: row.contester.fullName,
-              party: row.contester.party,
-              photoUrl: photo(row.contester.photoFileId),
-              choice: row.choice,
-              votes: row.votes,
-              percent: Number(row.percent),
-              rank: row.rank,
-              isWinner: row.isWinner,
-            })),
-        };
-      }),
     };
   }
 

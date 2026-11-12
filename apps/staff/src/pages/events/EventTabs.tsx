@@ -8,7 +8,7 @@ import { AuditView } from '../audit/AuditPage';
 
 export function EventActivity() {
   const event = useOutletContext<EventDetail>();
-  return <AuditView endpoint={`/v1/events/${event.id}/audit`} />;
+  return <AuditView endpoint={`/v1/events/${event.id}/audit`} exportEventId={event.id} />;
 }
 
 export function EventTabSoon() {

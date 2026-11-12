@@ -6,6 +6,7 @@ Nov 3, 2026 · @Smartone
 
 | Date | Change |
 |---|---|
+| 12 Nov 2026 | Reports (Implementation Plan step 28, migration 023_report_jobs): report_jobs gains params jsonb (audit export filters) and progress smallint (0–100, for "Tunaandaa PDF…"); a CHECK keeps event_id NULL only for audit_xlsx. Audit exports have their own routes, POST /audit/exports (audit.view.org) and POST /events/:eventId/audit/exports (audit.view.event), so event activity export does not need reports.download; GET /events/:eventId/reports lists recent downloads. For events up to 5,000 voters POST /events/:eventId/reports waits for the job and returns it completed with a download link (GET /files/:fileId, Content-Disposition: attachment) instead of streaming the file; larger events answer 202 with the queued job. |
 | 11 Nov 2026 | Ballots are sealed when an event closes (owner decision after the step 22 review, Implementation Plan step 27): app.seal_ballots() rewrites the event's ballots and selections as fresh rows in random order inside the close transaction, so nothing a database administrator can read (transaction ids, physical order) links a ballot to the participation row written with it. Only transition_event() calls it; the ballot immutability triggers allow its rewrite and nothing else. app.tally_event() and app.freeze_results() are not executable by vk_api, so no running count can be read before close. |
 | 10 Nov 2026 | SMS provider is Beem Africa instead of NextSMS (owner decision, Implementation Plan step 21): delivery reports arrive at POST /webhooks/beem/dlr checked with BEEM_DLR_SECRET; provider_message_id holds the Beem request id; sms_sender_id is the sender ID registered with Beem. |
 | 5 Nov 2026 | Added 4.10 platform_settings (PLT-04 needed storage for the default session timeout, USSD short code and support contact; migration 009_platform_settings, Implementation Plan step 12). |
@@ -627,7 +628,7 @@ Files are served only through GET /api/v1/files/:id after a permission and organ
 
 voter_imports: organization_id, event_id, file_id, status (import_status), total_rows, valid_rows, warning_rows, error_rows, errors jsonb (array of {row, field, code, message}), column_mapping jsonb, created_by, completed_at.
 
-report_jobs: organization_id, event_id (nullable for audit exports), type (report_type), status (job_status), file_id (nullable until done), requested_by, error, completed_at.
+report_jobs: organization_id, event_id (nullable for audit exports), type (report_type), status (job_status), params jsonb (audit export filters), progress smallint (0–100), file_id (nullable until done), requested_by, error (a stable error code), completed_at.
 
 ### 7.8 audit.audit_log
 
@@ -1286,8 +1287,13 @@ REST over JSON at /api/v1, plus the USSD and webhook callbacks. Request and resp
 | POST | /events/:eventId/results/ties/:categoryId | results.resolve_tie | {outcome, winnerContesterIds, reason} → app.resolve_tie() |
 | POST | /events/:eventId/results/publish | results.publish | {confirmName} → transition to results_published |
 | POST | /events/:eventId/results/link | results.publish | {enabled: boolean} |
-| POST | /events/:eventId/reports | reports.download | {type} → report job (PDF instant if ≤ 5,000 voters: response streams the file) |
+| POST | /events/:eventId/reports | reports.download | {type: results_pdf, voters_pdf, voters_xlsx} → report job; ≤ 5,000 voters: 200 with the finished job and its download link, otherwise 202 queued |
+| GET | /events/:eventId/reports | reports.download | Recent downloads (last 10) |
 | GET | /events/:eventId/reports/:jobId | reports.download | Job status and download link |
+| POST | /events/:eventId/audit/exports | audit.view.event | {filters} → audit_xlsx job for the event |
+| GET | /events/:eventId/audit/exports/:jobId | audit.view.event | Job status and download link |
+| POST | /audit/exports | audit.view.org | {filters} → audit_xlsx job for the organization |
+| GET | /audit/exports/:jobId | audit.view.org | Job status and download link |
 | GET | /files/:fileId | Owner organization + permission for the file kind | Serve photo, logo, report |
 
 ### 12.11 Voter API (no staff session)

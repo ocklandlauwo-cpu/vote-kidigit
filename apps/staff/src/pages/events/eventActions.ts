@@ -19,7 +19,7 @@ export type EventActionKey =
 export interface EventAction {
   key: EventActionKey;
   permission: PermissionKey;
-  /** Built so far; closing, reopening and results arrive with steps 27-28. */
+  /** Built so far; greyed out in the header until its step arrives. */
   available: boolean;
 }
 
@@ -28,7 +28,7 @@ const MAIN: Partial<Record<EventStatus, EventAction>> = {
   scheduled: { key: 'openNow', permission: 'event.publish', available: true },
   open: { key: 'closeNow', permission: 'event.close', available: true },
   closed: { key: 'publishResults', permission: 'results.publish', available: true },
-  results_published: { key: 'downloadPdf', permission: 'reports.download', available: false },
+  results_published: { key: 'downloadPdf', permission: 'reports.download', available: true },
 };
 
 /** The header's main button; Cancelled and Archived events have none. */

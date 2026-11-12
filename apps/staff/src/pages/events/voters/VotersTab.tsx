@@ -2,7 +2,14 @@
 // a table with search and filters (category, gender, code status), a bulk bar for the selected
 // rows (assign to / remove from a category, delete) and the side panel EVT-05a. From Scheduled on,
 // voters are read-only. Export (PDF / Excel) arrives with reports.
-import { DownloadOutlined, PlusOutlined, UploadOutlined, UserOutlined } from '@ant-design/icons';
+import {
+  DownloadOutlined,
+  FileExcelOutlined,
+  FilePdfOutlined,
+  PlusOutlined,
+  UploadOutlined,
+  UserOutlined,
+} from '@ant-design/icons';
 import {
   type BulkVotersRequest,
   type Category,
@@ -10,7 +17,7 @@ import {
   type EventDetail,
   type VoterSummary,
 } from '@vote-kidigit/shared';
-import { App, Button, Flex, Input, Select, Table, Tag, Typography } from 'antd';
+import { App, Button, Dropdown, Flex, Input, Select, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext } from 'react-router';
@@ -20,6 +27,8 @@ import { Banner } from '../../../components/Banner';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { EmptyState } from '../../../components/EmptyState';
 import { StatusBadge } from '../../../components/StatusBadge';
+import { ReportProgress } from '../../reports/ReportParts';
+import { useEventReport } from '../../reports/reportsApi';
 import { useCategories } from '../categories/categoriesApi';
 import { PhotoZipDialog } from '../categories/PhotoZipDialog';
 import { VoterDrawer } from './VoterDrawer';
@@ -52,10 +61,13 @@ export function VotersTab() {
   const voters = useVoters(event.id, { ...filters, q: filters.q || undefined });
   const categories = useCategories(event.id);
   const bulk = useBulkVoters(event.id);
+  const exported = useEventReport(event.id);
+  const [exportType, setExportType] = useState<'voters_pdf' | 'voters_xlsx'>('voters_pdf');
 
   const draft = event.status === 'draft';
   const canManage = hasPermission(me, 'voter.manage');
   const editable = draft && canManage;
+  const mayExport = hasPermission(me, 'reports.download');
   const categoryList: Category[] = categories.data?.items ?? [];
   const nameOf = new Map(categoryList.map((c) => [c.id, c.name]));
   const selectable = categoryList.filter((c) => c.eligibility === 'selected');
@@ -79,6 +91,11 @@ export function VotersTab() {
 
   const totals = voters.data?.totals;
 
+  function exportAs(type: 'voters_pdf' | 'voters_xlsx') {
+    setExportType(type);
+    void exported.start(type);
+  }
+
   return (
     <Flex vertical gap="middle">
       {!draft && <Banner tone="info" message={t('voters.locked')} inline />}
@@ -96,6 +113,24 @@ export function VotersTab() {
           )}
         </Flex>
         <Flex gap="small" wrap>
+          {mayExport && (
+            <Dropdown
+              trigger={['click']}
+              disabled={exported.preparing}
+              menu={{
+                items: [
+                  { key: 'voters_pdf', icon: <FilePdfOutlined />, label: t('reports.asPdf') },
+                  { key: 'voters_xlsx', icon: <FileExcelOutlined />, label: t('reports.asExcel') },
+                ],
+                onClick: ({ key }) =>
+                  exportAs(key === 'voters_xlsx' ? 'voters_xlsx' : 'voters_pdf'),
+              }}
+            >
+              <Button icon={<DownloadOutlined />} loading={exported.preparing}>
+                {t('reports.exportVoters')}
+              </Button>
+            </Dropdown>
+          )}
           <Button icon={<DownloadOutlined />} href={templateUrl(event.id)} download>
             {t('voters.template')}
           </Button>
@@ -118,6 +153,12 @@ export function VotersTab() {
           )}
         </Flex>
       </Flex>
+
+      <ReportProgress
+        report={exported}
+        kind={exportType === 'voters_pdf' ? 'pdf' : 'excel'}
+        onRetry={() => exportAs(exportType)}
+      />
 
       <Flex gap="small" wrap>
         <Input.Search

@@ -2,6 +2,7 @@
 // to the control room; after close, the turnout summary, a banner while ties remain, one card per
 // category (winners, votes, %, skipped, threshold / quorum), the category detail (RES-02), tie
 // resolution (RES-03), publication with the typed event name, and the public link (copy, on/off).
+import { FilePdfOutlined } from '@ant-design/icons';
 import type { EventDetail, ResultCategory } from '@vote-kidigit/shared';
 import {
   App,
@@ -21,16 +22,18 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useOutletContext } from 'react-router';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 import { errorMessage } from '../../../api/errorMessage';
 import { hasPermission, useMe } from '../../../auth/useAuth';
 import { Banner } from '../../../components/Banner';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { EmptyState } from '../../../components/EmptyState';
 import { useFormat } from '../../../hooks/useFormat';
+import { RecentDownloads, ReportProgress } from '../../reports/ReportParts';
+import { useEventReport } from '../../reports/reportsApi';
 import { usePublicLink, usePublishResults, useResolveTie, useResults } from './resultsApi';
 
 const count = (n: number) => n.toLocaleString('en');
@@ -221,11 +224,24 @@ export function ResultsTab() {
   const results = useResults(event.id);
   const publish = usePublishResults(event.id);
   const publicLink = usePublicLink(event.id);
+  const pdf = useEventReport(event.id);
   const [detail, setDetail] = useState<ResultCategory | null>(null);
   const [tie, setTie] = useState<ResultCategory | null>(null);
   const [confirmPublish, setConfirmPublish] = useState(false);
   const mayPublish = hasPermission(me, 'results.publish');
   const mayResolve = hasPermission(me, 'results.resolve_tie');
+  const mayDownload = hasPermission(me, 'reports.download');
+  const [params, setParams] = useSearchParams();
+  const ready = results.data?.snapshot != null;
+
+  // "Download PDF" in the event header opens this tab with ?download=pdf.
+  useEffect(() => {
+    if (params.get('download') !== 'pdf' || !ready) return;
+    setParams({}, { replace: true });
+    if (mayDownload) void pdf.start('results_pdf');
+    // pdf.start is recreated each render; the parameter is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, ready, mayDownload]);
 
   if (results.isError) {
     return (
@@ -286,27 +302,43 @@ export function ResultsTab() {
               {t('results.hash', { hash: snapshot.contentHash.slice(0, 16) })}
             </Typography.Text>
           </Flex>
-          {!published && (
-            <Tooltip
-              title={
-                !mayPublish
-                  ? t('common.noPermission')
-                  : data.unresolvedTies > 0
-                    ? t('results.tiesBanner', { count: data.unresolvedTies })
-                    : undefined
-              }
-            >
+          <Flex gap="small" wrap>
+            <Tooltip title={mayDownload ? undefined : t('common.noPermission')}>
               <Button
-                type="primary"
-                disabled={!mayPublish || data.unresolvedTies > 0}
-                onClick={() => setConfirmPublish(true)}
-                data-testid="publish-results"
+                icon={<FilePdfOutlined />}
+                disabled={!mayDownload}
+                loading={pdf.preparing}
+                onClick={() => void pdf.start('results_pdf')}
+                data-testid="download-pdf"
               >
-                {t('events.actions.publishResults')}
+                {t('reports.downloadPdf')}
               </Button>
             </Tooltip>
-          )}
+            {!published && (
+              <Tooltip
+                title={
+                  !mayPublish
+                    ? t('common.noPermission')
+                    : data.unresolvedTies > 0
+                      ? t('results.tiesBanner', { count: data.unresolvedTies })
+                      : undefined
+                }
+              >
+                <Button
+                  type="primary"
+                  disabled={!mayPublish || data.unresolvedTies > 0}
+                  onClick={() => setConfirmPublish(true)}
+                  data-testid="publish-results"
+                >
+                  {t('events.actions.publishResults')}
+                </Button>
+              </Tooltip>
+            )}
+          </Flex>
         </Flex>
+        <div style={{ marginTop: 'var(--vk-space-3)' }}>
+          <ReportProgress report={pdf} kind="pdf" onRetry={() => void pdf.start('results_pdf')} />
+        </div>
       </Card>
 
       {published && data.publicUrl && (
@@ -346,6 +378,8 @@ export function ResultsTab() {
           />
         ))}
       </div>
+
+      {mayDownload && <RecentDownloads eventId={event.id} />}
 
       {/* RES-02 */}
       <Drawer
