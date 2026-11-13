@@ -31,7 +31,8 @@
       "hours_other": "{{count}} hours",
       "minutes_one": "1 minute",
       "minutes_other": "{{count}} minutes"
-    }
+    },
+    "offline": "You’re offline. Changes won’t save until you reconnect."
   },
   "nav": {
     "groupWork": "Work",
@@ -53,7 +54,6 @@
   "topbar": {
     "search": "Search events, voters or staff",
     "searchLabel": "Search",
-    "searchSoon": "Search is coming soon",
     "theme": "Switch theme",
     "language": "Language",
     "profileMenu": "Profile menu",
@@ -151,7 +151,13 @@
     "server": "Something went wrong on our side. Try again.",
     "rateLimited": "Too many attempts. Wait a minute, then try again.",
     "forbidden": "You don’t have permission to do this. Ask your administrator.",
-    "validation": "Check the highlighted fields, then try again."
+    "validation": "Check the highlighted fields, then try again.",
+    "eventLocked": "This event was published and can no longer be edited. Reload the page to see its current state.",
+    "notAllowed": "This action is no longer allowed. Reload the page to see the current state.",
+    "onlyModerator": "This user is the only moderator of an open event. Assign another moderator to it first.",
+    "notFound": "We couldn’t find that. It may have been deleted.",
+    "resultsPublished": "Results are published and can no longer be changed.",
+    "unresolvedTies": "Resolve all ties before publishing results."
   },
   "confirm": {
     "typeToConfirm": "Type \"{{text}}\" to confirm",
@@ -199,7 +205,46 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome, {{name}}",
-    "cardsSoon": "Dashboard cards will appear here once elections are being prepared."
+    "loadError": "Couldn’t load this.",
+    "eventsTitle": "Events by status",
+    "nextTitle": "Next event to open",
+    "opensIn": "Opens in {{time}}",
+    "noNext": "No events scheduled.",
+    "turnoutTitle": "Live turnout",
+    "turnoutRow": "{{voted}} of {{registered}} · {{percent}}%",
+    "noOpen": "No events are open right now.",
+    "tiesTitle": "Ties waiting to be resolved",
+    "noTies": "No ties to resolve.",
+    "resolve": "Resolve",
+    "activityTitle": "Recent activity",
+    "noActivity": "No activity yet.",
+    "eventStaffTitle": "Moderators per event",
+    "noModerator": "No moderator",
+    "categories_one": "{{count}} category",
+    "categories_other": "{{count}} categories",
+    "myEventsTitle": "My events",
+    "role": {
+      "moderator": "Moderator",
+      "observer": "Observer"
+    },
+    "orgsTitle": "Organizations",
+    "orgCol": {
+      "name": "Name",
+      "status": "Status",
+      "events": "Events",
+      "moderators": "Moderators",
+      "categories": "Categories",
+      "voters": "Voters",
+      "lastActivity": "Last activity"
+    },
+    "noOrgs": "No organizations yet.",
+    "createOrg": "Create organization",
+    "noEvents": "No events yet. Create your first event to get started.",
+    "notAssigned": "You haven’t been assigned to any events yet. Contact your administrator.",
+    "orgStatus": {
+      "active": "Active",
+      "suspended": "Suspended"
+    }
   },
   "users": {
     "title": "Users",
@@ -305,7 +350,8 @@
         "name": "Observer",
         "description": "Read-only access to mapped events"
       }
-    }
+    },
+    "customHint": "Create a custom role to give someone a specific set of permissions."
   },
   "audit": {
     "title": "Audit log",
@@ -418,7 +464,7 @@
     "colModerators": "Moderators",
     "empty": "No events yet. Create your first event.",
     "emptyAssigned": "You haven’t been assigned to any events yet. Contact your administrator.",
-    "emptyStatus": "No events with this status.",
+    "emptyStatus": "No {{status}} events.",
     "createTitle": "Create event",
     "name": "Event name",
     "namePlaceholder": "Annual General Meeting 2027",
@@ -718,7 +764,8 @@
       "selected": "Selected voters",
       "count_one": "1 eligible voter",
       "count_other": "{{count}} eligible voters",
-      "saved": "Category voters saved"
+      "saved": "Category voters saved",
+      "noneSelected": "No voters selected for this category."
     },
     "zip": {
       "title": "Upload contester photos (ZIP)",
@@ -752,7 +799,7 @@
     "allCategories": "All categories",
     "allGenders": "All genders",
     "allCodeStatuses": "All code statuses",
-    "empty": "No voters yet. Add one or upload a CSV.",
+    "empty": "No voters yet. Upload a CSV or add voters one by one.",
     "noMatch": "No voters match these filters.",
     "selected_one": "1 selected",
     "selected_other": "{{count}} selected",
@@ -881,7 +928,8 @@
       "title": "Upload voter photos (ZIP)",
       "help": "Name each photo after the voter's membership ID, e.g. \"M-1029.jpg\". JPG or PNG up to 2 MB each; ZIP up to 50 MB.",
       "person": "Voter"
-    }
+    },
+    "emptyGuide": "Download the template, fill one row per voter, then upload it."
   },
   "messages": {
     "types": {
@@ -1044,7 +1092,8 @@
       "theEvent": "Voting"
     },
     "openTitle": "Voting is open",
-    "openLink": "Open the control room"
+    "openLink": "Open the control room",
+    "noVotes": "No one has voted yet. Codes delivered: {{count}}."
   },
   "results": {
     "beforeCloseTitle": "No results yet",
@@ -1096,7 +1145,8 @@
     },
     "publishTitle": "Publish the results of {{name}}?",
     "publishBody": "The public link goes live and voters see the results. Results cannot be changed afterwards.",
-    "publishedDone": "Results published"
+    "publishedDone": "Results published",
+    "noBallots": "Voting closed with no ballots cast."
   },
   "reports": {
     "downloadPdf": "Download PDF",
@@ -1125,5 +1175,12 @@
     "exportVoters": "Export",
     "asPdf": "PDF",
     "asExcel": "Excel"
+  },
+  "search": {
+    "noResults": "No results for ‘{{text}}’.",
+    "typeMore": "Type 2 or more characters",
+    "events": "Events",
+    "voters": "Voters",
+    "staff": "Staff"
   }
 }

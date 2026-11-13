@@ -31,7 +31,8 @@
       "hours_other": "saa {{count}}",
       "minutes_one": "dakika 1",
       "minutes_other": "dakika {{count}}"
-    }
+    },
+    "offline": "Huna mtandao. Mabadiliko hayatahifadhiwa hadi uunganishwe tena."
   },
   "nav": {
     "groupWork": "Kazi",
@@ -53,7 +54,6 @@
   "topbar": {
     "search": "Tafuta chaguzi, wapiga kura au wafanyakazi",
     "searchLabel": "Tafuta",
-    "searchSoon": "Utafutaji utapatikana hivi karibuni",
     "theme": "Badili mwonekano",
     "language": "Lugha",
     "profileMenu": "Menyu ya wasifu",
@@ -151,7 +151,13 @@
     "server": "Kuna hitilafu upande wetu. Jaribu tena.",
     "rateLimited": "Majaribio ni mengi mno. Subiri dakika moja, kisha jaribu tena.",
     "forbidden": "Huna ruhusa ya kufanya hili. Muulize msimamizi wako.",
-    "validation": "Angalia sehemu zilizoonyeshwa, kisha jaribu tena."
+    "validation": "Angalia sehemu zilizoonyeshwa, kisha jaribu tena.",
+    "eventLocked": "Uchaguzi huu umechapishwa na hauwezi kubadilishwa tena. Pakia upya ukurasa kuona hali yake ya sasa.",
+    "notAllowed": "Kitendo hiki hakiruhusiwi tena. Pakia upya ukurasa kuona hali ya sasa.",
+    "onlyModerator": "Mtumiaji huyu ndiye msimamizi pekee wa uchaguzi ulio wazi. Mpangie msimamizi mwingine kwanza.",
+    "notFound": "Hatukuweza kukipata. Huenda kimefutwa.",
+    "resultsPublished": "Matokeo yametangazwa na hayawezi kubadilishwa.",
+    "unresolvedTies": "Amua sare zote kabla ya kutangaza matokeo."
   },
   "confirm": {
     "typeToConfirm": "Andika \"{{text}}\" kuthibitisha",
@@ -199,7 +205,46 @@
   "dashboard": {
     "title": "Dashibodi",
     "welcome": "Karibu, {{name}}",
-    "cardsSoon": "Kadi za dashibodi zitaonekana hapa uchaguzi utakapoanza kuandaliwa."
+    "loadError": "Hatukuweza kupakia hiki.",
+    "eventsTitle": "Chaguzi kwa hali",
+    "nextTitle": "Uchaguzi unaofuata",
+    "opensIn": "Unafunguliwa baada ya {{time}}",
+    "noNext": "Hakuna uchaguzi uliopangwa.",
+    "turnoutTitle": "Upigaji kura sasa hivi",
+    "turnoutRow": "{{voted}} kati ya {{registered}} · {{percent}}%",
+    "noOpen": "Hakuna uchaguzi ulio wazi kwa sasa.",
+    "tiesTitle": "Sare zinazosubiri uamuzi",
+    "noTies": "Hakuna sare za kuamua.",
+    "resolve": "Amua",
+    "activityTitle": "Shughuli za karibuni",
+    "noActivity": "Hakuna shughuli bado.",
+    "eventStaffTitle": "Wasimamizi kwa kila uchaguzi",
+    "noModerator": "Hakuna msimamizi",
+    "categories_one": "Nafasi {{count}}",
+    "categories_other": "Nafasi {{count}}",
+    "myEventsTitle": "Chaguzi zangu",
+    "role": {
+      "moderator": "Msimamizi",
+      "observer": "Mtazamaji"
+    },
+    "orgsTitle": "Mashirika",
+    "orgCol": {
+      "name": "Jina",
+      "status": "Hali",
+      "events": "Chaguzi",
+      "moderators": "Wasimamizi",
+      "categories": "Nafasi",
+      "voters": "Wapiga kura",
+      "lastActivity": "Shughuli ya mwisho"
+    },
+    "noOrgs": "Hakuna mashirika bado.",
+    "createOrg": "Unda shirika",
+    "noEvents": "Hakuna chaguzi bado. Unda uchaguzi wako wa kwanza ili kuanza.",
+    "notAssigned": "Bado hujapangiwa uchaguzi wowote. Wasiliana na msimamizi wako.",
+    "orgStatus": {
+      "active": "Hai",
+      "suspended": "Limesimamishwa"
+    }
   },
   "users": {
     "title": "Watumiaji",
@@ -305,7 +350,8 @@
         "name": "Mwangalizi",
         "description": "Anaona tu chaguzi alizopangiwa"
       }
-    }
+    },
+    "customHint": "Unda jukumu maalum ili kumpa mtu seti mahususi ya ruhusa."
   },
   "audit": {
     "title": "Kumbukumbu za ukaguzi",
@@ -418,7 +464,7 @@
     "colModerators": "Wasimamizi",
     "empty": "Hakuna chaguzi bado. Unda uchaguzi wako wa kwanza.",
     "emptyAssigned": "Bado hujapangiwa uchaguzi wowote. Wasiliana na msimamizi wako.",
-    "emptyStatus": "Hakuna chaguzi zenye hali hii.",
+    "emptyStatus": "Hakuna chaguzi zenye hali “{{status}}”.",
     "createTitle": "Unda uchaguzi",
     "name": "Jina la uchaguzi",
     "namePlaceholder": "Mkutano Mkuu wa Mwaka 2027",
@@ -718,7 +764,8 @@
       "selected": "Wapiga kura waliochaguliwa",
       "count_one": "Mpiga kura 1 anastahili",
       "count_other": "Wapiga kura {{count}} wanastahili",
-      "saved": "Wapiga kura wa nafasi wamehifadhiwa"
+      "saved": "Wapiga kura wa nafasi wamehifadhiwa",
+      "noneSelected": "Hakuna wapiga kura waliochaguliwa kwa nafasi hii."
     },
     "zip": {
       "title": "Pakia picha za wagombea (ZIP)",
@@ -752,7 +799,7 @@
     "allCategories": "Nafasi zote",
     "allGenders": "Jinsia zote",
     "allCodeStatuses": "Hali zote za msimbo",
-    "empty": "Hakuna wapiga kura bado. Ongeza mmoja au pakia CSV.",
+    "empty": "Hakuna wapiga kura bado. Pakia CSV au ongeza wapiga kura mmoja mmoja.",
     "noMatch": "Hakuna wapiga kura wanaolingana na vichujio hivi.",
     "selected_one": "Mpiga kura 1 amechaguliwa",
     "selected_other": "Wapiga kura {{count}} wamechaguliwa",
@@ -881,7 +928,8 @@
       "title": "Pakia picha za wapiga kura (ZIP)",
       "help": "Jina la kila picha liwe namba ya uanachama ya mpiga kura, kwa mfano \"M-1029.jpg\". JPG au PNG hadi MB 2 kila moja; ZIP hadi MB 50.",
       "person": "Mpiga kura"
-    }
+    },
+    "emptyGuide": "Pakua kiolezo, jaza safu moja kwa kila mpiga kura, kisha ukipakie."
   },
   "messages": {
     "types": {
@@ -1044,7 +1092,8 @@
       "theEvent": "Upigaji kura"
     },
     "openTitle": "Upigaji kura unaendelea",
-    "openLink": "Fungua chumba cha udhibiti"
+    "openLink": "Fungua chumba cha udhibiti",
+    "noVotes": "Bado hakuna aliyepiga kura. Namba zilizofika: {{count}}."
   },
   "results": {
     "beforeCloseTitle": "Matokeo bado",
@@ -1096,7 +1145,8 @@
     },
     "publishTitle": "Tangaza matokeo ya {{name}}?",
     "publishBody": "Kiungo cha umma kitafunguliwa na wapiga kura wataona matokeo. Matokeo hayawezi kubadilishwa baadaye.",
-    "publishedDone": "Matokeo yametangazwa"
+    "publishedDone": "Matokeo yametangazwa",
+    "noBallots": "Upigaji kura umefungwa bila kura yoyote kupigwa."
   },
   "reports": {
     "downloadPdf": "Pakua PDF",
@@ -1125,5 +1175,12 @@
     "exportVoters": "Pakua orodha",
     "asPdf": "PDF",
     "asExcel": "Excel"
+  },
+  "search": {
+    "noResults": "Hakuna matokeo ya ‘{{text}}’.",
+    "typeMore": "Andika herufi 2 au zaidi",
+    "events": "Chaguzi",
+    "voters": "Wapiga kura",
+    "staff": "Wafanyakazi"
   }
 }

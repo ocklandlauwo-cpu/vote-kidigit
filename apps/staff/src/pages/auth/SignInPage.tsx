@@ -8,7 +8,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { isApiError } from '../../api/client';
 import { errorMessage } from '../../api/errorMessage';
 import type { SignedOutReason } from '../../api/session';
-import { safeReturnTo } from '../../auth/returnTo';
+import { landingState, safeReturnTo } from '../../auth/returnTo';
 import { useSignIn } from '../../auth/useAuth';
 import { Banner } from '../../components/Banner';
 
@@ -74,7 +74,10 @@ export function SignInPage() {
   function submit(values: Values) {
     setLockedUntil(null);
     signIn.mutate(values, {
-      onSuccess: () => void navigate(safeReturnTo(params.get('returnTo')), { replace: true }),
+      onSuccess: () => {
+        const to = safeReturnTo(params.get('returnTo'));
+        void navigate(to, { replace: true, state: landingState(to) });
+      },
       onError: (error) => {
         const until = isApiError(error, 'ACCOUNT_LOCKED') ? error.details?.lockedUntil : undefined;
         if (typeof until === 'string') setLockedUntil(Date.parse(until));

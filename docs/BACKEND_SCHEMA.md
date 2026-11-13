@@ -6,6 +6,7 @@ Nov 3, 2026 · @Smartone
 
 | Date | Change |
 |---|---|
+| 12 Nov 2026 | Dashboards (Implementation Plan step 29, migration 024_dashboard_counts): GET /dashboard is split into one route per card (GET /dashboard/events, /turnout, /ties, /activity, /event-staff, /my-events, /organizations), all Session, each checking the permission it needs, so cards load and fail independently (App Flow 5.2). DSH-01 is served by the same routes for platform admins. New app.event_counts(uuid[]) (SECURITY DEFINER) returns registered and voted counts per event, numbers only, for events of app.current_org_id() or any event for a platform admin, since platform admins cannot read voters or voter_participation. GET /search?q= (2–100 characters) returns at most 5 events, voters (voter.view; never the phone) and staff (staff.manage) each; platform admins get events only. |
 | 12 Nov 2026 | Reports (Implementation Plan step 28, migration 023_report_jobs): report_jobs gains params jsonb (audit export filters) and progress smallint (0–100, for "Tunaandaa PDF…"); a CHECK keeps event_id NULL only for audit_xlsx. Audit exports have their own routes, POST /audit/exports (audit.view.org) and POST /events/:eventId/audit/exports (audit.view.event), so event activity export does not need reports.download; GET /events/:eventId/reports lists recent downloads. For events up to 5,000 voters POST /events/:eventId/reports waits for the job and returns it completed with a download link (GET /files/:fileId, Content-Disposition: attachment) instead of streaming the file; larger events answer 202 with the queued job. |
 | 11 Nov 2026 | Ballots are sealed when an event closes (owner decision after the step 22 review, Implementation Plan step 27): app.seal_ballots() rewrites the event's ballots and selections as fresh rows in random order inside the close transaction, so nothing a database administrator can read (transaction ids, physical order) links a ballot to the participation row written with it. Only transition_event() calls it; the ballot immutability triggers allow its rewrite and nothing else. app.tally_event() and app.freeze_results() are not executable by vk_api, so no running count can be read before close. |
 | 10 Nov 2026 | SMS provider is Beem Africa instead of NextSMS (owner decision, Implementation Plan step 21): delivery reports arrive at POST /webhooks/beem/dlr checked with BEEM_DLR_SECRET; provider_message_id holds the Beem request id; sms_sender_id is the sender ID registered with Beem. |
@@ -1189,7 +1190,7 @@ REST over JSON at /api/v1, plus the USSD and webhook callbacks. Request and resp
 
 | Method | Path | Permission | Purpose |
 |---|---|---|---|
-| GET | /dashboard | Session | DSH-02 / 03 / 04 cards for the caller's role |
+| GET | /dashboard/{events, turnout, ties, activity, event-staff, my-events, organizations} | Session (each card checks its permission) | DSH-01 to DSH-04 cards, one route per card |
 | GET / PATCH | /organization | org.settings.manage (GET: Session) | Settings (SYS-03) |
 | POST | /organization/logo | org.settings.manage | Upload logo |
 | GET | /users | staff.manage | List users |

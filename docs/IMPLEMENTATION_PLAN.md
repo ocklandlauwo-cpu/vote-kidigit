@@ -514,7 +514,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 - ☑ 26. Control room and live turnout
 - ☑ 27. Closing, results and publication
 - ☑ 28. Reports
-- ☐ 29. Dashboards, search and state sweep
+- ☑ 29. Dashboards, search and state sweep
 
 **Phase 4 — Hardening, deployment and pilot**
 

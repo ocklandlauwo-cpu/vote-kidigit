@@ -157,7 +157,8 @@ describe('reports', () => {
     await api.$disconnect();
     await worker.close();
     await app.close();
-  });
+    // Removing 5,000 voters and their ballots takes a while when other test files are busy.
+  }, 120_000);
 
   it('makes the results PDF only after close, and serves it as an attachment', async () => {
     const e = await election(5, 3);

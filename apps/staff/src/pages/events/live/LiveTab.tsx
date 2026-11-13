@@ -3,7 +3,7 @@
 // by channel, the last message batch with "send reminder to voters who haven't voted", and the
 // running kiosks. Refreshes every 30 s and says when it was updated. No numbers per contester.
 import type { EventDetail, Live, LiveAlert, LiveCategory } from '@vote-kidigit/shared';
-import { App, Button, Card, Flex, Skeleton, Switch, Table, Tooltip, Typography } from 'antd';
+import { App, Button, Card, Flex, Skeleton, Switch, Table, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOutletContext } from 'react-router';
@@ -95,6 +95,20 @@ export function LiveTab() {
         <AlertBanner key={`${alert.kind}-${alert.categoryId ?? ''}`} alert={alert} live={data} />
       ))}
 
+      {data.turnout.voted === 0 && (
+        <Banner
+          tone="info"
+          message={t('live.noVotes', { count: event.codeCounts.delivered })}
+          action={
+            maySend && data.notVoted > 0 ? (
+              <Button size="small" onClick={() => setReminder(true)}>
+                {t('live.sendReminder', { count: data.notVoted })}
+              </Button>
+            ) : undefined
+          }
+        />
+      )}
+
       <Card>
         <Flex justify="space-between" align="center" wrap gap="middle">
           <Flex vertical>
@@ -109,11 +123,6 @@ export function LiveTab() {
               {t('live.closesIn', { time: durationText(t, new Date(data.endAt).getTime() - now) })}
             </Typography.Text>
           </Flex>
-          <Tooltip title={t('events.soon')}>
-            <Button type="primary" danger disabled>
-              {t('events.actions.closeNow')}
-            </Button>
-          </Tooltip>
         </Flex>
       </Card>
 

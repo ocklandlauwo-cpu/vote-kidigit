@@ -16,6 +16,19 @@ export function errorMessage(t: TFunction, error: unknown): string {
       return t('errors.forbidden');
     case 'VALIDATION_FAILED':
       return t('errors.validation');
+    case 'NOT_FOUND':
+      return t('errors.notFound');
+    case 'EVENT_LOCKED':
+      return t('errors.eventLocked');
+    case 'RESULTS_PUBLISHED':
+      return t('errors.resultsPublished');
+    case 'UNRESOLVED_TIES':
+      return t('errors.unresolvedTies');
+    case 'INVALID_TRANSITION':
+      // Someone else changed the state first, or (users) the only moderator of an Open event.
+      return t(
+        error.details?.reason === 'ONLY_MODERATOR' ? 'errors.onlyModerator' : 'errors.notAllowed',
+      );
     default:
       return t('errors.server');
   }

@@ -277,6 +277,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Staff: `pages/reports/` (`reportsApi.ts`: `useEventReport`, `useAuditExport`, `useRecentReports`; `ReportParts.tsx`: `ReportProgress`, `RecentDownloads`; `download.ts` `startDownload`, mocked in tests). The header's Download PDF opens the Results tab with `?download=pdf`. `api()` reads a 202 body when there is one.
 - In tests, a category with one contester is a Yes/No vote: give report fixtures two contesters or ballots are refused (RULE_NOT_MET).
 
+## Dashboards and search in code
+
+- `modules/dashboard/`: one `@SignedIn` route per card (`/dashboard/events`, `turnout`, `ties`, `activity`, `event-staff`, `my-events`, `organizations`); each card checks its own permission (403). Scope: platform admin → every organization (RLS platform read); `event.access_all` → the organization; otherwise the user's assignments. Deactivated and deleted events never count.
+- Turnout and voter numbers come from `app.event_counts(uuid[])` (migration 024, SECURITY DEFINER, numbers only): platform admins cannot read voters or participation.
+- `dashboardKind()` (shared `api/dashboard.ts`) decides DSH-01 to DSH-04: platform admin, `event.access_all`, `event.edit`, else observer. Landing (App Flow 5.1): sign-in navigates to `/` with `landingState()` (`auth/returnTo.ts`); only then does a moderator with exactly one active event (Draft, Scheduled, Open, Closed) go to it.
+- `modules/search/`: `GET /search?q=` (2+ characters), 5 per group; voters need `voter.view` and never carry the phone; staff need `staff.manage`; platform admins get events only. Staff `layout/GlobalSearch.tsx`; a voter opens `/events/:id/voters?voter=:id`, which the Voters tab shows while the parameter is there.
+- Staff `pages/dashboard/` (`dashboardApi.ts`, `DashboardCards.tsx` with `DashboardCard`: loading, "Couldn't load this." + Retry, the App Flow 12 empty message). Event names are plain text on the platform dashboard (platform admins cannot open events).
+- `errorMessage()` maps EVENT_LOCKED, INVALID_TRANSITION (ONLY_MODERATOR), NOT_FOUND, RESULTS_PUBLISHED and UNRESOLVED_TIES to their own words. `useOnline()` drives the portal's offline banner.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

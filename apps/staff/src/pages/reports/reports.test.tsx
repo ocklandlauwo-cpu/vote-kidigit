@@ -181,6 +181,28 @@ describe('report downloads', () => {
     expect(view.router.state.location.search).toBe('');
   });
 
+  it('says when voting closed with no ballots, with Download PDF', async () => {
+    renderResults({
+      [`GET /v1/events/${EVENT_ID}/results`]: () =>
+        jsonResponse(200, {
+          ...closedResults,
+          snapshot: closedResults.snapshot && { ...closedResults.snapshot, votersVoted: 0 },
+        }),
+      [`POST /v1/events/${EVENT_ID}/reports`]: () => jsonResponse(200, job()),
+    });
+    expect(
+      await screen.findByText(
+        'Upigaji kura umefungwa bila kura yoyote kupigwa.',
+        {},
+        { timeout: 5_000 },
+      ),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getAllByRole('button', { name: /Pakua PDF/ }).at(-1) as HTMLElement,
+    );
+    await waitFor(() => expect(startDownload).toHaveBeenCalledWith(FILE_URL));
+  });
+
   it('greys Download PDF without reports.download', async () => {
     renderResults({}, ['event.view', 'results.view']);
     expect(await screen.findByTestId('download-pdf')).toBeDisabled();

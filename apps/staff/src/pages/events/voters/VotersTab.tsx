@@ -20,7 +20,7 @@ import {
 import { App, Button, Dropdown, Flex, Input, Select, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useOutletContext } from 'react-router';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 import { errorMessage } from '../../../api/errorMessage';
 import { hasPermission, useMe } from '../../../auth/useAuth';
 import { Banner } from '../../../components/Banner';
@@ -55,6 +55,24 @@ export function VotersTab() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [panel, setPanel] = useState<{ voterId: string | null } | null>(null);
+  const [params, setParams] = useSearchParams();
+  // Global search opens a voter here with ?voter={id} (App Flow 3.6); it stays while open.
+  const voterParam = params.get('voter');
+  const shown = panel ?? (voterParam ? { voterId: voterParam } : null);
+
+  function closePanel() {
+    setPanel(null);
+    if (voterParam) {
+      setParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.delete('voter');
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  }
   const [bulkCategory, setBulkCategory] = useState<string | undefined>();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [zipOpen, setZipOpen] = useState(false);
@@ -275,12 +293,13 @@ export function VotersTab() {
           <EmptyState
             kind="list"
             title={t('voters.empty')}
+            description={editable ? t('voters.emptyGuide') : undefined}
             action={
               editable
                 ? {
-                    label: t('voters.add'),
-                    icon: <PlusOutlined />,
-                    onClick: () => setPanel({ voterId: null }),
+                    label: t('voters.uploadCsv'),
+                    icon: <UploadOutlined />,
+                    onClick: () => void navigate('import'),
                   }
                 : undefined
             }
@@ -382,10 +401,10 @@ export function VotersTab() {
 
       <VoterDrawer
         event={event}
-        open={panel !== null}
-        voterId={panel?.voterId ?? null}
+        open={shown !== null}
+        voterId={shown?.voterId ?? null}
         categories={categoryList}
-        onClose={() => setPanel(null)}
+        onClose={closePanel}
       />
       <PhotoZipDialog
         eventId={event.id}

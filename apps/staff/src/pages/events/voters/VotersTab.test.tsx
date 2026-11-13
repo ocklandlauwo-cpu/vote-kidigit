@@ -189,6 +189,14 @@ describe('EVT-05 voters tab', () => {
     expect(calls.some((c) => c.method === 'POST')).toBe(false);
   });
 
+  it('opens the voter named by ?voter= (global search) and forgets it on close', async () => {
+    const view = renderTab('scheduled');
+    void view.router.navigate(`/voters?voter=${asha.id}`);
+    expect(await screen.findByTestId('voter-code', {}, { timeout: 5_000 })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(view.router.state.location.search).toBe(''));
+  });
+
   it('opens a voter, never shows the code, and regenerates it after confirmation', async () => {
     const { calls } = renderTab('scheduled');
     await userEvent.click(await screen.findByText('Asha Mollel'));
@@ -236,10 +244,16 @@ describe('EVT-05 voters tab', () => {
     expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
   });
 
-  it('offers to add the first voter', async () => {
+  it('offers the CSV upload and the template guide for the first voters', async () => {
     renderTab('draft', []);
     expect(
-      await screen.findByText('Hakuna wapiga kura bado. Ongeza mmoja au pakia CSV.'),
+      await screen.findByText(
+        'Hakuna wapiga kura bado. Pakia CSV au ongeza wapiga kura mmoja mmoja.',
+      ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText('Pakua kiolezo, jaza safu moja kwa kila mpiga kura, kisha ukipakie.'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Pakia CSV/ }).length).toBeGreaterThan(0);
   });
 });

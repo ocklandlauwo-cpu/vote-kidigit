@@ -367,6 +367,18 @@ export function ResultsTab() {
         </Card>
       )}
 
+      {snapshot.votersVoted === 0 && (
+        <EmptyState
+          kind="list"
+          title={t('results.noBallots')}
+          action={
+            mayDownload
+              ? { label: t('reports.downloadPdf'), onClick: () => void pdf.start('results_pdf') }
+              : undefined
+          }
+        />
+      )}
+
       <div className="vk-template-grid">
         {snapshot.categories.map((category) => (
           <CategoryCard

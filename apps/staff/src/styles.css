@@ -454,3 +454,14 @@ body {
 .vk-reminder-input {
   width: 11rem;
 }
+
+/* DSH-01 to DSH-04: cards side by side, tables across the full width. */
+.vk-dashboard-grid {
+  display: grid;
+  gap: var(--vk-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+}
+
+.vk-dashboard-grid > .vk-dashboard-wide {
+  grid-column: 1 / -1;
+}

@@ -76,7 +76,11 @@ export function EventsPage() {
         return (
           <EmptyState
             kind="noMatch"
-            title={t('events.emptyStatus')}
+            title={
+              status
+                ? t('events.emptyStatus', { status: t(`status.event.${status}`) })
+                : t('search.noResults', { text: q })
+            }
             onClearFilters={() => {
               setSearch('');
               update({ status: undefined, q: undefined, page: undefined });

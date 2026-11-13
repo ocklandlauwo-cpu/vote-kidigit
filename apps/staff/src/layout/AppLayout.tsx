@@ -10,19 +10,21 @@ import {
   MenuOutlined,
   MenuUnfoldOutlined,
   SafetyCertificateOutlined,
-  SearchOutlined,
   SettingOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import type { MeResponse } from '@vote-kidigit/shared';
-import { Button, Drawer, Flex, Grid, Input, Layout, Menu, type MenuProps, Tooltip } from 'antd';
+import { Button, Drawer, Flex, Grid, Layout, Menu, type MenuProps, Tooltip } from 'antd';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { Logo } from '../components/Logo';
 import { LogoMark } from '../components/LogoMark';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Banner } from '../components/Banner';
+import { useOnline } from '../hooks/useOnline';
 import { Breadcrumbs } from './Breadcrumbs';
+import { GlobalSearch } from './GlobalSearch';
 import { LanguageSwitch } from './LanguageSwitch';
 import { activeNavKey, type NavIcon, navItems } from './navigation';
 import { ProfileMenu } from './ProfileMenu';
@@ -110,6 +112,7 @@ export function AppLayout({ me }: { me: MeResponse }) {
   const { t } = useTranslation();
   const screens = Grid.useBreakpoint();
   const desktop = screens.lg ?? false;
+  const online = useOnline();
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -193,25 +196,7 @@ export function AppLayout({ me }: { me: MeResponse }) {
           )}
           {screens.md && <Breadcrumbs />}
           <div style={{ flex: 1 }} />
-          {/* Global search arrives in step 29 (App Flow 3.6); the box shows where it will be. */}
-          <Tooltip title={t('topbar.searchSoon')}>
-            {desktop ? (
-              <Input
-                prefix={<SearchOutlined aria-hidden />}
-                placeholder={t('topbar.search')}
-                aria-label={t('topbar.searchLabel')}
-                disabled
-                style={{ width: screens.xl ? 320 : 240 }}
-              />
-            ) : (
-              <Button
-                type="text"
-                icon={<SearchOutlined />}
-                aria-label={t('topbar.searchLabel')}
-                disabled
-              />
-            )}
-          </Tooltip>
+          <GlobalSearch compact={!desktop} width={screens.xl ? '20rem' : '15rem'} />
           <ThemeToggle />
           <LanguageSwitch />
           <ProfileMenu me={me} />
@@ -220,6 +205,11 @@ export function AppLayout({ me }: { me: MeResponse }) {
           id="main"
           style={{ padding: desktop ? 'var(--vk-space-8)' : 'var(--vk-space-4)' }}
         >
+          {!online && (
+            <div style={{ marginBottom: 'var(--vk-space-4)' }}>
+              <Banner tone="warning" message={t('common.offline')} />
+            </div>
+          )}
           <Outlet />
         </Layout.Content>
       </Layout>

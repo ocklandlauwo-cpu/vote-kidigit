@@ -11,7 +11,7 @@ import { isApiError } from '../api/client';
 import { session } from '../api/session';
 import { ErrorPage } from '../components/ErrorPage';
 import { AppLayout } from '../layout/AppLayout';
-import { safeReturnTo } from './returnTo';
+import { landingState, safeReturnTo } from './returnTo';
 import { hasAnyPermission, ME_KEY, useMe } from './useAuth';
 
 export function FullPageLoading() {
@@ -68,7 +68,10 @@ export function GuestOnly() {
   const me = useMe();
   const [params] = useSearchParams();
   if (me.isPending) return <FullPageLoading />;
-  if (me.data) return <Navigate to={safeReturnTo(params.get('returnTo'))} replace />;
+  if (me.data) {
+    const to = safeReturnTo(params.get('returnTo'));
+    return <Navigate to={to} replace state={landingState(to)} />;
+  }
   return <Outlet />;
 }
 

@@ -82,6 +82,9 @@ export function RolesPage() {
       {header}
       {remove.isError && <Banner tone="danger" message={errorMessage(t, remove.error)} />}
       <Flex vertical gap="middle" style={{ marginTop: 'var(--vk-space-4)' }}>
+        {roles.data.items.every((role) => role.isSystem) && (
+          <Typography.Text type="secondary">{t('roles.customHint')}</Typography.Text>
+        )}
         {roles.data.items.map((role) => (
           <Card key={role.id} size="small" data-role={role.systemKey ?? 'custom'}>
             <Flex wrap justify="space-between" align="center" gap="middle">

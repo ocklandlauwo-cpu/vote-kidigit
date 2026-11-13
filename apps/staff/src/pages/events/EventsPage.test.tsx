@@ -107,7 +107,7 @@ describe('EVT-01 event list', () => {
     view.unmount();
 
     renderPage(['event.view'], '/events?status=closed');
-    expect(await screen.findByText('Hakuna chaguzi zenye hali hii.')).toBeInTheDocument();
+    expect(await screen.findByText('Hakuna chaguzi zenye hali “Imefungwa”.')).toBeInTheDocument();
   });
 
   it('opens an event from its row', async () => {

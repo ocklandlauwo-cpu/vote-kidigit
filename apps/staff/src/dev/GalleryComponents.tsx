@@ -25,6 +25,7 @@ import { StatusBadge } from '../components/StatusBadge';
 import { STATUS_SPECS, type StatusDomain } from '../components/statusSpecs';
 import { UserAvatar } from '../components/UserAvatar';
 import { CategoryCard } from '../pages/events/categories/CategoryCard';
+import { ReportProgress } from '../pages/reports/ReportParts';
 
 function Variant({ name, children }: { name: string; children: ReactNode }) {
   return (
@@ -338,6 +339,47 @@ export function GalleryComponents() {
           <PasswordRules password="kura2027" />
           <PasswordRules password="Uchaguzi2027" />
           <PasswordRules password="Uchaguzi2027" reused />
+        </Flex>
+      </Variant>
+
+      <Variant name="ReportProgress — preparing with progress, job failed, request refused">
+        <Flex vertical gap="middle">
+          <ReportProgress
+            kind="pdf"
+            onRetry={() => undefined}
+            report={{
+              preparing: true,
+              failed: false,
+              requestError: null,
+              job: {
+                id: '0190f0a1-2b3c-7d4e-8f90-000000000901',
+                type: 'results_pdf',
+                status: 'running',
+                progress: 50,
+                downloadUrl: null,
+                fileName: null,
+                requestedBy: 'Neema Mushi',
+                error: null,
+                createdAt: '2026-11-20T13:10:00.000Z',
+                completedAt: null,
+              },
+            }}
+          />
+          <ReportProgress
+            kind="pdf"
+            onRetry={() => undefined}
+            report={{ preparing: false, failed: true, requestError: null, job: null }}
+          />
+          <ReportProgress
+            kind="excel"
+            onRetry={() => undefined}
+            report={{
+              preparing: false,
+              failed: true,
+              requestError: new ApiError(409, 'INVALID_TRANSITION', 'x'),
+              job: null,
+            }}
+          />
         </Flex>
       </Variant>
     </>

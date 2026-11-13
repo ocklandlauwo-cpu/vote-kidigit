@@ -97,6 +97,13 @@ export function EligibilityDrawer({
               {t('categories.eligibility.count', { count: category.eligibleVoters })}
             </Typography.Text>
           )}
+          {chosen === 'selected' &&
+            category.eligibility === 'selected' &&
+            category.eligibleVoters === 0 && (
+              <Typography.Text type="secondary">
+                {t('categories.eligibility.noneSelected')}
+              </Typography.Text>
+            )}
           {chosen === 'selected' && category.eligibility === 'selected' && (
             <VoterPicker eventId={eventId} categoryId={category.id} readOnly={readOnly} />
           )}

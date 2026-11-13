@@ -59,6 +59,17 @@ export class AuditQueryService {
     return this.withOrganizationNames(tx, rows);
   }
 
+  /** The newest entries about any of `eventIds` (DSH-03 / DSH-04 recent activity). */
+  async recentForEvents(tx: Tx, eventIds: string[], take = 10): Promise<AuditEntry[]> {
+    if (eventIds.length === 0) return [];
+    const rows = await tx.auditLog.findMany({
+      where: { eventId: { in: eventIds } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take,
+    });
+    return this.withOrganizationNames(tx, rows);
+  }
+
   private async withOrganizationNames(
     tx: Tx,
     rows: Prisma.AuditLogGetPayload<object>[],
