@@ -293,6 +293,12 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - `e2e/support.ts`: `seed('--kiosk' | '--staff' | '--tie')` (a fresh organization each time; `--staff` adds an Org Super Admin, a mapped moderator and observer and an unmapped moderator with `E2E_STAFF_PASSWORD`; `--tie` adds an Open event tied 1–1), `signIn()`, `pickerText()` for the event date pickers. Call the API through the staff dev server (`new URL('/api/v1', STAFF_URL)`) so the session cookie goes with it.
 - Suites: moderator setup with CSV import and codes, web vote, kiosk (own phone and other phone), close → tie → publish → public page → PDF, permissions (observer, unmapped moderator), keyboard-only vote in both themes at 320 px (focus ring, 48 px tap targets, one h1, lang="sw").
 
+## Load test in code
+
+- `apps/api/src/cli/seed-load.ts` (built: `dist/cli/seed-load.js --voters 5000 --out load-seed.json`): a test organization with an Open event (2 categories) and N voters with known codes, plus an Org Super Admin, written to a JSON file (git-ignored, mode 600, delete after the run). Refuses NODE_ENV=production unless `--allow-production` (the VPS run on a test organization).
+- `scripts/load/run.mjs --seed load-seed.json [--api …/api/v1] [--minutes 30] [--burst-seconds 120] [--burst-rate 30]`: sign-in → confirm identity → ballot → submit per voter on the NFR-01 schedule, each with its own `X-Forwarded-For` (the per-IP sign-in limit would otherwise stop the test); then turnout from the control room, close (seal + freeze) timed, and results. Prints p50/p95/p99 per step and PASS/FAIL for the step 31 targets; writes `load-report.json`.
+- Run it against the built API and worker (`node dist/main.js`, `node dist/worker.js`, `SMS_DRIVER=fake`), never `pnpm dev`.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

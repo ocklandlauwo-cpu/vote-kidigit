@@ -38,3 +38,7 @@ Thumbs.db
 Documentations/
 ~$*
 *.tmp
+
+# Load test data (scripts/load): the seed holds every voter's code.
+load-seed*.json
+load-report*.json
