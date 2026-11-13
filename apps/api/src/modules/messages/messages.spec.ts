@@ -570,6 +570,40 @@ describe('messages', () => {
     expect(fake.outbox.length - before).toBe(1);
   });
 
+  it('does not send again when recording the send fails (busy database)', async () => {
+    const event = await seedEvent('scheduled', 1);
+    const voter = await owner.voter.findFirstOrThrow({ where: { eventId: event.id } });
+    const message = await owner.smsMessage.create({
+      data: {
+        organizationId: orgId,
+        eventId: event.id,
+        voterId: voter.id,
+        channel: 'sms',
+        type: 'code_delivery',
+        toAddress: voter.phone,
+        bodyRedacted: `Msimbo: ${REDACTED_CODE}`,
+      },
+    });
+    const sender = worker.get(MessageSender);
+    const requestContext = worker.get(RequestContextService);
+    const run = () =>
+      requestContext.run(systemContext(randomUUID(), orgId), () => sender.send(message.id, false));
+    // The gateway accepts the SMS, then the transaction recording it cannot start in time.
+    const record = jest
+      .spyOn(sender as unknown as { recordSent: () => Promise<unknown> }, 'recordSent')
+      .mockRejectedValueOnce(new Error('Unable to start a transaction in the given time'));
+    const before = fake.outbox.length;
+    await expect(run()).rejects.toThrow('Unable to start a transaction');
+    // The job's retry records the earlier send instead of sending again.
+    expect(await run()).toBe('sent');
+    record.mockRestore();
+    expect(fake.outbox.length - before).toBe(1);
+    expect(await owner.smsMessage.findUniqueOrThrow({ where: { id: message.id } })).toMatchObject({
+      status: 'sent',
+      providerMessageId: fake.outbox.at(-1)?.providerMessageId,
+    });
+  });
+
   it('refuses codes before publish and needs messages.send', async () => {
     const draft = await seedEvent('draft', 1);
     const res = await send(staff.moderator, `/events/${draft.id}/batches`, {

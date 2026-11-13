@@ -211,6 +211,7 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Messages store `body_redacted` with `REDACTED_CODE`; `MessageSender` (worker only) decrypts the code just before the send. Never store, log or audit a rendered text with a code.
 - Which message types may go out in which event state is `send-rules.ts` (`maySend`): checked on start, resume and resend failed, and again by the worker, which cancels a batch whose event moved on. Cancelling an event cancels its unfinished batches.
 - A message of a paused batch stays in the queue as a delayed job (`DelayedError`, no attempt used); Resume promotes those jobs and adds only missing ones. Re-adding the same job id while a job is active is silently ignored by BullMQ.
+- A message is sent at most once: the `smslock:` lock stops overlapping runs, and `smssent:{messageId}` (set right after the gateway accepts it, kept 24 h) makes a retry record an earlier send instead of sending again when recording failed.
 - `SMS_GATEWAY` is `BeemSmsAdapter` or `FakeSmsAdapter` (`SMS_DRIVER`); tests read `FakeSmsAdapter.outbox` and set `failWith`. Beem errors keep only `error_code` and `message` from the body. Delivery reports: `POST /api/webhooks/beem/dlr?secret=BEEM_DLR_SECRET`.
 - "Send codes now" on publish needs `messages.send` as well as `event.publish` (checked in LifecycleService). Staff: `pages/events/messages/` (MessagesTab, TemplateDrawer, SendDialog, BatchDrawer); message statuses reuse the Code / SMS badge (queued shows as Not sent); batch status is plain text (Design System 3.3 has no batch row).
 - In tests, filter the fake outbox by event name: test files and tests share phone numbers.
@@ -285,6 +286,12 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - `modules/search/`: `GET /search?q=` (2+ characters), 5 per group; voters need `voter.view` and never carry the phone; staff need `staff.manage`; platform admins get events only. Staff `layout/GlobalSearch.tsx`; a voter opens `/events/:id/voters?voter=:id`, which the Voters tab shows while the parameter is there.
 - Staff `pages/dashboard/` (`dashboardApi.ts`, `DashboardCards.tsx` with `DashboardCard`: loading, "Couldn't load this." + Retry, the App Flow 12 empty message). Event names are plain text on the platform dashboard (platform admins cannot open events).
 - `errorMessage()` maps EVENT_LOCKED, INVALID_TRANSITION (ONLY_MODERATOR), NOT_FOUND, RESULTS_PUBLISHED and UNRESOLVED_TIES to their own words. `useOnline()` drives the portal's offline banner.
+
+## End-to-end tests in code
+
+- `pnpm e2e` (Playwright, `e2e/`): `playwright.config.ts` starts the built API, the worker (ready when it prints "worker started") and both frontends, all with `SMS_DRIVER=fake`; locally a running `pnpm dev` is reused for the API and frontends. Build the API first (`pnpm build`): the seed is `apps/api/dist/cli/seed-vote-e2e.js`.
+- `e2e/support.ts`: `seed('--kiosk' | '--staff' | '--tie')` (a fresh organization each time; `--staff` adds an Org Super Admin, a mapped moderator and observer and an unmapped moderator with `E2E_STAFF_PASSWORD`; `--tie` adds an Open event tied 1–1), `signIn()`, `pickerText()` for the event date pickers. Call the API through the staff dev server (`new URL('/api/v1', STAFF_URL)`) so the session cookie goes with it.
+- Suites: moderator setup with CSV import and codes, web vote, kiosk (own phone and other phone), close → tie → publish → public page → PDF, permissions (observer, unmapped moderator), keyboard-only vote in both themes at 320 px (focus ring, 48 px tap targets, one h1, lang="sw").
 
 ## Design system in code
 

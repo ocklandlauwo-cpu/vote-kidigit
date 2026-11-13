@@ -125,9 +125,9 @@ export function ReviewCard({ items }: { items: ReviewItem[] }) {
               ))
             )}
           </div>
+          {/* Size L: voter tap targets are at least 48 px (Design System 13.1). */}
           <Button
             variant="tertiary"
-            size="S"
             onClick={item.onChange}
             aria-label={t('review.changeLabel', { name: item.categoryName })}
           >

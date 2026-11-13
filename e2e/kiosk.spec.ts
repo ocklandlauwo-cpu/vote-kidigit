@@ -78,3 +78,37 @@ test('a voter votes at a kiosk, which then returns to the start', async ({ page 
   await page.getByRole('button', { name: 'Funga kiosk' }).click();
   await expect(page.getByText('Kiosk hii imefungwa. Muone msimamizi wa uchaguzi.')).toBeVisible();
 });
+
+test('a voter without their phone gets the code on another phone, approved by the officer', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const election = seed();
+  await page.goto(`${VOTER_URL}vote/kiosk/${election.kiosk.token}`);
+  await page.getByTestId('kiosk-welcome').click();
+  await page.getByLabel('Namba ya uanachama').fill(election.membershipId);
+  await page.getByRole('button', { name: 'Nitumie msimbo' }).click();
+  await expect(page.getByText('Tumetuma msimbo kwa simu inayoishia 001')).toBeVisible();
+
+  // KSK-03a: the officer approves another number with the kiosk PIN.
+  await page.getByRole('button', { name: 'Tumia simu nyingine' }).click();
+  await expect(page.getByRole('heading', { name: 'Msimamizi athibitishe' })).toBeVisible();
+  await page.getByLabel('PIN ya msimamizi').fill(election.kiosk.pin);
+  await page.getByLabel('Namba ya simu nyingine').fill('0754123987');
+  await page.getByRole('button', { name: 'Thibitisha' }).click();
+  await expect(page.getByText('Tumetuma msimbo kwa simu inayoishia 987')).toBeVisible();
+
+  // The same code arrives on the other phone; the vote goes on as usual.
+  await page.getByLabel('Weka msimbo wa uthibitisho').fill(election.code);
+  await page.getByRole('button', { name: 'Endelea' }).click();
+  await page.getByRole('button', { name: 'Huyu ni mimi' }).click();
+  await page.getByRole('button', { name: 'Anza kupiga kura' }).click();
+  const [chair, board] = election.categories;
+  await page.getByRole('radio', { name: chair?.contesters[2] }).click();
+  await page.getByRole('button', { name: 'Inayofuata' }).click();
+  await page.getByRole('checkbox', { name: board?.contesters[0] }).click();
+  await page.getByRole('checkbox', { name: board?.contesters[1] }).click();
+  await page.getByRole('button', { name: 'Inayofuata' }).click();
+  await page.getByRole('button', { name: 'Tuma kura' }).click();
+  await expect(page.getByRole('heading', { name: 'Kura yako imepokelewa' })).toBeVisible();
+});

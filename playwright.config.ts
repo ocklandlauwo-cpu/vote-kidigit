@@ -5,6 +5,8 @@ export const VOTER_URL = 'http://localhost:5174/';
 export const API_HEALTH_URL = 'http://localhost:3000/api/health';
 
 const isCI = Boolean(process.env.CI);
+/** End-to-end runs never send a real SMS, whatever apps/api/.env says. */
+const FAKE_SMS = { SMS_DRIVER: 'fake' };
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,6 +22,13 @@ export default defineConfig({
       command: 'pnpm --filter @vote-kidigit/api start',
       url: API_HEALTH_URL,
       reuseExistingServer: !isCI,
+      env: FAKE_SMS,
+    },
+    {
+      // The worker (CSV imports, code SMS, PDFs). It has no port: ready when it says so.
+      command: 'pnpm --filter @vote-kidigit/api start:worker',
+      wait: { stdout: /worker started/ },
+      env: { ...FAKE_SMS, PROCESS_ROLE: 'worker' },
     },
     {
       command: 'pnpm --filter @vote-kidigit/staff dev',

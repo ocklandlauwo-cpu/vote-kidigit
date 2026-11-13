@@ -30,6 +30,14 @@ export class RetryLater extends Error {}
 const SEND_LOCK_PREFIX = 'smslock:';
 const SEND_LOCK_MS = 60_000;
 
+/**
+ * Set as soon as the gateway accepts a message, before the database records it. If recording
+ * fails (a busy database), the job's retry finds this and records the send instead of sending
+ * the SMS again. Kept far longer than the job's retries last.
+ */
+const SENT_MARK_PREFIX = 'smssent:';
+const SENT_MARK_MS = 24 * 3_600_000;
+
 const escapeHtml = (text: string) =>
   text.replace(
     /[&<>"]/g,
@@ -79,32 +87,24 @@ export class MessageSender {
 
     let providerMessageId: string | null = null;
     let failure: SmsSendError | null = null;
-    try {
-      if (prepared.channel === 'sms') {
-        providerMessageId = (
-          await this.gateway.send({
-            to: prepared.to,
-            text: prepared.text,
-            senderId: prepared.senderId,
-            reference: messageId,
-          })
-        ).providerMessageId;
-      } else {
-        await this.mail.send({
-          to: prepared.to,
-          subject: prepared.subject ?? '',
-          text: prepared.text,
-          html: `<p>${escapeHtml(prepared.text).replace(/\n/g, '<br>')}</p>`,
-        });
+    const sentKey = `${SENT_MARK_PREFIX}${messageId}`;
+    const earlier = await this.redis.get(sentKey);
+    if (earlier !== null) {
+      // Sent by an earlier run whose record did not commit: record it, do not send again.
+      providerMessageId = earlier || null;
+    } else {
+      try {
+        providerMessageId = await this.deliver(messageId, prepared);
+      } catch (error: unknown) {
+        failure =
+          error instanceof SmsSendError
+            ? error
+            : new SmsSendError(
+                error instanceof Error ? error.message.slice(0, 200) : 'send failed',
+                true,
+              );
       }
-    } catch (error: unknown) {
-      failure =
-        error instanceof SmsSendError
-          ? error
-          : new SmsSendError(
-              error instanceof Error ? error.message.slice(0, 200) : 'send failed',
-              true,
-            );
+      if (!failure) await this.redis.set(sentKey, providerMessageId ?? '', 'PX', SENT_MARK_MS);
     }
 
     const outcome = await this.prisma.withContext(ctx, (tx) =>
@@ -114,6 +114,30 @@ export class MessageSender {
     );
     if (outcome === 'retry') throw new RetryLater(failure?.message ?? 'retry');
     return outcome;
+  }
+
+  /** Hands the message to the SMS gateway or the mail server; the provider's id for an SMS. */
+  private async deliver(
+    messageId: string,
+    prepared: Exclude<Awaited<ReturnType<MessageSender['prepare']>>, null | 'held'>,
+  ): Promise<string | null> {
+    if (prepared.channel === 'sms') {
+      return (
+        await this.gateway.send({
+          to: prepared.to,
+          text: prepared.text,
+          senderId: prepared.senderId,
+          reference: messageId,
+        })
+      ).providerMessageId;
+    }
+    await this.mail.send({
+      to: prepared.to,
+      subject: prepared.subject ?? '',
+      text: prepared.text,
+      html: `<p>${escapeHtml(prepared.text).replace(/\n/g, '<br>')}</p>`,
+    });
+    return null;
   }
 
   /** Whether the message's batch is still paused (a held job checks this after parking). */

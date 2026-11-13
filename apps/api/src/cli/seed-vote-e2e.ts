@@ -1,8 +1,11 @@
 // CLI for end-to-end tests only (Implementation Plan step 24): creates an organization with an
 // Open event (two categories, contesters and one voter with a known code) and prints what the
 // browser test needs as one JSON line. Refuses to run in production.
-//   node apps/api/dist/cli/seed-vote-e2e.js [--kiosk]
+//   node apps/api/dist/cli/seed-vote-e2e.js [--kiosk] [--staff] [--tie]
 // With --kiosk it also launches a kiosk for the event and prints its token and PIN.
+// With --staff it adds staff accounts (password E2E_STAFF_PASSWORD): an Org Super Admin, a
+// moderator and an observer mapped to the event, and a moderator mapped to nothing.
+// With --tie it adds a second Open event whose one seat is tied 1–1, ready to close.
 // The event is set up as Draft and then opened through app.transition_event(), like the product.
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
@@ -16,6 +19,9 @@ import { PrismaService } from '../database/prisma.service.js';
 import { CodesService } from '../modules/voters/codes.service.js';
 
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const E2E_STAFF_PASSWORD = 'Uchaguzi2027E2E';
+
+type StaffKey = 'superAdmin' | 'moderator' | 'observer' | 'unmappedModerator';
 
 export interface SeededVote {
   organizationId: string;
@@ -26,6 +32,8 @@ export interface SeededVote {
   voterName: string;
   categories: { name: string; contesters: string[]; choose: number }[];
   kiosk?: { token: string; pin: string };
+  staff?: Record<StaffKey, string> & { password: string };
+  tie?: { eventId: string; eventName: string; contesters: string[] };
 }
 
 async function main(): Promise<void> {
@@ -136,7 +144,104 @@ async function main(): Promise<void> {
           });
           kiosk = { token, pin };
         }
-        return { eventId: event.id, eventName, membershipId, plan, kiosk };
+        let staff: SeededVote['staff'];
+        if (process.argv.includes('--staff')) {
+          const passwordHash = await hashPassword(E2E_STAFF_PASSWORD);
+          const people: [StaffKey, string, string, 'moderator' | 'observer' | null][] = [
+            ['superAdmin', 'org_super_admin', 'Neema Msimamizi Mkuu', null],
+            ['moderator', 'moderator', 'Musa Msimamizi', 'moderator'],
+            ['observer', 'observer', 'Olivia Mtazamaji', 'observer'],
+            ['unmappedModerator', 'moderator', 'Upendo Hajapangiwa', null],
+          ];
+          const emails = {} as Record<StaffKey, string>;
+          for (const [key, systemKey, fullName, assignment] of people) {
+            const email = `${key.toLowerCase()}-${tag}@example.test`;
+            const role = await tx.role.findFirstOrThrow({
+              where: { organizationId, systemKey },
+              select: { id: true },
+            });
+            const user = await tx.user.create({
+              data: {
+                organizationId,
+                email,
+                fullName,
+                status: 'active',
+                passwordHash,
+                isOrgSuperAdmin: systemKey === 'org_super_admin',
+              },
+              select: { id: true },
+            });
+            await tx.userRole.create({
+              data: { userId: user.id, roleId: role.id, organizationId },
+            });
+            if (assignment) {
+              await tx.eventAssignment.create({
+                data: { organizationId, eventId: event.id, userId: user.id, type: assignment },
+              });
+            }
+            emails[key] = email;
+          }
+          staff = { ...emails, password: E2E_STAFF_PASSWORD };
+        }
+
+        let tie: SeededVote['tie'];
+        if (process.argv.includes('--tie')) {
+          const tieName = `Sare E2E ${tag}`;
+          const tieEvent = await tx.votingEvent.create({
+            data: {
+              organizationId,
+              name: tieName,
+              startAt: new Date(Date.now() - 60_000),
+              endAt: new Date(Date.now() + 8 * 3_600_000),
+            },
+            select: { id: true },
+          });
+          const seat = await tx.category.create({
+            data: {
+              organizationId,
+              eventId: tieEvent.id,
+              name: 'Katibu',
+              displayOrder: 0,
+              selectionMode: 'exact',
+              exactCount: 1,
+            },
+            select: { id: true },
+          });
+          const contesters = ['Halima Juma', 'Petro Mrema'];
+          const ids: string[] = [];
+          for (const fullName of contesters) {
+            const contester = await tx.contester.create({
+              data: { organizationId, eventId: tieEvent.id, categoryId: seat.id, fullName },
+              select: { id: true },
+            });
+            ids.push(contester.id);
+          }
+          const voterIds: string[] = [];
+          for (const [i, fullName] of ['Mpiga Kwanza', 'Mpiga Pili'].entries()) {
+            const voter = await tx.voter.create({
+              data: {
+                organizationId,
+                eventId: tieEvent.id,
+                fullName,
+                membershipId: `SARE-${tag}-${i}`,
+                phone: '+255712000002',
+                gender: 'male',
+              },
+              select: { id: true },
+            });
+            voterIds.push(voter.id);
+          }
+          await tx.$queryRaw`SELECT id FROM app.transition_event(${tieEvent.id}::uuid, 'open'::event_status, NULL)`;
+          // One vote each: a tie for the only seat.
+          for (const [i, voterId] of voterIds.entries()) {
+            const selections = JSON.stringify([
+              { categoryId: seat.id, choice: 'contester', contesterIds: [ids[i]] },
+            ]);
+            await tx.$queryRaw`SELECT app.cast_ballot(${voterId}::uuid, ${tieEvent.id}::uuid, ${selections}::jsonb, 'web'::vote_channel)`;
+          }
+          tie = { eventId: tieEvent.id, eventName: tieName, contesters };
+        }
+        return { eventId: event.id, eventName, membershipId, plan, kiosk, staff, tie };
       }),
     );
 
@@ -149,6 +254,8 @@ async function main(): Promise<void> {
       voterName: 'Amina Hassan',
       categories: seeded.plan,
       ...(seeded.kiosk && { kiosk: seeded.kiosk }),
+      ...(seeded.staff && { staff: seeded.staff }),
+      ...(seeded.tie && { tie: seeded.tie }),
     };
     process.stdout.write(`${JSON.stringify(output)}\n`);
   } finally {

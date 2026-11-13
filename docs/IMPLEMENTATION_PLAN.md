@@ -518,7 +518,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 
 **Phase 4 — Hardening, deployment and pilot**
 
-- ☐ 30. End-to-end tests and accessibility
+- ☑ 30. End-to-end tests and accessibility
 - ☐ 31. Load test
 - ☐ 32. Security review
 - ☐ 33. Server provisioning

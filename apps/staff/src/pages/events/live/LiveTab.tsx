@@ -112,7 +112,7 @@ export function LiveTab() {
       <Card>
         <Flex justify="space-between" align="center" wrap gap="middle">
           <Flex vertical>
-            <span className="vk-stat-value" data-testid="turnout">
+            <span className="vk-stat-value" data-testid="turnout" aria-live="polite">
               {t('live.turnout', {
                 voted: count(data.turnout.voted),
                 registered: count(data.turnout.registered),
