@@ -41,7 +41,10 @@ export function useVoters(eventId: string, params: ListParams) {
 export function useVoter(eventId: string, voterId: string | null) {
   return useQuery({
     queryKey: [...votersKey(eventId), voterId],
-    queryFn: () => api(`${base(eventId)}/voters/${voterId ?? ''}`, { schema: VoterDetailSchema }),
+    queryFn: () =>
+      api(`${base(eventId)}/voters/${encodeURIComponent(voterId ?? '')}`, {
+        schema: VoterDetailSchema,
+      }),
     enabled: voterId !== null,
   });
 }

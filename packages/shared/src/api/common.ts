@@ -40,3 +40,8 @@ export const TimeZoneSchema = z.string().refine((zone) => {
 export function optionalText<T extends z.ZodType<string>>(schema: T) {
   return z.preprocess((value) => (value === '' ? null : value), schema.nullable());
 }
+
+/** True for a well-formed UUID: ids taken from a URL are checked before they reach an API path. */
+export function isUuid(value: unknown): value is string {
+  return z.uuid().safeParse(value).success;
+}

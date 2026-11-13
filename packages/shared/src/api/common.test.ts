@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PaginationQuerySchema, TimeZoneSchema } from './common.js';
+import { isUuid, PaginationQuerySchema, TimeZoneSchema } from './common.js';
 import { CreateOrganizationRequestSchema, UpdateOrganizationRequestSchema } from './platform.js';
 
 describe('pagination', () => {
@@ -40,5 +40,14 @@ describe('organization requests', () => {
       contactPhone: null,
     });
     expect(UpdateOrganizationRequestSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('isUuid', () => {
+  it('accepts only a well-formed UUID', () => {
+    expect(isUuid('0190f0a1-2b3c-7d4e-8f90-0000000004a1')).toBe(true);
+    for (const value of ['../../users', '0190f0a1-2b3c-7d4e-8f90', '', null, undefined, 42]) {
+      expect(isUuid(value)).toBe(false);
+    }
   });
 });

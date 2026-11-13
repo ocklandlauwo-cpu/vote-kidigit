@@ -15,6 +15,7 @@ import {
   type Category,
   codeStatuses,
   type EventDetail,
+  isUuid,
   type VoterSummary,
 } from '@vote-kidigit/shared';
 import { App, Button, Dropdown, Flex, Input, Select, Table, Tag, Typography } from 'antd';
@@ -57,7 +58,9 @@ export function VotersTab() {
   const [panel, setPanel] = useState<{ voterId: string | null } | null>(null);
   const [params, setParams] = useSearchParams();
   // Global search opens a voter here with ?voter={id} (App Flow 3.6); it stays while open.
-  const voterParam = params.get('voter');
+  // Only a UUID is used: anything else in the link never reaches an API path.
+  const rawVoter = params.get('voter');
+  const voterParam = isUuid(rawVoter) ? rawVoter : null;
   const shown = panel ?? (voterParam ? { voterId: voterParam } : null);
 
   function closePanel() {

@@ -197,6 +197,14 @@ describe('EVT-05 voters tab', () => {
     await waitFor(() => expect(view.router.state.location.search).toBe(''));
   });
 
+  it('ignores a ?voter= that is not a UUID, so it never reaches an API path', async () => {
+    const view = renderTab('scheduled');
+    void view.router.navigate('/voters?voter=..%2F..%2Fusers');
+    expect(await screen.findByText('Asha Mollel', {}, { timeout: 5_000 })).toBeInTheDocument();
+    expect(view.calls.some((c) => c.path.includes('users'))).toBe(false);
+    expect(screen.queryByTestId('voter-code')).not.toBeInTheDocument();
+  });
+
   it('opens a voter, never shows the code, and regenerates it after confirmation', async () => {
     const { calls } = renderTab('scheduled');
     await userEvent.click(await screen.findByText('Asha Mollel'));
