@@ -154,3 +154,9 @@ function componentTokens(mode: 'light' | 'dark'): ThemeConfig['components'] {
     Radio: { radioSize: 18 },
   };
 }
+
+/**
+ * Compact rows for the Voters table only (Design System 8.7: 40 px instead of 52 px). Applied
+ * through a nested ConfigProvider so other tables keep the comfortable height.
+ */
+export const COMPACT_TABLE_THEME = { components: { Table: { cellPaddingBlock: 9 } } };

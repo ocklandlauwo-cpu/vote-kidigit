@@ -1,5 +1,3 @@
-import type { PermissionKey } from '@vote-kidigit/shared';
-import type { ParseKeys } from 'i18next';
 import { createBrowserRouter, type RouteObject, type UIMatch } from 'react-router';
 import {
   FullPageLoading,
@@ -14,7 +12,6 @@ import { AcceptInvitePage } from './pages/auth/AcceptInvitePage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { SignInPage } from './pages/auth/SignInPage';
-import { ComingSoonPage } from './pages/ComingSoonPage';
 import { AuditPage } from './pages/audit/AuditPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { EventCrumb } from './pages/events/EventCrumb';
@@ -29,6 +26,10 @@ import { ImportPage } from './pages/events/voters/ImportPage';
 import { VotersTab } from './pages/events/voters/VotersTab';
 import { EventActivity } from './pages/events/EventTabs';
 import { EventWorkspace } from './pages/events/EventWorkspace';
+import { OrganizationDetailPage } from './pages/platform/OrganizationDetailPage';
+import { OrganizationsPage } from './pages/platform/OrganizationsPage';
+import { PlatformAuditPage } from './pages/platform/PlatformAuditPage';
+import { PlatformSettingsPage } from './pages/platform/PlatformSettingsPage';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { RoleEditorPage } from './pages/roles/RoleEditorPage';
 import { RolesPage } from './pages/roles/RolesPage';
@@ -36,17 +37,6 @@ import { SettingsPage } from './pages/settings/SettingsPage';
 import { UsersPage } from './pages/users/UsersPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { RouteErrorPage } from './pages/RouteErrorPage';
-
-/** A menu section whose screens arrive later, behind its permissions (App Flow 2.1, 3.3). */
-function section(path: string, title: ParseKeys, anyOf: PermissionKey[]): RouteObject {
-  const handle: RouteHandle = { crumb: title };
-  return {
-    path,
-    handle,
-    element: anyOf.length ? <RequirePermission anyOf={anyOf} /> : undefined,
-    children: [{ index: true, element: <ComingSoonPage title={title} /> }],
-  };
-}
 
 // React Router 7 in data mode (Tech Stack 7), basename /app (App Flow 2.1). The component gallery
 // exists only in development: import.meta.env.DEV is false in production builds, so the route
@@ -88,9 +78,28 @@ export const routes: RouteObject[] = [
           { index: true, element: <DashboardPage />, handle: { crumb: 'nav.dashboard' } },
           { path: 'welcome', element: <WelcomePage /> },
           { path: 'profile', element: <ProfilePage />, handle: { crumb: 'nav.profile' } },
-          section('platform/orgs', 'nav.organizations', ['platform.orgs.manage']),
-          section('platform/audit', 'nav.audit', ['platform.audit.view']),
-          section('platform/settings', 'nav.settings', ['platform.settings.manage']),
+          {
+            // PLT-01 to PLT-03 (App Flow 5.3)
+            path: 'platform/orgs',
+            handle: { crumb: 'nav.organizations' },
+            element: <RequirePermission anyOf={['platform.orgs.manage']} />,
+            children: [
+              { index: true, element: <OrganizationsPage /> },
+              { path: ':orgId', element: <OrganizationDetailPage /> },
+            ],
+          },
+          {
+            path: 'platform/audit',
+            handle: { crumb: 'nav.audit' },
+            element: <RequirePermission anyOf={['platform.audit.view']} />,
+            children: [{ index: true, element: <PlatformAuditPage /> }],
+          },
+          {
+            path: 'platform/settings',
+            handle: { crumb: 'nav.settings' },
+            element: <RequirePermission anyOf={['platform.settings.manage']} />,
+            children: [{ index: true, element: <PlatformSettingsPage /> }],
+          },
           {
             path: 'events',
             handle: { crumb: 'nav.events' },

@@ -329,6 +329,15 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Forms: `PublicForm` + `contactForm.ts` validate with the shared `PublicContactRequestSchema` (one message per field, focus on the first problem); `POST /api/v1/public/contact` (`modules/public/`) queues an email job, stores nothing; the honeypot `website` field is dropped silently.
 - The ballot "screenshot" is `PhoneMock`, drawn with tokens (follows the theme, no image). Home page first load is about 177 KB gzip (step 38 check: `vite build --manifest` and sum the home page's import closure).
 
+## Remaining V1 features in code (step 39)
+
+- `docs/TRACEABILITY.md` maps every M and S requirement to code and tests; update it when a requirement's code or tests move.
+- Archiving: migration 025 adds `archive_event` to `app.due_transitions()` (results published or cancelled more than `organizations.archive_after_days` ago); `app.transition_event` clears every voter's `code_hmac` / `code_ciphertext` on → archived (COD-08). Migration 026 makes the sweep skip suspended organizations for opening and reminders (ORG-05).
+- Email copies (SMS-09): `BatchesService.emailCopy` creates an email batch next to every SMS batch (staff `start` and system `send`) for voters with an address; not for another-phone kiosk sends or failed-only resends. Code status follows SMS only. Tests filter batches by `channel`.
+- Small groups (NFR-22): shared `isSmallGroup` (1–4 voters); staff `SmallGroupTag` on the Live and Results tabs.
+- Voters table density: `pages/events/voters/density.ts` (localStorage `vk.votersDensity`) and `COMPACT_TABLE_THEME` (theme.ts) through a nested ConfigProvider, so other tables keep 52 px rows.
+- Platform screens: `pages/platform/` (PLT-01 OrganizationsPage with CreateOrganizationDrawer, PLT-03 OrganizationDetailPage, PLT-04 PlatformSettingsPage, PLT-05 PlatformAuditPage reusing `AuditView` with `organizations` and `title`). Organization status badges are domain `org`. `applyFieldErrors` maps dotted API paths to nested form fields.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

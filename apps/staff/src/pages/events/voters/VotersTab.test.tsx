@@ -133,6 +133,23 @@ describe('EVT-05 voters tab', () => {
     );
   });
 
+  it('switches to compact rows and remembers the choice (Design System 8.7)', async () => {
+    globalThis.localStorage.removeItem('vk.votersDensity');
+    const user = userEvent.setup();
+    const first = renderTab();
+    await screen.findByText('Asha Mollel');
+    const density = screen.getByRole('radiogroup', { name: 'Ukubwa wa mistari' });
+    expect(within(density).getByRole('radio', { name: 'Nafasi pana' })).toBeChecked();
+    await user.click(within(density).getByText('Nafasi finyu'));
+    expect(within(density).getByRole('radio', { name: 'Nafasi finyu' })).toBeChecked();
+    expect(globalThis.localStorage.getItem('vk.votersDensity')).toBe('compact');
+    first.unmount();
+    renderTab();
+    await screen.findByText('Asha Mollel');
+    expect(screen.getByRole('radio', { name: 'Nafasi finyu' })).toBeChecked();
+    globalThis.localStorage.removeItem('vk.votersDensity');
+  });
+
   it('searches and filters through the API', async () => {
     const { calls } = renderTab();
     await screen.findByText('Asha Mollel');

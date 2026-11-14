@@ -184,6 +184,8 @@ Status is always shown as **colour + icon + text** together, never colour alone.
 | Staff user | Invited | info | MailOutlined | Amealikwa / Invited |
 | Staff user | Active | success | CheckCircleOutlined | Hai / Active |
 | Staff user | Deactivated | neutral | StopOutlined | Amezimwa / Deactivated |
+| Organization | Active | success | CheckCircleOutlined | Hai / Active |
+| Organization | Suspended | warning | PauseCircleOutlined | Imesimamishwa / Suspended |
 
 ### 3.4 Organization colour (voter, kiosk, public results)
 

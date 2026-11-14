@@ -31,6 +31,7 @@ import {
 } from '../../testing/db.js';
 import { createTestHttpApp, testIp } from '../../testing/http.js';
 import { RequestContextService, systemContext } from '../../context/request-context.js';
+import { MailService } from '../../mail/mail.service.js';
 import { WorkerModule } from '../../worker.module.js';
 import { SchedulerRunner } from '../events/scheduler.js';
 import { CodesService } from '../voters/codes.service.js';
@@ -375,9 +376,10 @@ describe('messages', () => {
     );
     expect(codeOf(refused)).toBe('INVALID_TRANSITION');
     const detail = (await get(staff.moderator, `/events/${event.id}/voters/${voter.id}`)).body as {
-      messages: { bodyRedacted: string }[];
+      messages: { bodyRedacted: string; channel: string }[];
     };
-    expect(detail.messages).toHaveLength(2);
+    // Resend and regenerate, each by SMS and (PRD SMS-09) by email to the voter's address.
+    expect(detail.messages.map((m) => m.channel).sort()).toEqual(['email', 'email', 'sms', 'sms']);
     expect(detail.messages.every((m) => m.bodyRedacted.includes(REDACTED_CODE))).toBe(true);
   }, 60_000);
 
@@ -435,9 +437,19 @@ describe('messages', () => {
       sendCodes: true,
     }).expect(200);
     const codesBatch = await owner.smsBatch.findFirstOrThrow({
-      where: { eventId: event.id, type: 'code_delivery' },
+      where: { eventId: event.id, type: 'code_delivery', channel: 'sms' },
     });
     expect(codesBatch).toMatchObject({ audience: 'not_sent', totalCount: 2 });
+    // PRD SMS-09: the one voter with an email address also gets the code by email.
+    const emailBatch = await owner.smsBatch.findFirstOrThrow({
+      where: { eventId: event.id, type: 'code_delivery', channel: 'email' },
+    });
+    expect(emailBatch).toMatchObject({ audience: 'not_sent', totalCount: 1 });
+    await waitForBatch(emailBatch.id, ['completed'], 30);
+    const emailed = await owner.smsMessage.findFirstOrThrow({ where: { batchId: emailBatch.id } });
+    const mail = worker.get(MailService).outbox.find((m) => m.to === emailed.toAddress);
+    expect(mail?.text).toMatch(/[A-Z2-9]{4}-[A-Z2-9]{4}/);
+    expect(emailed.bodyRedacted).toContain(REDACTED_CODE);
     await waitForBatch(codesBatch.id, ['completed'], 30);
     // Unpublishing is refused once codes went out.
     await send(staff.moderator, `/events/${event.id}/unpublish`).expect(409);
@@ -447,7 +459,7 @@ describe('messages', () => {
       reason: 'Mkutano umeahirishwa',
     }).expect(200);
     const cancelled = await owner.smsBatch.findFirstOrThrow({
-      where: { eventId: event.id, type: 'event_cancelled' },
+      where: { eventId: event.id, type: 'event_cancelled', channel: 'sms' },
     });
     expect(cancelled.totalCount).toBe(2);
   }, 60_000);
@@ -465,7 +477,7 @@ describe('messages', () => {
     expect((await runner.sweep(new Date('2000-01-01T08:30:00Z'))).reminders).toBe(1);
     expect((await runner.sweep(new Date('2000-01-01T09:30:00Z'))).reminders).toBe(0);
     const reminder = await owner.smsBatch.findFirstOrThrow({
-      where: { eventId: event.id, type: 'reminder_before_open' },
+      where: { eventId: event.id, type: 'reminder_before_open', channel: 'sms' },
     });
     expect(reminder).toMatchObject({ audience: 'not_voted', totalCount: 2, createdBy: null });
   }, 60_000);

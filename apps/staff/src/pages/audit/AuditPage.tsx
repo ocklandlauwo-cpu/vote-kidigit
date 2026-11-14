@@ -20,6 +20,8 @@ import { useAuditExport } from '../reports/reportsApi';
 import { useUsers } from '../users/usersApi';
 
 const ACTION_GROUPS = ['event', 'auth', 'user', 'role', 'org', 'me'] as const;
+/** The platform log (PLT-05) also has the platform's own actions. */
+const PLATFORM_GROUPS = ['platform', ...ACTION_GROUPS] as const;
 const PAGE_SIZES = [25, 50, 100] as const;
 
 /** A stored audit value as text: objects as JSON, empty as a dash. */
@@ -62,10 +64,19 @@ export function AuditView({
   endpoint,
   withHeader = false,
   exportEventId,
+  title,
+  organizations,
 }: {
   endpoint: string;
   withHeader?: boolean;
   exportEventId?: string;
+  /** Page title instead of the organization audit log's. */
+  title?: string;
+  /**
+   * Platform audit log (PLT-05): an Organization filter with these choices. The organization
+   * export does not apply there, so the Export button is not shown.
+   */
+  organizations?: { value: string; label: string }[];
 }) {
   const { t } = useTranslation();
   const format = useFormat();
@@ -75,10 +86,13 @@ export function AuditView({
   const actorUserId = params.get('user') ?? undefined;
   const from = params.get('from') ?? undefined;
   const to = params.get('to') ?? undefined;
+  const organizationId = params.get('org') ?? undefined;
+  const platform = organizations !== undefined;
+  const groups = platform ? PLATFORM_GROUPS : ACTION_GROUPS;
   const page = Number(params.get('page') ?? '1') || 1;
   const sizeParam = Number(params.get('pageSize') ?? '50');
   const pageSize = (PAGE_SIZES as readonly number[]).includes(sizeParam) ? sizeParam : 50;
-  const filtered = Boolean(action || actorUserId || from || to);
+  const filtered = Boolean(action || actorUserId || from || to || organizationId);
   const exported = useAuditExport(exportEventId);
   const runExport = () =>
     void exported.start({
@@ -87,14 +101,14 @@ export function AuditView({
       ...(from && { from }),
       ...(to && { to }),
     });
-  const exportButton = (
+  const exportButton = platform ? null : (
     <Button icon={<DownloadOutlined />} loading={exported.preparing} onClick={runExport}>
       {t('audit.export')}
     </Button>
   );
 
   const query = new URLSearchParams();
-  for (const [key, value] of Object.entries({ action, actorUserId, from, to })) {
+  for (const [key, value] of Object.entries({ action, actorUserId, from, to, organizationId })) {
     if (value) query.set(key, value);
   }
   query.set('page', String(page));
@@ -143,6 +157,7 @@ export function AuditView({
               user: undefined,
               from: undefined,
               to: undefined,
+              org: undefined,
               page: undefined,
             })
           }
@@ -195,6 +210,16 @@ export function AuditView({
               <span style={{ whiteSpace: 'nowrap' }}>{format.dateTime(value)}</span>
             ),
           },
+          ...(platform
+            ? [
+                {
+                  title: t('platform.audit.organization'),
+                  key: 'organization',
+                  render: (_: unknown, row: AuditEntry) =>
+                    row.organizationName ?? t('platform.audit.platformOnly'),
+                },
+              ]
+            : []),
           { title: t('audit.colUser'), dataIndex: 'actorLabel' },
           {
             title: t('audit.colAction'),
@@ -211,7 +236,7 @@ export function AuditView({
   return (
     <>
       {/* SYS-01 */}
-      {withHeader && <PageHeader title={t('audit.title')} actions={exportButton} />}
+      {withHeader && <PageHeader title={title ?? t('audit.title')} actions={exportButton} />}
       <Flex wrap gap="middle" style={{ marginBottom: 'var(--vk-space-4)' }}>
         <DatePicker.RangePicker
           aria-label={t('audit.dateRange')}
@@ -241,13 +266,26 @@ export function AuditView({
             onChange={(value?: string) => update({ user: value, page: undefined })}
           />
         )}
+        {organizations && (
+          <Select
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder={t('platform.audit.organization')}
+            aria-label={t('platform.audit.organization')}
+            value={organizationId}
+            style={{ minWidth: '14rem' }}
+            options={organizations}
+            onChange={(value?: string) => update({ org: value, page: undefined })}
+          />
+        )}
         <Select
           allowClear
           placeholder={t('audit.action')}
           aria-label={t('audit.action')}
           value={action?.replace(/\.$/, '')}
           style={{ minWidth: '14rem' }}
-          options={ACTION_GROUPS.map((group) => ({
+          options={groups.map((group) => ({
             value: group,
             label: t(`audit.groups.${group}`),
           }))}

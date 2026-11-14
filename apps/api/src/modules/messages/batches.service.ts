@@ -171,14 +171,28 @@ export class BatchesService {
     await this.enqueue(missing);
   }
 
+  /**
+   * PRD SMS-09: an SMS batch is copied to email for its voters who have an address. Not for a
+   * code sent to another phone (kiosk) or a resend of failed messages, which repeat one channel.
+   */
+  private async emailCopy(tx: Tx, batch: NewBatch): Promise<string[]> {
+    if (batch.channel !== 'sms' || batch.toAddress || batch.voterIds) return [];
+    const copy = await this.create(tx, { ...batch, channel: 'email' });
+    return copy?.messageIds ?? [];
+  }
+
   /** Creates, commits and queues in one go (resend, regenerate, cancellation, reminders). */
   async send(batch: NewBatch): Promise<string | null> {
-    const created = await this.prisma.withContext(this.context(), (tx) => this.create(tx, batch), {
-      timeout: CREATE_TIMEOUT_MS,
-    });
-    if (!created) return null;
-    await this.enqueue(created.messageIds);
-    return created.batchId;
+    const created = await this.prisma.withContext(
+      this.context(),
+      async (tx) => {
+        const sms = await this.create(tx, batch);
+        return { sms, email: await this.emailCopy(tx, batch) };
+      },
+      { timeout: CREATE_TIMEOUT_MS },
+    );
+    await this.enqueue([...(created.sms?.messageIds ?? []), ...created.email]);
+    return created.sms?.batchId ?? null;
   }
 
   /** POST /events/:eventId/batches (App Flow 6.7 Send). */
@@ -194,11 +208,11 @@ export class BatchesService {
             issues: [{ path: 'audience', code: 'empty', message: 'nobody to send to' }],
           });
         }
-        return result;
+        return { ...result, email: await this.emailCopy(tx, { eventId, ...body }) };
       },
       { timeout: CREATE_TIMEOUT_MS },
     );
-    await this.enqueue(created.messageIds);
+    await this.enqueue([...created.messageIds, ...created.email]);
     return this.prisma.withContext(this.context(), (tx) => this.load(tx, eventId, created.batchId));
   }
 

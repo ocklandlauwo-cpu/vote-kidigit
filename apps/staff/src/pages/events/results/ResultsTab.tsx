@@ -3,7 +3,7 @@
 // category (winners, votes, %, skipped, threshold / quorum), the category detail (RES-02), tie
 // resolution (RES-03), publication with the typed event name, and the public link (copy, on/off).
 import { FilePdfOutlined } from '@ant-design/icons';
-import type { EventDetail, ResultCategory } from '@vote-kidigit/shared';
+import { type EventDetail, isSmallGroup, type ResultCategory } from '@vote-kidigit/shared';
 import {
   App,
   Button,
@@ -29,6 +29,7 @@ import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 import { errorMessage } from '../../../api/errorMessage';
 import { hasPermission, useMe } from '../../../auth/useAuth';
 import { Banner } from '../../../components/Banner';
+import { SmallGroupTag } from '../../../components/SmallGroupTag';
 import { ConfirmDialog } from '../../../components/ConfirmDialog';
 import { EmptyState } from '../../../components/EmptyState';
 import { useFormat } from '../../../hooks/useFormat';
@@ -190,7 +191,12 @@ function CategoryCard({
       }
     >
       <Flex vertical gap="small">
-        {unresolved && <Tag color="warning">{t('results.tieOpen')}</Tag>}
+        {(unresolved || isSmallGroup(category.votersVoted)) && (
+          <Flex wrap gap="small">
+            {unresolved && <Tag color="warning">{t('results.tieOpen')}</Tag>}
+            <SmallGroupTag voted={category.votersVoted} />
+          </Flex>
+        )}
         {winners.length === 0 ? (
           <Typography.Text type="secondary">{t('results.noWinner')}</Typography.Text>
         ) : (

@@ -21,6 +21,7 @@ const DueSchema = z.object({
     'close_category',
     'reminder_before_open',
     'reminder_before_close',
+    'archive_event',
   ]),
 });
 type Due = z.infer<typeof DueSchema>;
@@ -30,6 +31,7 @@ export interface SweepResult {
   closed: number;
   closedCategories: number;
   reminders: number;
+  archived: number;
   failed: number;
 }
 
@@ -64,6 +66,7 @@ export class SchedulerRunner {
       closed: 0,
       closedCategories: 0,
       reminders: 0,
+      archived: 0,
       failed: 0,
     };
     for (const item of due) {
@@ -74,6 +77,7 @@ export class SchedulerRunner {
         if (item.action === 'open_event') result.opened += 1;
         else if (item.action === 'close_event') result.closed += 1;
         else if (item.action === 'close_category') result.closedCategories += 1;
+        else if (item.action === 'archive_event') result.archived += 1;
         else result.reminders += 1;
       } catch (error: unknown) {
         result.failed += 1;
@@ -90,6 +94,7 @@ export class SchedulerRunner {
       result.closed ||
       result.closedCategories ||
       result.reminders ||
+      result.archived ||
       result.failed
     ) {
       this.logger.log({ message: 'Scheduler sweep', ...result });
@@ -131,6 +136,23 @@ export class SchedulerRunner {
           eventId: item.event_id,
           before: { status: 'open' },
           after: { status: 'closed', by: 'schedule' },
+        });
+        return;
+      }
+      if (item.action === 'archive_event') {
+        // The organization's archive period has passed (PRD 4.2); codes expire with it (COD-08).
+        const before = await tx.votingEvent.findUniqueOrThrow({
+          where: { id: item.event_id },
+          select: { status: true },
+        });
+        await transitionEvent(tx, item.event_id, 'archived');
+        await this.audit.record(tx, {
+          action: 'event.archive',
+          entityType: 'voting_events',
+          entityId: item.event_id,
+          eventId: item.event_id,
+          before: { status: before.status },
+          after: { status: 'archived', by: 'schedule' },
         });
         return;
       }

@@ -13,14 +13,15 @@ export function applyFieldErrors(
 ): boolean {
   if (!isApiError(error, 'VALIDATION_FAILED') || error.issues.length === 0) return false;
   let all = true;
-  const fields: { name: string; errors: string[] }[] = [];
+  // A nested path ("superAdmin.email") names a nested field: ['superAdmin', 'email'].
+  const fields: { name: string[]; errors: string[] }[] = [];
   for (const issue of error.issues) {
     const text = messages[`${issue.path}:${issue.code}`] ?? messages[issue.path];
     if (!text) {
       all = false;
       continue;
     }
-    fields.push({ name: issue.path, errors: [text] });
+    fields.push({ name: issue.path.split('.'), errors: [text] });
   }
   form.setFields(fields);
   return all;

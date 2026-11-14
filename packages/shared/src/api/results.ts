@@ -150,3 +150,13 @@ export const VoterResultsSchema = PublicResultsSchema.extend({
   votedAt: z.iso.datetime().nullable(),
 });
 export type VoterResults = z.infer<typeof VoterResultsSchema>;
+
+/**
+ * PRD NFR-22: a category with fewer than this many voters can reveal individual choices, so its
+ * turnout and results carry a warning on staff screens.
+ */
+export const SMALL_GROUP_MIN = 5;
+
+export function isSmallGroup(voted: number): boolean {
+  return voted > 0 && voted < SMALL_GROUP_MIN;
+}

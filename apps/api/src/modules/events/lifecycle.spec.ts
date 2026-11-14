@@ -303,6 +303,104 @@ describe('event lifecycle and scheduler', () => {
       });
     });
 
+    it('archives events after the archive period and expires their codes (PRD 4.2, COD-08)', async () => {
+      const runner = worker.get(SchedulerRunner);
+      const DAY = 24 * HOUR;
+      const { archiveAfterDays } = await owner.organization.findUniqueOrThrow({
+        where: { id: orgId },
+        select: { archiveAfterDays: true },
+      });
+      const sweepAt = new Date(T0.getTime() + 400 * DAY);
+      const ago = (days: number) => new Date(sweepAt.getTime() - days * DAY);
+      const window = {
+        startAt: new Date(T0.getTime() - 2 * DAY),
+        endAt: new Date(T0.getTime() - DAY),
+      };
+
+      const published = await seedEvent({ complete: true, ...window });
+      await owner.votingEvent.update({
+        where: { id: published.id },
+        data: { status: 'results_published', resultsPublishedAt: ago(archiveAfterDays) },
+      });
+      const cancelled = await seedEvent({ complete: true, ...window });
+      await owner.votingEvent.update({
+        where: { id: cancelled.id },
+        data: {
+          status: 'cancelled',
+          cancelledAt: ago(archiveAfterDays + 1),
+          cancelReason: 'Mkutano umeahirishwa kabisa',
+        },
+      });
+      const recent = await seedEvent({ complete: true, ...window });
+      await owner.votingEvent.update({
+        where: { id: recent.id },
+        data: { status: 'results_published', resultsPublishedAt: ago(archiveAfterDays - 1) },
+      });
+      // Every voter has a code until the archive.
+      await owner.voter.updateMany({
+        where: { eventId: { in: [published.id, cancelled.id, recent.id] } },
+        data: { codeHmac: Buffer.from('a'.repeat(32)), codeCiphertext: Buffer.from('b') },
+      });
+
+      const result = await runner.sweep(sweepAt);
+      expect(result).toMatchObject({ archived: 2, failed: 0 });
+      expect(await status(published.id)).toBe('archived');
+      expect(await status(cancelled.id)).toBe('archived');
+      expect(await status(recent.id)).toBe('results_published');
+
+      const codes = await owner.voter.findMany({
+        where: { eventId: { in: [published.id, cancelled.id, recent.id] } },
+        select: { eventId: true, codeHmac: true, codeCiphertext: true },
+      });
+      for (const voter of codes) {
+        const expired = voter.eventId !== recent.id;
+        expect([voter.eventId, voter.codeHmac === null]).toEqual([voter.eventId, expired]);
+        expect(voter.codeCiphertext === null).toBe(expired);
+      }
+      const entry = await owner.auditLog.findFirstOrThrow({
+        where: { eventId: published.id, action: 'event.archive' },
+      });
+      expect(entry).toMatchObject({ actorType: 'system' });
+      expect(entry.after).toEqual({ status: 'archived', by: 'schedule' });
+      expect((await runner.sweep(sweepAt)).archived).toBe(0);
+    });
+
+    it('opens nothing for a suspended organization (PRD ORG-05)', async () => {
+      const runner = worker.get(SchedulerRunner);
+      const suspendedOrg = await createOrganization(
+        owner,
+        `Chama Kilichosimamishwa ${uniqueSuffix()}`,
+      );
+      try {
+        const event = await owner.votingEvent.create({
+          data: {
+            organizationId: suspendedOrg,
+            name: `AGM ${uniqueSuffix()}`,
+            startAt: T0,
+            endAt: new Date(Date.now() + HOUR),
+            status: 'scheduled',
+            reminderBeforeOpenHours: 24,
+          },
+        });
+        await owner.organization.update({
+          where: { id: suspendedOrg },
+          data: { status: 'suspended' },
+        });
+        const at = new Date(T0.getTime() + SWEEP_EVERY_MS);
+        expect(await runner.sweep(at)).toMatchObject({ opened: 0, reminders: 0, failed: 0 });
+        expect(await status(event.id)).toBe('scheduled');
+
+        await owner.organization.update({
+          where: { id: suspendedOrg },
+          data: { status: 'active' },
+        });
+        expect((await runner.sweep(at)).opened).toBe(1);
+        expect(await status(event.id)).toBe('open');
+      } finally {
+        await deleteOrganizations(owner, [suspendedOrg]);
+      }
+    });
+
     it('repeats the sweep every minute through a BullMQ job scheduler', async () => {
       await worker.get(ScheduleProcessor).registerSweep();
       const queue = worker.get<Queue>(getQueueToken(SCHEDULE_QUEUE));

@@ -89,7 +89,12 @@ export const envSchema = z
     USSD_ALLOWED_IPS: z
       .string()
       .default('')
-      .transform((value) => value.split(',').map((ip) => ip.trim()).filter(Boolean)),
+      .transform((value) =>
+        value
+          .split(',')
+          .map((ip) => ip.trim())
+          .filter(Boolean),
+      ),
 
     // Email
     SMTP_HOST: text,

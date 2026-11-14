@@ -11,6 +11,7 @@ import {
   Skeleton,
   Switch,
   Table,
+  Tag,
   Tooltip,
   Typography,
 } from 'antd';
@@ -253,7 +254,10 @@ function BatchTable({
             title: t('messages.col.type'),
             render: (_, b) => (
               <Flex vertical>
-                <span>{t(`messages.types.${b.type}`)}</span>
+                <Flex gap="small" align="center" wrap>
+                  <span>{t(`messages.types.${b.type}`)}</span>
+                  {b.channel === 'email' && <Tag>{t('messages.channel.email')}</Tag>}
+                </Flex>
                 <Typography.Text type="secondary">
                   {t(`messages.batchStatus.${b.status}`)}
                 </Typography.Text>

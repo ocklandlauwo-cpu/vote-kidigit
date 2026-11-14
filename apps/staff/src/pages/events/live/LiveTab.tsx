@@ -4,6 +4,7 @@
 // running kiosks. Refreshes every 30 s and says when it was updated. No numbers per contester.
 import type { EventDetail, Live, LiveAlert, LiveCategory } from '@vote-kidigit/shared';
 import { App, Button, Card, Flex, Skeleton, Switch, Table, Typography } from 'antd';
+import { SmallGroupTag } from '../../../components/SmallGroupTag';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOutletContext } from 'react-router';
@@ -156,7 +157,12 @@ export function LiveTab() {
             {
               key: 'turnout',
               title: t('live.col.turnout'),
-              render: (_, c) => `${count(c.voted)} / ${count(c.eligible)}`,
+              render: (_, c) => (
+                <Flex wrap gap="small" align="center">
+                  <span>{`${count(c.voted)} / ${count(c.eligible)}`}</span>
+                  <SmallGroupTag voted={c.voted} />
+                </Flex>
+              ),
             },
             {
               key: 'switch',

@@ -200,6 +200,10 @@
       "invited": "Amealikwa",
       "active": "Hai",
       "deactivated": "Amezimwa"
+    },
+    "org": {
+      "active": "Hai",
+      "suspended": "Imesimamishwa"
     }
   },
   "dashboard": {
@@ -375,7 +379,8 @@
       "role": "Majukumu",
       "org": "Mipangilio ya shirika",
       "me": "Wasifu",
-      "event": "Uchaguzi"
+      "event": "Uchaguzi",
+      "platform": "Jukwaa"
     },
     "from": "Kuanzia",
     "to": "Hadi"
@@ -929,7 +934,12 @@
       "help": "Jina la kila picha liwe namba ya uanachama ya mpiga kura, kwa mfano \"M-1029.jpg\". JPG au PNG hadi MB 2 kila moja; ZIP hadi MB 50.",
       "person": "Mpiga kura"
     },
-    "emptyGuide": "Pakua kiolezo, jaza safu moja kwa kila mpiga kura, kisha ukipakie."
+    "emptyGuide": "Pakua kiolezo, jaza safu moja kwa kila mpiga kura, kisha ukipakie.",
+    "density": {
+      "label": "Ukubwa wa mistari",
+      "comfortable": "Nafasi pana",
+      "compact": "Nafasi finyu"
+    }
   },
   "messages": {
     "types": {
@@ -1182,5 +1192,83 @@
     "events": "Chaguzi",
     "voters": "Wapiga kura",
     "staff": "Wafanyakazi"
+  },
+  "privacy": {
+    "smallGroup": "Wapiga kura chini ya 5",
+    "smallGroupHelp": "Katika kikundi kidogo matokeo yanaweza kuonyesha nani alimchagua nani. Shiriki kwa tahadhari."
+  },
+  "platform": {
+    "orgs": {
+      "title": "Mashirika",
+      "create": "Unda shirika",
+      "search": "Tafuta kwa jina",
+      "filterStatus": "Hali",
+      "colName": "Shirika",
+      "colSuperAdmin": "Msimamizi mkuu",
+      "colStaff": "Wafanyakazi",
+      "colCreated": "Liliundwa",
+      "colStatus": "Hali",
+      "empty": "Bado hakuna mashirika",
+      "emptyBody": "Unda shirika la kwanza na umwalike msimamizi wake mkuu.",
+      "noMatch": "Hakuna mashirika yanayolingana",
+      "noSuperAdmin": "Hakuna"
+    },
+    "create": {
+      "title": "Unda shirika",
+      "name": "Jina la shirika",
+      "timeZone": "Saa za eneo",
+      "contactEmail": "Barua pepe ya mawasiliano",
+      "contactPhone": "Simu ya mawasiliano",
+      "smsSender": "Jina la mtumaji wa SMS",
+      "superAdminTitle": "Msimamizi mkuu wa kwanza",
+      "superAdminName": "Jina kamili",
+      "superAdminEmail": "Barua pepe",
+      "submit": "Unda na tuma mwaliko",
+      "created": "Shirika limeundwa. Mwaliko umetumwa.",
+      "inviteFailed": "Shirika limehifadhiwa. Mwaliko haukutumwa: tuma tena.",
+      "emailTaken": "Barua pepe hii tayari ina akaunti",
+      "required": "Sehemu hii inahitajika",
+      "invalidEmail": "Weka barua pepe sahihi",
+      "invalidPhone": "Weka namba ya simu sahihi, mfano +255754123456"
+    },
+    "detail": {
+      "overview": "Muhtasari",
+      "staff": "Wafanyakazi",
+      "settings": "Mipangilio",
+      "status": "Hali",
+      "created": "Liliundwa",
+      "staffCount": "Wafanyakazi",
+      "superAdmin": "Msimamizi mkuu",
+      "contact": "Mawasiliano",
+      "suspend": "Simamisha",
+      "reactivate": "Rejesha",
+      "resendInvite": "Tuma mwaliko tena",
+      "inviteResent": "Mwaliko umetumwa tena",
+      "suspendTitle": "Simamisha {{name}}?",
+      "suspendBody": "Wafanyakazi wake wataondolewa na hawataweza kuingia, na chaguzi zake hazitafunguliwa hadi utakapolirejesha.",
+      "suspendBlocked": "Haiwezekani kusimamisha wakati uchaguzi wa shirika hili uko wazi.",
+      "reactivateTitle": "Rejesha {{name}}?",
+      "reactivateBody": "Wafanyakazi wake wataweza kuingia tena.",
+      "suspended": "Shirika limesimamishwa",
+      "reactivated": "Shirika limerejeshwa",
+      "suspendedBanner": "Shirika hili limesimamishwa. Wafanyakazi wake hawawezi kuingia.",
+      "noStaff": "Hakuna wafanyakazi bado",
+      "role": "Jukumu",
+      "lastSignIn": "Aliingia mwisho"
+    },
+    "settings": {
+      "title": "Mipangilio ya jukwaa",
+      "sessionTimeout": "Muda wa kutotumika kabla ya kutolewa (dakika) kwa mashirika mapya",
+      "ussdShortCode": "Namba fupi ya USSD",
+      "ussdHelp": "Mfano *150*12#",
+      "ussdInvalid": "Weka namba kama *150*12#",
+      "supportPhone": "Simu ya msaada (inaonekana kwa wapiga kura)",
+      "supportEmail": "Barua pepe ya msaada"
+    },
+    "audit": {
+      "title": "Kumbukumbu za jukwaa",
+      "organization": "Shirika",
+      "platformOnly": "Jukwaa (bila shirika)"
+    }
   }
 }

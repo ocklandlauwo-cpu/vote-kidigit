@@ -200,6 +200,10 @@
       "invited": "Invited",
       "active": "Active",
       "deactivated": "Deactivated"
+    },
+    "org": {
+      "active": "Active",
+      "suspended": "Suspended"
     }
   },
   "dashboard": {
@@ -375,7 +379,8 @@
       "role": "Roles",
       "org": "Organization settings",
       "me": "Profile",
-      "event": "Events"
+      "event": "Events",
+      "platform": "Platform"
     },
     "from": "From",
     "to": "To"
@@ -929,7 +934,12 @@
       "help": "Name each photo after the voter's membership ID, e.g. \"M-1029.jpg\". JPG or PNG up to 2 MB each; ZIP up to 50 MB.",
       "person": "Voter"
     },
-    "emptyGuide": "Download the template, fill one row per voter, then upload it."
+    "emptyGuide": "Download the template, fill one row per voter, then upload it.",
+    "density": {
+      "label": "Row density",
+      "comfortable": "Comfortable",
+      "compact": "Compact"
+    }
   },
   "messages": {
     "types": {
@@ -1182,5 +1192,83 @@
     "events": "Events",
     "voters": "Voters",
     "staff": "Staff"
+  },
+  "privacy": {
+    "smallGroup": "Fewer than 5 voters",
+    "smallGroupHelp": "In a small group the results can show who chose whom. Share with care."
+  },
+  "platform": {
+    "orgs": {
+      "title": "Organizations",
+      "create": "Create organization",
+      "search": "Search by name",
+      "filterStatus": "Status",
+      "colName": "Organization",
+      "colSuperAdmin": "Org Super Admin",
+      "colStaff": "Staff",
+      "colCreated": "Created",
+      "colStatus": "Status",
+      "empty": "No organizations yet",
+      "emptyBody": "Create the first organization and invite its Org Super Admin.",
+      "noMatch": "No organizations match",
+      "noSuperAdmin": "None"
+    },
+    "create": {
+      "title": "Create organization",
+      "name": "Organization name",
+      "timeZone": "Time zone",
+      "contactEmail": "Contact email",
+      "contactPhone": "Contact phone",
+      "smsSender": "SMS sender ID",
+      "superAdminTitle": "First Org Super Admin",
+      "superAdminName": "Full name",
+      "superAdminEmail": "Email",
+      "submit": "Create and send invitation",
+      "created": "Organization created. Invitation sent.",
+      "inviteFailed": "Organization saved. Invitation not sent: resend it.",
+      "emailTaken": "This email already has an account",
+      "required": "This field is required",
+      "invalidEmail": "Enter a valid email address",
+      "invalidPhone": "Enter a valid phone number, for example +255754123456"
+    },
+    "detail": {
+      "overview": "Overview",
+      "staff": "Staff",
+      "settings": "Settings",
+      "status": "Status",
+      "created": "Created",
+      "staffCount": "Staff",
+      "superAdmin": "Org Super Admin",
+      "contact": "Contact",
+      "suspend": "Suspend",
+      "reactivate": "Reactivate",
+      "resendInvite": "Resend invite",
+      "inviteResent": "Invitation sent again",
+      "suspendTitle": "Suspend {{name}}?",
+      "suspendBody": "Its staff are signed out and cannot sign in, and its events will not open until you reactivate it.",
+      "suspendBlocked": "You cannot suspend an organization while one of its events is open.",
+      "reactivateTitle": "Reactivate {{name}}?",
+      "reactivateBody": "Its staff can sign in again.",
+      "suspended": "Organization suspended",
+      "reactivated": "Organization reactivated",
+      "suspendedBanner": "This organization is suspended. Its staff cannot sign in.",
+      "noStaff": "No staff yet",
+      "role": "Role",
+      "lastSignIn": "Last sign-in"
+    },
+    "settings": {
+      "title": "Platform settings",
+      "sessionTimeout": "Inactivity before sign-out (minutes) for new organizations",
+      "ussdShortCode": "USSD short code",
+      "ussdHelp": "For example *150*12#",
+      "ussdInvalid": "Enter a code like *150*12#",
+      "supportPhone": "Support phone (shown to voters)",
+      "supportEmail": "Support email"
+    },
+    "audit": {
+      "title": "Platform audit log",
+      "organization": "Organization",
+      "platformOnly": "Platform (no organization)"
+    }
   }
 }

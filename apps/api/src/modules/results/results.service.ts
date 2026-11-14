@@ -24,7 +24,6 @@ import { currentSnapshot, snapshotInclude, toSnapshot } from './snapshot.js';
 
 const RESULT_STATES = ['closed', 'results_published', 'archived'];
 
-
 @Injectable()
 export class ResultsService {
   private readonly logger = new Logger(ResultsService.name);
@@ -61,9 +60,7 @@ export class ResultsService {
       }
       const snapshot = await currentSnapshot(tx, eventId);
       if (!snapshot) return { state: 'not_closed', snapshot: null, unresolvedTies: 0, ...base };
-      const view = toSnapshot(snapshot, (fileId) =>
-        fileId ? `/api/v1/files/${fileId}` : null,
-      );
+      const view = toSnapshot(snapshot, (fileId) => (fileId ? `/api/v1/files/${fileId}` : null));
       return {
         state: snapshot.publishedAt ? 'published' : 'closed',
         snapshot: view,

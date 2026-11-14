@@ -18,7 +18,21 @@ import {
   isUuid,
   type VoterSummary,
 } from '@vote-kidigit/shared';
-import { App, Button, Dropdown, Flex, Input, Select, Table, Tag, Typography } from 'antd';
+import {
+  App,
+  Button,
+  ConfigProvider,
+  Dropdown,
+  Flex,
+  Input,
+  Segmented,
+  Select,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
+import { COMPACT_TABLE_THEME } from '../../../theme';
+import { type Density, readDensity, saveDensity } from './density';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
@@ -79,6 +93,7 @@ export function VotersTab() {
   const [bulkCategory, setBulkCategory] = useState<string | undefined>();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [zipOpen, setZipOpen] = useState(false);
+  const [density, setDensity] = useState<Density>(readDensity);
   const voters = useVoters(event.id, { ...filters, q: filters.q || undefined });
   const categories = useCategories(event.id);
   const bulk = useBulkVoters(event.id);
@@ -224,6 +239,19 @@ export function VotersTab() {
           }))}
           style={{ minWidth: '12rem' }}
         />
+        <Segmented<Density>
+          aria-label={t('voters.density.label')}
+          value={density}
+          onChange={(value) => {
+            setDensity(value);
+            saveDensity(value);
+          }}
+          options={[
+            { value: 'comfortable', label: t('voters.density.comfortable') },
+            { value: 'compact', label: t('voters.density.compact') },
+          ]}
+          style={{ marginInlineStart: 'auto' }}
+        />
       </Flex>
 
       {selected.length > 0 && editable && (
@@ -309,97 +337,103 @@ export function VotersTab() {
           />
         )
       ) : (
-        <Table<VoterSummary>
-          rowKey="id"
-          loading={voters.isFetching && !voters.data}
-          dataSource={voters.data?.items ?? []}
-          scroll={{ x: 'max-content' }}
-          rowSelection={
-            editable
-              ? {
-                  selectedRowKeys: selected,
-                  onChange: (keys) => setSelected(keys.map(String)),
-                  preserveSelectedRowKeys: true,
-                }
-              : undefined
-          }
-          onRow={(voter) => ({
-            onClick: () => setPanel({ voterId: voter.id }),
-            style: { cursor: 'pointer' },
-          })}
-          pagination={{
-            current: filters.page,
-            pageSize: filters.pageSize,
-            total: voters.data?.total ?? 0,
-            pageSizeOptions: PAGE_SIZES.map(String),
-            showSizeChanger: true,
-            onChange: (page, pageSize) =>
-              setFilters((current) => ({
-                ...current,
-                page,
-                pageSize: pageSize as Filters['pageSize'],
-              })),
-          }}
-          columns={[
-            {
-              key: 'photo',
-              title: t('voters.col.photo'),
-              width: 64,
-              render: (_, voter) => (
-                <span className="vk-photo-contester vk-photo-row">
-                  {voter.photoUrl ? (
-                    <img src={voter.photoUrl} alt="" />
-                  ) : (
-                    <UserOutlined aria-hidden />
-                  )}
-                </span>
-              ),
-            },
-            {
-              key: 'name',
-              title: t('voters.col.name'),
-              render: (_, voter) => (
-                <Button
-                  type="link"
-                  style={{ padding: 0 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPanel({ voterId: voter.id });
-                  }}
-                >
-                  {voter.fullName}
-                </Button>
-              ),
-            },
-            { key: 'membershipId', title: t('voters.col.membershipId'), dataIndex: 'membershipId' },
-            {
-              key: 'phone',
-              title: t('voters.col.phone'),
-              render: (_, voter) => <span className="vk-tabular">{voter.phoneMasked}</span>,
-            },
-            {
-              key: 'gender',
-              title: t('voters.col.gender'),
-              render: (_, voter) => t(`voters.gender.${voter.gender}`),
-            },
-            {
-              key: 'categories',
-              title: t('voters.col.categories'),
-              render: (_, voter) => (
-                <Flex gap="small" wrap>
-                  {voter.categoryIds.map((id) => (
-                    <Tag key={id}>{nameOf.get(id) ?? '—'}</Tag>
-                  ))}
-                </Flex>
-              ),
-            },
-            {
-              key: 'code',
-              title: t('voters.col.code'),
-              render: (_, voter) => <StatusBadge domain="code" value={voter.codeStatus} />,
-            },
-          ]}
-        />
+        <ConfigProvider theme={density === 'compact' ? COMPACT_TABLE_THEME : {}}>
+          <Table<VoterSummary>
+            rowKey="id"
+            loading={voters.isFetching && !voters.data}
+            dataSource={voters.data?.items ?? []}
+            scroll={{ x: 'max-content' }}
+            rowSelection={
+              editable
+                ? {
+                    selectedRowKeys: selected,
+                    onChange: (keys) => setSelected(keys.map(String)),
+                    preserveSelectedRowKeys: true,
+                  }
+                : undefined
+            }
+            onRow={(voter) => ({
+              onClick: () => setPanel({ voterId: voter.id }),
+              style: { cursor: 'pointer' },
+            })}
+            pagination={{
+              current: filters.page,
+              pageSize: filters.pageSize,
+              total: voters.data?.total ?? 0,
+              pageSizeOptions: PAGE_SIZES.map(String),
+              showSizeChanger: true,
+              onChange: (page, pageSize) =>
+                setFilters((current) => ({
+                  ...current,
+                  page,
+                  pageSize: pageSize as Filters['pageSize'],
+                })),
+            }}
+            columns={[
+              {
+                key: 'photo',
+                title: t('voters.col.photo'),
+                width: 64,
+                render: (_, voter) => (
+                  <span className="vk-photo-contester vk-photo-row">
+                    {voter.photoUrl ? (
+                      <img src={voter.photoUrl} alt="" />
+                    ) : (
+                      <UserOutlined aria-hidden />
+                    )}
+                  </span>
+                ),
+              },
+              {
+                key: 'name',
+                title: t('voters.col.name'),
+                render: (_, voter) => (
+                  <Button
+                    type="link"
+                    style={{ padding: 0 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPanel({ voterId: voter.id });
+                    }}
+                  >
+                    {voter.fullName}
+                  </Button>
+                ),
+              },
+              {
+                key: 'membershipId',
+                title: t('voters.col.membershipId'),
+                dataIndex: 'membershipId',
+              },
+              {
+                key: 'phone',
+                title: t('voters.col.phone'),
+                render: (_, voter) => <span className="vk-tabular">{voter.phoneMasked}</span>,
+              },
+              {
+                key: 'gender',
+                title: t('voters.col.gender'),
+                render: (_, voter) => t(`voters.gender.${voter.gender}`),
+              },
+              {
+                key: 'categories',
+                title: t('voters.col.categories'),
+                render: (_, voter) => (
+                  <Flex gap="small" wrap>
+                    {voter.categoryIds.map((id) => (
+                      <Tag key={id}>{nameOf.get(id) ?? '—'}</Tag>
+                    ))}
+                  </Flex>
+                ),
+              },
+              {
+                key: 'code',
+                title: t('voters.col.code'),
+                render: (_, voter) => <StatusBadge domain="code" value={voter.codeStatus} />,
+              },
+            ]}
+          />
+        </ConfigProvider>
       )}
 
       <VoterDrawer

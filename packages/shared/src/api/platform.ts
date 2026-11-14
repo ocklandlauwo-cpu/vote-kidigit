@@ -93,6 +93,10 @@ export const CreateOrganizationResponseSchema = z.object({
 });
 export type CreateOrganizationResponse = z.infer<typeof CreateOrganizationResponseSchema>;
 
+/** POST …/resend-invite: false when the invitation could not be queued. */
+export const ResendInviteResponseSchema = z.object({ invitationSent: z.boolean() });
+export type ResendInviteResponse = z.infer<typeof ResendInviteResponseSchema>;
+
 /** PLT-03 Settings tab. Omitted fields stay as they are; an empty string or null clears one. */
 export const UpdateOrganizationRequestSchema = z
   .object({

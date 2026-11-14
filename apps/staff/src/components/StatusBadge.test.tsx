@@ -29,6 +29,8 @@ const EXPECTED: [StatusDomain, string, string, string, string][] = [
   ['user', 'invited', 'info', 'Amealikwa', 'Invited'],
   ['user', 'active', 'success', 'Hai', 'Active'],
   ['user', 'deactivated', 'neutral', 'Amezimwa', 'Deactivated'],
+  ['org', 'active', 'success', 'Hai', 'Active'],
+  ['org', 'suspended', 'warning', 'Imesimamishwa', 'Suspended'],
 ];
 
 describe('StatusBadge', () => {

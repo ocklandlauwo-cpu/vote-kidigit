@@ -11,6 +11,7 @@ import {
   MailOutlined,
   MinusCircleOutlined,
   MinusOutlined,
+  PauseCircleOutlined,
   PlayCircleOutlined,
   SendOutlined,
   StopOutlined,
@@ -61,6 +62,10 @@ export const STATUS_SPECS = {
     invited: { tone: 'info', icon: MailOutlined },
     active: { tone: 'success', icon: CheckCircleOutlined },
     deactivated: { tone: 'neutral', icon: StopOutlined },
+  },
+  org: {
+    active: { tone: 'success', icon: CheckCircleOutlined },
+    suspended: { tone: 'warning', icon: PauseCircleOutlined },
   },
 } as const satisfies Record<string, Record<string, StatusSpec>>;
 
