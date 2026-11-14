@@ -71,7 +71,7 @@ equals 'password_encryption' scram-sha-256 "$(setting password_encryption)"
 roles=$(sudo -u postgres psql -tAc "SELECT rolname || ':' || rolbypassrls || ':' || rolsuper FROM pg_roles WHERE rolname LIKE 'vk\_%' ORDER BY 1" | tr '\n' ' ')
 equals 'roles (name:bypassrls:superuser)' 'vk_api:f:f vk_owner:f:f vk_readonly:t:f ' "$roles"
 check 'database vote_kidigit owned by vk_owner' bash -c "sudo -u postgres psql -tAc \"SELECT 1 FROM pg_database d JOIN pg_roles r ON r.oid = d.datdba WHERE datname = 'vote_kidigit' AND rolname = 'vk_owner'\" | grep -q 1"
-check 'pg_trgm installed' bash -c "sudo -u postgres psql -d vote_kidigit -tAc \"SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'\" | grep -q 1"
+check 'pg_trgm installed' bash -c "sudo -u postgres psql -d vote_kidigit -tAc \"SELECT 1 FROM pg_catalog.pg_extension WHERE extname OPERATOR(pg_catalog.=) 'pg_trgm'\" | grep -q 1"
 archiver=$(sudo -u postgres psql -tAc 'SELECT failed_count FROM pg_stat_archiver')
 equals 'WAL archive failures' 0 "$archiver"
 
@@ -100,6 +100,8 @@ check '/home/vk/storage owned by vk, not world-readable' bash -c "[[ \$(stat -c 
 check "$ENV_FILE owned by vk, mode 600" bash -c "[[ \$(stat -c '%U %a' $ENV_FILE) == 'vk 600' ]]"
 check 'NODE_ENV=production in .env' bash -c "[[ \$(grep -E '^NODE_ENV=' $ENV_FILE | cut -d= -f2) == production ]]"
 check 'SMS_DRIVER=beem in .env' bash -c "[[ \$(grep -E '^SMS_DRIVER=' $ENV_FILE | cut -d= -f2) == beem ]]"
+check '/root/.pgpass for the backup roles, mode 600' bash -c "[[ \$(stat -c '%U %a' /root/.pgpass) == 'root 600' ]] && grep -q ':vk_owner:' /root/.pgpass"
+check 'backups connect without a superuser' bash -c "psql -h 127.0.0.1 -w -U vk_readonly -d vote_kidigit -tAc 'SELECT 1' | grep -q 1"
 check 'backups folder only for root' bash -c "[[ \$(stat -c '%U %a' /var/backups/vote-kidigit) == 'root 700' ]]"
 check 'backup crontab installed' bash -c "crontab -l | grep -q pg-backup.sh"
 latest=$(ls -1t /var/backups/vote-kidigit/daily/*.dump 2>/dev/null | head -1)

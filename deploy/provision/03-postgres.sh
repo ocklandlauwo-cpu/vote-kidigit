@@ -45,6 +45,7 @@ if ! grep -q 'vote-kidigit roles' "$HBA"; then
     echo '# vote-kidigit roles (deploy/provision/03-postgres.sh)'
     echo "host  $DB  vk_owner,vk_api,vk_readonly  127.0.0.1/32  scram-sha-256"
     echo "host  $DB  vk_owner,vk_api,vk_readonly  ::1/128       scram-sha-256"
+    echo "host  ${DB}_restore_test  vk_owner  127.0.0.1/32  scram-sha-256"
     cat "$HBA"
   } > "$tmp"
   install -m 600 -o postgres -g postgres "$tmp" "$HBA"
@@ -81,6 +82,16 @@ export VK_OWNER_PW VK_API_PW VK_RO_PW
   cat deploy/sql/000_roles.sql
 } | sudo --preserve-env=VK_OWNER_PW,VK_API_PW,VK_RO_PW -u postgres \
   psql -q -d postgres -v db_name="$DB"
+
+# Root's backup scripts connect as vk_owner (dumps, restore test) and vk_readonly (open-events
+# check), never as a superuser: code a database owner controls never runs with superuser rights.
+pgpass_escape() { sed -e 's/\\/\\\\/g' -e 's/:/\\:/g' <<<"$1"; }
+umask 077
+{
+  echo "127.0.0.1:5432:*:vk_owner:$(pgpass_escape "$VK_OWNER_PW")"
+  echo "127.0.0.1:5432:*:vk_readonly:$(pgpass_escape "$VK_RO_PW")"
+} > /root/.pgpass
+chmod 600 /root/.pgpass
 
 sudo -u postgres psql -tAc 'SHOW server_version'
 echo "PostgreSQL ready. Next: sudo bash deploy/provision/04-redis.sh"
