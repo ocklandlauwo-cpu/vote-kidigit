@@ -18,6 +18,12 @@ export interface WithContextOptions {
   timeout?: number;
 }
 
+/**
+ * How long a transaction may wait for a free pooled connection. Prisma's default (2 s) turned a
+ * 30-voters-a-second burst into errors (step 31 load test); a short queue is better than a 500.
+ */
+const TRANSACTION_MAX_WAIT_MS = 5_000;
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -30,7 +36,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   constructor(config: ConfigService<Env, true>) {
     const url = config.get('DATABASE_URL', { infer: true });
-    super({ adapter: new PrismaPg({ connectionString: url, connectionTimeoutMillis: 5000 }) });
+    super({
+      adapter: new PrismaPg({
+        connectionString: url,
+        connectionTimeoutMillis: 5000,
+        max: config.get('DATABASE_POOL_MAX', { infer: true }),
+      }),
+    });
     this.target = describeConnection(url);
   }
 
@@ -74,14 +86,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     assertUuidOrNull('orgId', context.orgId);
     assertUuidOrNull('userId', context.userId);
 
-    return this.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT
+    return this.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT
         set_config('app.org_id', ${context.orgId ?? ''}, true),
         set_config('app.user_id', ${context.userId ?? ''}, true),
         set_config('app.is_platform_admin', ${context.isPlatformAdmin ? 'true' : 'false'}, true),
         set_config('app.request_id', ${context.requestId}, true)`;
-      return fn(tx);
-    }, options);
+        return fn(tx);
+      },
+      { maxWait: TRANSACTION_MAX_WAIT_MS, ...options },
+    );
   }
 }
 

@@ -46,6 +46,11 @@ export const envSchema = z
     // Database
     DATABASE_URL: postgresUrl,
     MIGRATION_DATABASE_URL: postgresUrl,
+    /**
+     * Connections per process (step 31 load test). 4 API instances and the worker at 15 each
+     * stay under PostgreSQL's max_connections = 100 (Tech Stack 9.2).
+     */
+    DATABASE_POOL_MAX: z.coerce.number().int().min(2).max(50).default(15),
 
     // Redis
     REDIS_URL: redisUrl,
