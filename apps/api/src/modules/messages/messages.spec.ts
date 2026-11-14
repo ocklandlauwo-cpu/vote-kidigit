@@ -570,6 +570,44 @@ describe('messages', () => {
     expect(fake.outbox.length - before).toBe(1);
   });
 
+  it('completes a resumed batch whose messages all finished while it was paused', async () => {
+    const event = await seedEvent('scheduled', 2);
+    const voters = await owner.voter.findMany({ where: { eventId: event.id } });
+    const batch = await owner.smsBatch.create({
+      data: {
+        organizationId: orgId,
+        eventId: event.id,
+        type: 'code_delivery',
+        channel: 'sms',
+        audience: 'all',
+        status: 'paused',
+        pausedReason: 'failure_rate',
+        totalCount: 2,
+        sentCount: 1,
+        failedCount: 1,
+      },
+    });
+    for (const [i, voter] of voters.entries()) {
+      await owner.smsMessage.create({
+        data: {
+          organizationId: orgId,
+          eventId: event.id,
+          batchId: batch.id,
+          voterId: voter.id,
+          channel: 'sms',
+          type: 'code_delivery',
+          toAddress: voter.phone,
+          bodyRedacted: `Msimbo: ${REDACTED_CODE}`,
+          status: i === 0 ? 'sent' : 'failed',
+        },
+      });
+    }
+    const resumed = (
+      await send(staff.moderator, `/events/${event.id}/batches/${batch.id}/resume`).expect(200)
+    ).body as Batch;
+    expect(resumed.status).toBe('completed');
+  });
+
   it('does not send again when recording the send fails (busy database)', async () => {
     const event = await seedEvent('scheduled', 1);
     const voter = await owner.voter.findFirstOrThrow({ where: { eventId: event.id } });

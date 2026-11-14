@@ -310,7 +310,19 @@ export class BatchesService {
         data: { status: 'sending', pausedReason: null },
       });
       await this.auditControl(tx, eventId, batchId, 'messages.batch.resume');
-      return tx.smsMessage.findMany({ where: { batchId, status: 'queued' }, select: { id: true } });
+      const waiting = await tx.smsMessage.findMany({
+        where: { batchId, status: 'queued' },
+        select: { id: true },
+      });
+      // Messages already in flight when the batch paused may all have finished meanwhile; with
+      // nothing left to send, no send would ever complete the batch, so complete it here.
+      if (waiting.length === 0) {
+        await tx.smsBatch.update({
+          where: { id: batchId },
+          data: { status: 'completed', completedAt: new Date() },
+        });
+      }
+      return waiting;
     });
     await this.requeue(queued.map((m) => m.id));
     return this.prisma.withContext(this.context(), (tx) => this.load(tx, eventId, batchId));
