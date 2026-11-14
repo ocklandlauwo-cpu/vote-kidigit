@@ -519,7 +519,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 **Phase 4 — Hardening, deployment and pilot**
 
 - ☑ 30. End-to-end tests and accessibility
-- ☐ 31. Load test
+- ☑ 31. Load test (on the PC: 30-a-second burst passed with 4 API instances; the full 30-minute run is done on the VPS after step 34)
 - ☐ 32. Security review
 - ☐ 33. Server provisioning
 - ☐ 34. Deployment pipeline and first release

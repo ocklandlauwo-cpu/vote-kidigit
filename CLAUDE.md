@@ -297,7 +297,8 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 
 - `apps/api/src/cli/seed-load.ts` (built: `dist/cli/seed-load.js --voters 5000 --out load-seed.json`): a test organization with an Open event (2 categories) and N voters with known codes, plus an Org Super Admin, written to a JSON file (git-ignored, mode 600, delete after the run). Refuses NODE_ENV=production unless `--allow-production` (the VPS run on a test organization).
 - `scripts/load/run.mjs --seed load-seed.json [--api …/api/v1] [--minutes 30] [--burst-seconds 120] [--burst-rate 30]`: sign-in → confirm identity → ballot → submit per voter on the NFR-01 schedule, each with its own `X-Forwarded-For` (the per-IP sign-in limit would otherwise stop the test); then turnout from the control room, close (seal + freeze) timed, and results. Prints p50/p95/p99 per step and PASS/FAIL for the step 31 targets; writes `load-report.json`.
-- Run it against the built API and worker (`node dist/main.js`, `node dist/worker.js`, `SMS_DRIVER=fake`), never `pnpm dev`.
+- Run it against the production topology: `node scripts/load/cluster.mjs --instances 4` (4 API instances on one port via node:cluster, as PM2 cluster mode does) plus `node dist/worker.js`, both with `SMS_DRIVER=fake`; never `pnpm dev`. One API instance saturates a CPU core and fails the 30-a-second burst whatever the pool size.
+- `DATABASE_POOL_MAX` (default 15) is per process: 4 API instances and the worker stay under PostgreSQL's 100 connections. Transactions wait up to 5 s for a connection.
 
 ## Design system in code
 
