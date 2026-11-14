@@ -115,10 +115,11 @@ export function contactEmail({ to, request, receivedAt }: ContactEmail): MailMes
           ['Ujumbe / Message', request.message],
         ];
   rows.push(['Imepokelewa / Received (UTC)', receivedAt]);
+  // Fixed subjects: MailService logs the subject, and visitor text must stay out of logs.
   const subject =
     request.kind === 'demo'
-      ? `Ombi la onyesho / Demo request: ${request.organization}`
-      : `Ujumbe wa tovuti / Website message: ${request.name}`;
+      ? 'Ombi la onyesho / Demo request'
+      : 'Ujumbe wa tovuti / Website message';
   const text = rows.map(([label, value]) => `${label}: ${value}`).join('\n');
   const html = `<table>\n${rows
     .map(
@@ -126,5 +127,5 @@ export function contactEmail({ to, request, receivedAt }: ContactEmail): MailMes
         `<tr><th align="left" valign="top">${escapeHtml(label)}</th><td style="white-space:pre-wrap">${escapeHtml(value)}</td></tr>`,
     )
     .join('\n')}\n</table>`;
-  return { to, subject: subject.replace(/[\r\n]+/g, ' '), text, html, replyTo: request.email };
+  return { to, subject, text, html, replyTo: request.email };
 }

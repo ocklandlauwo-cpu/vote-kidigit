@@ -60,7 +60,7 @@ describe('public contact and demo forms', () => {
     const mail = await waitForMail(org);
     expect(mail.to).toBe('team@example.test');
     expect(mail.replyTo).toBe('asha@example.test');
-    expect(mail.subject).toBe(`Ombi la onyesho / Demo request: ${org}`);
+    expect(mail.subject).toBe('Ombi la onyesho / Demo request');
     expect(mail.text).toContain('Simu / Phone: +255754123456');
     expect(mail.text).toContain('Wapiga kura / Expected voters: 850');
     expect(mail.html).toContain('&#60;b&#62;Uchaguzi&#60;/b&#62;');
@@ -78,7 +78,7 @@ describe('public contact and demo forms', () => {
       language: 'en',
     }).expect(202);
     const mail = await waitForMail(name);
-    expect(mail.subject).toBe(`Ujumbe wa tovuti / Website message: ${name}`);
+    expect(mail.subject).toBe('Ujumbe wa tovuti / Website message');
     expect(mail.text).toContain('Simu / Phone: —');
     expect(mail.text).toContain('Lugha / Language: en');
   });
