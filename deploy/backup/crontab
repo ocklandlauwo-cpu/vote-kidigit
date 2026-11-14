@@ -1,0 +1,13 @@
+# Vote-Kidigit backups (Step 33 · Tech Stack 9.8) — root's crontab. Install with:
+#   sudo install -m 755 deploy/backup/*.sh /usr/local/sbin/
+#   sudo crontab deploy/backup/crontab      (after setting OFFSITE below)
+# Times are the server's (UTC). 23:30 UTC is 02:30 in Dar es Salaam.
+OFFSITE=CHANGE_ME_backup-user@backup-host:vote-kidigit/
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+
+# Nightly dump, then the off-site copy.
+30 23 * * *  /usr/local/sbin/pg-backup.sh daily && /usr/local/sbin/offsite-rsync.sh
+# Hourly dump while any event is Open (the script exits at once otherwise).
+5 * * * *    /usr/local/sbin/pg-backup.sh hourly
+# Monthly restore test, first Sunday; the result goes to the system log.
+0 2 1-7 * *  [ "$(date +\%u)" = 7 ] && /usr/local/sbin/restore-test.sh 2>&1 | logger -t vote-kidigit-restore
