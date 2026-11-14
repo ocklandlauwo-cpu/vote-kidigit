@@ -15,7 +15,10 @@ case $MODE in
 esac
 
 if [[ $MODE == hourly ]]; then
-  open=$(sudo -u postgres psql -d "$DB" -tAc "SELECT count(*) FROM public.voting_events WHERE status = 'open' AND deleted_at IS NULL")
+  # Runs as superuser inside a database vk_owner controls: catalog-only search_path and
+  # qualified operators, so no function or operator of the app's schema can run here.
+  open=$(sudo -u postgres psql -d "$DB" -tA -c "SET search_path = pg_catalog" \
+    -c "SELECT count(*) FROM public.voting_events WHERE status::text OPERATOR(pg_catalog.=) 'open' AND deleted_at IS NULL")
   [[ $open -gt 0 ]] || exit 0
 fi
 

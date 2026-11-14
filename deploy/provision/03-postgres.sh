@@ -73,8 +73,14 @@ systemctl restart postgresql-18
 ask VK_OWNER_PW 'Password for vk_owner (migrations)'
 ask VK_API_PW 'Password for vk_api (the application)'
 ask VK_RO_PW 'Password for vk_readonly (support queries)'
-sudo -u postgres psql -q -d postgres -v owner_pw="$VK_OWNER_PW" -v api_pw="$VK_API_PW" \
-  -v ro_pw="$VK_RO_PW" -v db_name="$DB" < deploy/sql/000_roles.sql   # root reads it: postgres cannot
+# The passwords travel in the environment (never in psql's arguments, which `ps` shows) and
+# psql reads them with \getenv. Root reads the SQL file and pipes it in: postgres cannot.
+export VK_OWNER_PW VK_API_PW VK_RO_PW
+{
+  printf '\\getenv owner_pw VK_OWNER_PW\n\\getenv api_pw VK_API_PW\n\\getenv ro_pw VK_RO_PW\n'
+  cat deploy/sql/000_roles.sql
+} | sudo --preserve-env=VK_OWNER_PW,VK_API_PW,VK_RO_PW -u postgres \
+  psql -q -d postgres -v db_name="$DB"
 
 sudo -u postgres psql -tAc 'SHOW server_version'
 echo "PostgreSQL ready. Next: sudo bash deploy/provision/04-redis.sh"
