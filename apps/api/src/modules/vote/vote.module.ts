@@ -3,6 +3,7 @@ import { FilesModule } from '../files/files.module.js';
 import { MessagesModule } from '../messages/messages.module.js';
 import { ResultsModule } from '../results/results.module.js';
 import { VotersModule } from '../voters/voters.module.js';
+import { BallotAuthorizer } from './ballot-authorizer.js';
 import { BallotTokenGuard } from './ballot-token.guard.js';
 import { VoteController } from './vote.controller.js';
 import { VoteSessions } from './vote-session.js';
@@ -12,7 +13,7 @@ import { VoteService } from './vote.service.js';
 @Module({
   imports: [FilesModule, MessagesModule, VotersModule, ResultsModule],
   controllers: [VoteController],
-  providers: [VoteService, VoteSessions, BallotTokenGuard],
-  exports: [VoteService, VoteSessions],
+  providers: [VoteService, VoteSessions, BallotAuthorizer, BallotTokenGuard],
+  exports: [VoteService, VoteSessions, BallotAuthorizer],
 })
 export class VoteModule {}

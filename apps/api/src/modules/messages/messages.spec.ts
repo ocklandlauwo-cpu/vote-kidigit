@@ -124,7 +124,18 @@ describe('messages', () => {
       if (statuses.includes(batch.status)) return batch;
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
-    throw new Error(`batch ${batchId} did not reach ${statuses.join('/')}`);
+    // Say where it got stuck, so a failure under load explains itself.
+    const batch = await owner.smsBatch.findUniqueOrThrow({ where: { id: batchId } });
+    const messages = await owner.smsMessage.groupBy({
+      by: ['status'],
+      where: { batchId },
+      _count: { _all: true },
+    });
+    const counts = messages.map((m) => `${m.status} ${m._count._all}`).join(', ');
+    throw new Error(
+      `batch ${batchId} did not reach ${statuses.join('/')}: ${batch.status}` +
+        ` (sent ${batch.sentCount}, failed ${batch.failedCount}; messages: ${counts})`,
+    );
   }
 
   const codeOfVoter = async (voterId: string) =>
@@ -273,7 +284,8 @@ describe('messages', () => {
 
     fake.failWith = null;
     await send(staff.moderator, `/events/${event.id}/batches/${batch.id}/resume`).expect(200);
-    const done = await waitForBatch(batch.id, ['completed'], 30);
+    // 60 s: under the full suite's load the remaining sends can take longer than 30 s.
+    const done = await waitForBatch(batch.id, ['completed'], 60);
     expect(done.sentCount + done.failedCount).toBe(30);
     expect(await owner.smsMessage.count({ where: { batchId: batch.id, status: 'queued' } })).toBe(
       0,

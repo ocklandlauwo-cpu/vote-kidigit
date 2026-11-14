@@ -18,6 +18,8 @@ const MAY_SKIP: Record<string, string> = {
   'HealthController.check': 'deploy and uptime checks; answers only up or down',
   'HealthController.liveEvents': 'deploy safety check; needs the deploy secret',
   'BeemWebhookController.deliveryReport': 'Beem posts reports in bulk; needs BEEM_DLR_SECRET',
+  'UssdController.callback':
+    'every caller arrives from the aggregator; needs USSD_CALLBACK_SECRET (+ IP allow-list); sign-in lockouts still apply',
 };
 
 /** Routes that guess secrets: the most requests a minute they may allow per address. */

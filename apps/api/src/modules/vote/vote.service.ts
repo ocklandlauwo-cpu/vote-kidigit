@@ -49,6 +49,8 @@ interface SignInMeta {
   ip: string | null;
   /** X-Kiosk-Token: sign-in on a kiosk records the kiosk channel (Backend Schema 8.3). */
   kioskToken?: string | null;
+  /** The USSD engine signs in on behalf of the caller (Backend Schema 8.5). */
+  channel?: 'ussd';
 }
 
 interface EventRow {
@@ -165,7 +167,7 @@ export class VoteService {
   /** POST /vote/sign-in (Backend Schema 8.3). */
   async signIn(request: VoterSignInRequest, meta: SignInMeta): Promise<VoterSignInResponse> {
     let body = request;
-    let channel: VoteChannel = 'web';
+    let channel: VoteChannel = meta.channel ?? 'web';
     if (meta.kioskToken) {
       const kiosk = await resolveKiosk(this.prisma, this.requestContext, meta.kioskToken);
       if (!kiosk) throw new AppError('UNAUTHENTICATED');
@@ -459,7 +461,13 @@ export class VoteService {
           allowSkip: true,
           contesters: {
             where: { status: 'active' },
-            select: { id: true, fullName: true, party: true, photoFileId: true },
+            select: {
+              id: true,
+              fullName: true,
+              ussdShortName: true,
+              party: true,
+              photoFileId: true,
+            },
           },
         },
       });
@@ -480,6 +488,7 @@ export class VoteService {
           contesters: seededOrder(c.contesters, session.seed, c.id).map((k) => ({
             id: k.id,
             fullName: k.fullName,
+            ussdName: k.ussdShortName,
             party: event.showParty ? k.party : null,
             photoUrl: signFileLink(this.secret, k.photoFileId, session.eventId),
           })),

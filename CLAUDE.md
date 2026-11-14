@@ -315,6 +315,12 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - On the server nothing a database owner controls runs as a superuser: backups connect as `vk_owner` / `vk_readonly` through root's `~/.pgpass`; the superuser only creates and drops the scratch restore database. Passwords never go on a command line.
 - Nginx sets `X-Forwarded-For` to `$remote_addr` (the API trusts one hop), the server headers (HSTS, `frame-ancestors`, nosniff, `Referrer-Policy: same-origin`), and keeps secret-carrying webhook paths out of access logs.
 
+## USSD in code
+
+- `modules/ussd/`: `POST /api/ussd/:provider/callback?secret=` (`@Public`, `@SkipThrottle`; secret and optional `USSD_ALLOWED_IPS`). Adapters in `ussd-adapters.ts` (`beem`: Beem's JSON per docs.beem.africa/guides/ussd/callback; `generic`: CON/END text with "*"-joined input, used by the tests). A new aggregator is one more adapter.
+- `UssdEngine` is the VTR-USSD-01 to -10 state machine; state in Redis `ussd:{sessionId}` for 180 s. It drives `VoteService` (sign-in with `channel: 'ussd'` and the caller's phone as the lockout key, identity, status, ballot, submit) and `ResultsService.voterResults`; ballot tokens are checked by `BallotAuthorizer` (shared with `BallotTokenGuard`). Never store the voting code in the USSD state.
+- Screens are pure functions in `ussd-screens.ts`, built with `screen()`, which throws above 182 characters; pages hold up to 6 contesters (fewer if the screen would overflow) with continuous numbers. Wording is App Flow 9 (Swahili); status messages reuse the web's.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

@@ -23,6 +23,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module.js';
 import { ReportsModule } from './modules/reports/reports.module.js';
 import { ResultsModule } from './modules/results/results.module.js';
 import { SearchModule } from './modules/search/search.module.js';
+import { UssdModule } from './modules/ussd/ussd.module.js';
 import { VoteModule } from './modules/vote/vote.module.js';
 import { VotersModule } from './modules/voters/voters.module.js';
 import { OrganizationModule } from './modules/organization/organization.module.js';
@@ -64,6 +65,7 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
     ReportsModule,
     DashboardModule,
     SearchModule,
+    UssdModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

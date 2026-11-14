@@ -82,6 +82,14 @@ export const envSchema = z
     // USSD
     USSD_SHORT_CODE: text,
     USSD_CALLBACK_SECRET: secret(16),
+    /**
+     * Addresses the aggregator calls from (comma-separated). Empty allows any address: the
+     * secret in the callback URL is then the only check, as for development and tests.
+     */
+    USSD_ALLOWED_IPS: z
+      .string()
+      .default('')
+      .transform((value) => value.split(',').map((ip) => ip.trim()).filter(Boolean)),
 
     // Email
     SMTP_HOST: text,

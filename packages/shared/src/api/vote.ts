@@ -109,6 +109,8 @@ export type VoterStatus = z.infer<typeof VoterStatusSchema>;
 export const BallotContesterSchema = z.object({
   id: z.uuid(),
   fullName: z.string(),
+  /** Short name for USSD screens (App Flow 9.2), when staff entered one. */
+  ussdName: z.string().nullable().optional(),
   party: z.string().nullable(),
   photoUrl: z.string().nullable(),
 });
