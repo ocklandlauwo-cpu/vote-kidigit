@@ -2,7 +2,9 @@
 
 Nov 3, 2026 · @Smartone
 
-**Change log:** 10 Nov 2026 — SMS provider Beem Africa replaces NextSMS (owner decision): environment variables BEEM_*, SMS_DRIVER; adapter notes in 10.
+**Change log:** 14 Nov 2026 — Security review (Implementation Plan step 32, owner-approved): sharp 0.34.5 → 0.35.5 and nodemailer 8.0.11 → 10.3.1 for high-severity advisories in code the API uses; multer pinned to 2.5.0 under @nestjs/platform-express through pnpm-workspace.yaml `overrides` (high-severity DoS). Load test (step 31): new variable DATABASE_POOL_MAX (connections per process, default 15). Remaining `pnpm audit --prod` findings are only in Puppeteer's install-time browser downloader and unused protocol code (docs/SECURITY.md).
+
+**Earlier:** 10 Nov 2026 — SMS provider Beem Africa replaces NextSMS (owner decision): environment variables BEEM_*, SMS_DRIVER; adapter notes in 10.
 
 ## 1. How Claude Code must use this document
 
@@ -251,12 +253,12 @@ The backend is NestJS 11 on Express 5, with Prisma 7 talking to PostgreSQL and B
 | argon2 | 0.44.0 | Argon2id hashing of staff passwords and voting codes (PRD COD-02, NFR-13) |
 | helmet | 8.3.0 | Security headers |
 | zod | 4.6.7 | Request validation through a custom ZodValidationPipe; schemas live in packages/shared |
-| sharp | 0.34.5 | Resize and crop photos to 350 × 490 px, strip metadata |
+| sharp | 0.35.5 | Resize and crop photos to 350 × 490 px, strip metadata |
 | papaparse | 5.7.0 | Parse voter CSV uploads |
 | exceljs | 4.4.0 | Registered-voters report and audit export (.xlsx) |
 | puppeteer | 24.43.1 | Render results PDF and voter report PDF from HTML templates (one shared browser in the worker) |
 | qrcode | 1.5.4 | QR code on the results PDF |
-| nodemailer | 8.0.11 | Email through DirectAdmin SMTP (invitations, resets, email codes) |
+| nodemailer | 10.3.1 | Email through DirectAdmin SMTP (invitations, resets, email codes) |
 | dayjs | 1.11.23 | Dates and time zones (utc + timezone plugins); org time zone default Africa/Dar_es_Salaam |
 | @sentry/nestjs | 10.78.0 | Error monitoring |
 | @vote-kidigit/shared | workspace:* | Shared schemas, types and constants |
@@ -522,6 +524,7 @@ DEFAULT_TIMEZONE=Africa/Dar_es_Salaam
 
 # --- Database ---
 DATABASE_URL=postgresql://vk_app:CHANGE_ME@127.0.0.1:5432/vote_kidigit
+DATABASE_POOL_MAX=15            # connections per process: 4 API + worker stay under max_connections 100
 
 # --- Redis ---
 REDIS_URL=redis://:CHANGE_ME@127.0.0.1:6379/0
@@ -627,10 +630,9 @@ Newer majors exist for several packages; they were rejected because they were fi
 | BullMQ / ioredis | 6.5.4 / 6.0.0 (Jul 2026) | 5.81.5 / 5.11.1 | Too new; BullMQ 5 uses ioredis 5.11.1 internally |
 | Puppeteer | 25.16.0 (May 2026) | 24.43.1 | Major first released 12 May 2026, after the cut-off |
 | Sentry SDKs | 11.10.0 (Sep 2026) | 10.78.0 | Too new (major first released Sep 2026) |
-| Nodemailer | 10.3.1 (Sep 2026) | 8.0.11 | Too new |
 | PM2 | 7.1.1 (May 2026) | 6.0.14 | Major first released 2 May 2026, just after the cut-off |
 | pnpm | 12.17.0 (Aug 2026) | 11.28.10 | Too new |
-| sharp, argon2, connect-redis, redis, react-easy-crop, jsdom, @testing-library/jest-dom | Newer majors from Jun–Jul 2026 | Versions in sections 6–7 | Too new |
+| argon2, connect-redis, redis, react-easy-crop, jsdom, @testing-library/jest-dom | Newer majors from Jun–Jul 2026 | Versions in sections 6–7 | Too new |
 | PostgreSQL | 19 release candidate | 18.6 | Not released |
 
 ### 12.2 Libraries and approaches not used

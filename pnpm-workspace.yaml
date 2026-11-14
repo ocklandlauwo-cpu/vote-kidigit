@@ -3,6 +3,10 @@ packages:
   - 'packages/*'
   - 'e2e'
 saveExact: true
+# Step 32 security review (owner-approved): multer under @nestjs/platform-express 11.2.8 has a
+# high-severity DoS fixed in 2.5.0; pinned here until NestJS ships it (Tech Stack 4.x change log).
+overrides:
+  multer: 2.5.0
 engineStrict: true
 # Tech Stack 5.3: the only packages allowed to run install scripts
 allowBuilds:

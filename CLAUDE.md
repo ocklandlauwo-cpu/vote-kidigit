@@ -300,6 +300,14 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - Run it against the production topology: `node scripts/load/cluster.mjs --instances 4` (4 API instances on one port via node:cluster, as PM2 cluster mode does) plus `node dist/worker.js`, both with `SMS_DRIVER=fake`; never `pnpm dev`. One API instance saturates a CPU core and fails the 30-a-second burst whatever the pool size.
 - `DATABASE_POOL_MAX` (default 15) is per process: 4 API instances and the worker stay under PostgreSQL's 100 connections. Transactions wait up to 5 s for a connection.
 
+## Security in code
+
+- `docs/SECURITY.md` is the threat model: controls, the tests that prove them, accepted risks and the list for the step 40 penetration test. Update it when a control changes.
+- `src/security/`: `idor.spec.ts` (every staff route with an ID, from controller metadata, answers 404 to another organization's IDs; give a new route that validates its body first an entry in `VALID_BODIES`, and a new path parameter a fixture), `rate-limits.spec.ts` (every public route throttled; secret-guessing routes have their own limit; only health and the Beem webhook skip), `raw-sql.spec.ts` (no `$queryRawUnsafe` / `Prisma.raw` outside test helpers).
+- Production builds of both apps carry a CSP `<meta>` from `packages/shared/vite-plugin-design.ts` (scripts: self + the pre-paint script's hash). A new inline script needs its hash there; `frame-ancestors` and HSTS come from Nginx (step 33).
+- `pnpm-workspace.yaml` pins `multer` 2.5.0 through `overrides`; drop it when @nestjs/platform-express ships that version. Remaining `pnpm audit --prod` findings are in Puppeteer's downloader and unused protocol code (SECURITY.md 3.10).
+- Tests that lock several vote tables take them in the clean-up's order (participation, ballots, selections) or they deadlock with parallel test files.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

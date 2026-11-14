@@ -474,7 +474,9 @@ describe('secret ballot', () => {
       `DELETE FROM ballot.ballot_selections WHERE id = '${selection.id}'`,
       'TRUNCATE public.voter_participation',
       'TRUNCATE ballot.ballot_selections',
-      'TRUNCATE ballot.ballot_selections, ballot.ballots',
+      // Same lock order as the test clean-up (ballots, then selections), so parallel test files
+      // cannot deadlock against it.
+      'TRUNCATE ballot.ballots, ballot.ballot_selections',
     ]) {
       await expect(owner.$executeRawUnsafe(sql)).rejects.toThrow(/IMMUTABLE_RECORD/);
     }

@@ -247,6 +247,27 @@ describe('staff authentication', () => {
       expect(response.body).toMatchObject({ code: 'UNAUTHENTICATED' });
     });
 
+    it('issues a new session at sign-in, so a planted session id is never adopted', async () => {
+      // An attacker's own valid session cookie, planted in the victim's browser.
+      const attacker = await newUser();
+      const victim = await newUser();
+      const planted = await signIn(attacker.email);
+      const plantedId = sessionIdOf(planted.response);
+      // The victim signs in from that browser (same cookie jar).
+      const response = await planted.agent
+        .post(LOGIN)
+        .send({ email: victim.email, password: PASSWORD })
+        .expect(200);
+      const newId = sessionIdOf(response);
+      expect(newId).not.toBe('');
+      expect(newId).not.toBe(plantedId);
+      expect((response.body as MeResponse).id).toBe(victim.id);
+      // The planted id no longer opens anything: the old session was replaced, not reused.
+      expect(await redis.exists(`${SESSION_PREFIX}${plantedId}`)).toBe(0);
+      const cookie = [planted.response.headers['set-cookie'] ?? []].flat()[0]?.split(';')[0] ?? '';
+      await request(server()).get('/api/v1/me').set('Cookie', cookie).expect(401);
+    });
+
     it('requires the CSRF token on state-changing requests', async () => {
       const user = await newUser();
       const { agent, me } = await signIn(user.email);
