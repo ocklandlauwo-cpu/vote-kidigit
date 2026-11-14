@@ -308,6 +308,13 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - `pnpm-workspace.yaml` pins `multer` 2.5.0 through `overrides`; drop it when @nestjs/platform-express ships that version. Remaining `pnpm audit --prod` findings are in Puppeteer's downloader and unused protocol code (SECURITY.md 3.10).
 - Tests that lock several vote tables take them in the clean-up's order (participation, ballots, selections) or they deadlock with parallel test files.
 
+## Server and deployment in code
+
+- `deploy/README.md` is the order of work on the VPS (step 33: `deploy/provision/01-04`, Nginx `deploy/nginx/vote-kidigit.conf`, `deploy/backup`, `deploy/verify-server.sh`) and the deploy setup (step 34: secrets, first release, smoke test, rollback).
+- Deploys: `.github/workflows/deploy.yml` (CI passed → build → no Open event → rsync to `/home/vk/releases/<sha>` → `deploy/release.sh`: shared `.env` link, install from the lockfile, `prisma migrate deploy`, frontends to `PUBLIC_HTML`, `/home/vk/current` switch, `pm2 startOrReload deploy/ecosystem.config.cjs`, keep 5). Rollback: `deploy/rollback.sh` (code only; migrations are forward-only).
+- On the server nothing a database owner controls runs as a superuser: backups connect as `vk_owner` / `vk_readonly` through root's `~/.pgpass`; the superuser only creates and drops the scratch restore database. Passwords never go on a command line.
+- Nginx sets `X-Forwarded-For` to `$remote_addr` (the API trusts one hop), the server headers (HSTS, `frame-ancestors`, nosniff, `Referrer-Policy: same-origin`), and keeps secret-carrying webhook paths out of access logs.
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.

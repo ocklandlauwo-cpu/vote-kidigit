@@ -1,0 +1,106 @@
+# Deploy to the VPS (Implementation Plan step 34, Tech Stack 9.7). Runs on a version tag
+# (v1.2.3) or by hand, only for a commit whose CI passed, and never while an event is Open.
+# Plain ssh and rsync with repository secrets; no third-party deploy actions.
+#
+# Secrets (environment "production"):
+#   DEPLOY_HOST            server name or address
+#   DEPLOY_SSH_KEY         private key of the vk user's deploy key (ed25519)
+#   DEPLOY_KNOWN_HOSTS     the server's host key line(s), from `ssh-keyscan -p 22 <host>`
+#   DEPLOY_DOMAIN          public domain, e.g. vote.example.co.tz
+#   DEPLOY_HEALTH_SECRET   same value as DEPLOY_HEALTH_SECRET in the server's .env
+#   DEPLOY_PUBLIC_HTML     the domain's document root, e.g. /home/user/domains/<domain>/public_html
+name: Deploy
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  checks: read
+  actions: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version-file: .nvmrc }
+
+      - name: CI passed for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          conclusion=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --json conclusion \
+            --jq '[.[] | select(.conclusion != "")][0].conclusion')
+          echo "CI for $GITHUB_SHA: ${conclusion:-none}"
+          [ "$conclusion" = success ] || { echo "::error::CI has not passed for this commit"; exit 1; }
+
+      - name: Build
+        env:
+          # The production build needs no secrets; Prisma generates its client without a database.
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Never deploy while an event is Open
+        env:
+          DOMAIN: ${{ secrets.DEPLOY_DOMAIN }}
+          SECRET: ${{ secrets.DEPLOY_HEALTH_SECRET }}
+        run: |
+          body=$(curl -fsS --max-time 15 -H "X-Deploy-Secret: $SECRET" "https://$DOMAIN/api/health/live-events")
+          open=$(node -e 'console.log(JSON.parse(process.argv[1]).openEvents)' "$body")
+          echo "Open events: $open"
+          [ "$open" = 0 ] || { echo "::error::$open event(s) are Open: deploy refused"; exit 1; }
+
+      - name: SSH access
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  User vk\n  IdentityFile ~/.ssh/deploy\n  StrictHostKeyChecking yes\n' \
+            "${{ secrets.DEPLOY_HOST }}" > ~/.ssh/config
+
+      - name: Upload the release
+        run: |
+          release="/home/vk/releases/$GITHUB_SHA"
+          ssh vps "mkdir -p $release"
+          # Source and lockfile for the install (every workspace package, or the frozen lockfile
+          # check fails), the builds, migrations and deploy scripts; never .env files.
+          rsync -az --delete \
+            --exclude node_modules --exclude .git --exclude '.env' --exclude '.env.*' \
+            --exclude 'test-results' --exclude 'playwright-report' \
+            --exclude 'apps/*/coverage' --exclude 'docs/screenshots' \
+            ./ "vps:$release/"
+
+      - name: Activate (install, migrate, frontends, switch, reload)
+        env:
+          PUBLIC_HTML: ${{ secrets.DEPLOY_PUBLIC_HTML }}
+        run: |
+          ssh vps "PUBLIC_HTML='$PUBLIC_HTML' bash /home/vk/releases/$GITHUB_SHA/deploy/release.sh"
+
+      - name: Health after the release
+        env:
+          DOMAIN: ${{ secrets.DEPLOY_DOMAIN }}
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS --max-time 5 "https://$DOMAIN/api/health" | grep -q '"ok"'; then
+              echo "Healthy"; exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::API not healthy after the release: roll back with deploy/rollback.sh"
+          exit 1
