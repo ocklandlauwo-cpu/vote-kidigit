@@ -9,10 +9,15 @@ import { RequestContextService, systemContext } from '../context/request-context
 import { type DbContext, PrismaService } from '../database/prisma.service.js';
 import type { RequestContext } from '../context/request-context.js';
 import { RedisService } from '../redis/redis.service.js';
-import { EMAIL_JOB, type InvitationJob, type PasswordResetJob } from '../queue/email-jobs.js';
+import {
+  type ContactJob,
+  EMAIL_JOB,
+  type InvitationJob,
+  type PasswordResetJob,
+} from '../queue/email-jobs.js';
 import { EMAIL_QUEUE } from '../queue/queue.module.js';
 import { MailService } from './mail.service.js';
-import { invitationEmail, type Language, passwordResetEmail } from './templates.js';
+import { contactEmail, invitationEmail, type Language, passwordResetEmail } from './templates.js';
 
 /** Row returned by app.find_user_for_login (migration 005); only what a reset needs. */
 interface AccountRow {
@@ -42,6 +47,7 @@ const dbContext = (ctx: RequestContext, userId: string | null): DbContext => ({
 export class EmailProcessor extends WorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
   private readonly appUrl: string;
+  private readonly contactTo: string;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -54,6 +60,7 @@ export class EmailProcessor extends WorkerHost {
   ) {
     super();
     this.appUrl = config.get('APP_URL', { infer: true });
+    this.contactTo = config.get('CONTACT_TO_EMAIL', { infer: true });
   }
 
   async process(job: Job): Promise<void> {
@@ -62,6 +69,8 @@ export class EmailProcessor extends WorkerHost {
         return this.invitation(job.data as InvitationJob);
       case EMAIL_JOB.passwordReset:
         return this.passwordReset(job.data as PasswordResetJob, job.attemptsMade > 0);
+      case EMAIL_JOB.contact:
+        return this.contact(job.data as ContactJob);
       default:
         this.logger.warn({ msg: 'unknown email job', job: job.name });
     }
@@ -148,6 +157,15 @@ export class EmailProcessor extends WorkerHost {
         }),
       );
     });
+  }
+
+  /** Public website form → the team mailbox (no database, no audit: nothing is stored). */
+  private async contact(data: ContactJob): Promise<void> {
+    await this.requestContext.run(systemContext(data.requestId), () =>
+      this.mail.send(
+        contactEmail({ to: this.contactTo, request: data.request, receivedAt: data.receivedAt }),
+      ),
+    );
   }
 
   /** /app/invite/{token} or /app/reset/{token} on the staff portal (App Flow 2). */

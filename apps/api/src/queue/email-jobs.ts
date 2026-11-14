@@ -1,9 +1,11 @@
 // Jobs on the email queue. Payloads carry no link tokens: the worker creates the token when it
 // sends the email, so a token exists only in the database (as a hash) and in the email.
+import type { PublicContactPayload } from '@vote-kidigit/shared';
 
 export const EMAIL_JOB = {
   invitation: 'invitation',
   passwordReset: 'password-reset',
+  contact: 'contact',
 } as const;
 
 /** Send (or resend) the invitation of a user with status 'invited'. */
@@ -19,5 +21,12 @@ export interface InvitationJob {
 /** A forgot-password request; the worker decides whether the email belongs to an account. */
 export interface PasswordResetJob {
   email: string;
+  requestId: string;
+}
+
+/** A contact or demo request from the public website, for the team mailbox (nothing stored). */
+export interface ContactJob {
+  request: PublicContactPayload;
+  receivedAt: string;
   requestId: string;
 }

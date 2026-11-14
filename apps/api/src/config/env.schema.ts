@@ -97,6 +97,8 @@ export const envSchema = z
     SMTP_USER: text,
     SMTP_PASSWORD: text,
     MAIL_FROM: text,
+    /** Receives the public website's contact and demo requests (App Flow 4.1). */
+    CONTACT_TO_EMAIL: z.email(),
 
     // Storage
     STORAGE_DIR: text,

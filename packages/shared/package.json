@@ -11,6 +11,8 @@
       "default": "./dist/index.js"
     },
     "./design/tokens.css": "./src/design/tokens.css",
+    "./i18n/public-sw.json": "./src/i18n/public-sw.json",
+    "./i18n/public-en.json": "./src/i18n/public-en.json",
     "./design/fonts/*": "./src/design/fonts/*"
   },
   "files": [

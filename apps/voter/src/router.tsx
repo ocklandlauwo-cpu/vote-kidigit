@@ -1,9 +1,8 @@
 import type { ComponentType } from 'react';
 import { createBrowserRouter, type NonIndexRouteObject, type RouteObject } from 'react-router';
-import { PlaceholderPage } from './pages/PlaceholderPage';
 
-// React Router 7 in data mode (Tech Stack 7). Public site, voter flow and results pages
-// become separate lazy-loaded chunks as they are built (steps 24, 27, 38). The component
+// React Router 7 in data mode (Tech Stack 7). Public site, voter flow and results pages are
+// separate lazy-loaded chunks (steps 24, 27, 38). The component
 // gallery exists only in development: import.meta.env.DEV is false in production builds,
 // so the route and its lazy chunk are removed entirely.
 /** A lazily loaded page: each voter screen is its own chunk (Tech Stack 7.2). */
@@ -26,7 +25,17 @@ function indexPage(load: () => Promise<{ default: ComponentType }>): RouteObject
 }
 
 export const routes: RouteObject[] = [
-  { path: '/', element: <PlaceholderPage screenId="PUB-01" /> },
+  {
+    // Public website (App Flow 4.1): PUB-01 to PUB-05 share the site header and footer.
+    ...page('/', () => import('./pages/public/PublicLayout')),
+    children: [
+      indexPage(() => import('./pages/public/HomePage')),
+      page('features', () => import('./pages/public/FeaturesPage')),
+      page('pricing', () => import('./pages/public/PricingPage')),
+      page('contact', () => import('./pages/public/ContactPage')),
+      page('demo', () => import('./pages/public/DemoPage')),
+    ],
+  },
   page('/vote', () => import('./pages/vote/SignInPage')),
   page('/vote/:eventId', () => import('./pages/vote/SignInPage')),
   page('/vote/:eventId/identity', () => import('./pages/vote/IdentityPage')),

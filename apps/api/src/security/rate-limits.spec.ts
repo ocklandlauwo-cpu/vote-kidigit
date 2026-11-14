@@ -32,6 +32,8 @@ const STRICT: Record<string, number> = {
   'VoteController.signIn': 20,
   'KioskDeviceController.sendCode': 30,
   'PublicResultsController.get': 60,
+  // Not a secret, but every request emails the team.
+  'PublicController.contact': 5,
 };
 
 interface PublicRoute {

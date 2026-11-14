@@ -761,4 +761,4 @@ Questions 1–27 follow your answers of 3 Nov 2026. Questions 28–86 use the pr
 - ☐ **Reopening a closed category.** This document allows reopening only by reopening the whole event (Admin). Should a single category be reopenable?
 - ☐ **USSD review length.** With many categories, the USSD review screen pages over several screens and adds time against the operator's session limit. Confirm review is still wanted on USSD for events with more than 4 categories.
 - ☐ **Cancellation reason for voters.** Currently hidden from voters. Confirm.
-- ☐ **Contact and demo form handling.** Which email address receives demo requests?
+- ☐ **Contact and demo form handling.** Which email address receives demo requests? (Step 38: the address is the CONTACT_TO_EMAIL setting; a placeholder until decided. Phone, email and address on PUB-04 are placeholders in public-sw.json / public-en.json.)

@@ -8,6 +8,8 @@ export interface MailMessage {
   subject: string;
   text: string;
   html: string;
+  /** Where answers go, e.g. the visitor who sent a contact form. */
+  replyTo?: string;
 }
 
 /**

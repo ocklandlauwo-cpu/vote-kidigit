@@ -28,6 +28,7 @@ import { VoteModule } from './modules/vote/vote.module.js';
 import { VotersModule } from './modules/voters/voters.module.js';
 import { OrganizationModule } from './modules/organization/organization.module.js';
 import { PlatformModule } from './modules/platform/platform.module.js';
+import { PublicModule } from './modules/public/public.module.js';
 import { RolesModule } from './modules/roles/roles.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { AccessLogMiddleware } from './logging/access-log.middleware.js';
@@ -66,6 +67,7 @@ import { ThrottlingModule } from './throttling/throttling.module.js';
     DashboardModule,
     SearchModule,
     UssdModule,
+    PublicModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: AllExceptionsFilter },

@@ -18,3 +18,4 @@ export * from './live.js';
 export * from './results.js';
 export * from './reports.js';
 export * from './dashboard.js';
+export * from './public.js';

@@ -1,5 +1,7 @@
 // Voter components in the development gallery (Design System 10): every variant and state, with
 // sample data. English labels only: this page is a developer tool.
+import { LockOutlined } from '@ant-design/icons';
+import { FeatureTile, PhoneMock } from '../pages/public/PublicParts';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { BallotProgress, ContesterCard, YesNoChoice } from '../components/vote/BallotParts';
@@ -149,6 +151,32 @@ export function VoterComponents() {
             <StatusScreen key={kind} kind={kind} title={kind} message="Message" />
           ),
         )}
+      </Block>
+      <Block title="Public site (10.11): buttons M, CTA on primary, step number, feature tile, phone mock">
+        <div className="vk-site flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="vk-btn vk-btn--primary vk-btn--m">
+              Primary M
+            </button>
+            <button type="button" className="vk-btn vk-btn--secondary vk-btn--m">
+              Secondary M
+            </button>
+            <button type="button" className="vk-btn vk-btn--tertiary vk-btn--m">
+              Tertiary M
+            </button>
+            <button type="button" className="vk-btn vk-btn--primary vk-btn--m" disabled>
+              Disabled
+            </button>
+          </div>
+          <div className="vk-cta-band px-4">
+            <button type="button" className="vk-btn vk-btn--on-primary">
+              On primary
+            </button>
+          </div>
+          <span className="vk-step-number">1</span>
+          <FeatureTile icon={LockOutlined} title="Feature tile" text="Body small text" />
+          <PhoneMock />
+        </div>
       </Block>
     </section>
   );

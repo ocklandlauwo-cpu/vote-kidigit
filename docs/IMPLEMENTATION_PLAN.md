@@ -529,7 +529,7 @@ Tick a step only when its pull request is merged. Claude Code updates this list 
 
 - ☐ 36. Pilot fixes
 - ☐ 37. USSD voting
-- ☐ 38. Public website
+- ☑ 38. Public website
 - ☐ 39. Remaining V1 features
 - ☐ 40. V1 release
 

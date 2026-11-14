@@ -53,6 +53,7 @@ jobs:
       SMTP_USER: ci
       SMTP_PASSWORD: ci
       MAIL_FROM: Vote-Kidigit <no-reply@example.test>
+      CONTACT_TO_EMAIL: team@example.test
       STORAGE_DIR: /tmp/vk-storage
       MAX_UPLOAD_MB: '2'
       MAX_CSV_MB: '10'

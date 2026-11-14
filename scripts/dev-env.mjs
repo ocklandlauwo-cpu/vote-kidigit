@@ -44,6 +44,7 @@ const values = {
   SMTP_PORT: '1025',
   SMTP_USER: 'dev',
   SMTP_PASSWORD: 'dev',
+  CONTACT_TO_EMAIL: 'team@example.test',
   STORAGE_DIR: join(root, 'storage').replaceAll('\\', '/'),
 };
 

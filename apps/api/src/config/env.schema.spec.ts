@@ -33,6 +33,7 @@ function validRawEnv(): Record<string, string> {
     SMTP_USER: 'no-reply@example.test',
     SMTP_PASSWORD: 'smtp-secret-pw',
     MAIL_FROM: 'Vote-Kidigit <no-reply@example.test>',
+    CONTACT_TO_EMAIL: 'team@example.test',
     STORAGE_DIR: '/home/vk/storage',
     MAX_UPLOAD_MB: '2',
     MAX_CSV_MB: '10',

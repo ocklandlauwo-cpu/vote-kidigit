@@ -11,7 +11,9 @@ test('staff portal shows the sign-in screen at /app/login', async ({ page }) => 
   await expect(page.getByLabel('Barua pepe')).toBeVisible();
 });
 
-test('voter app loads at /', async ({ page }) => {
+test('public website loads at /', async ({ page }) => {
   await page.goto(VOTER_URL);
-  await expect(page.getByRole('heading', { level: 1, name: 'Vote-Kidigit' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Uchaguzi wa siri, matokeo ya uhakika' }),
+  ).toBeVisible();
 });

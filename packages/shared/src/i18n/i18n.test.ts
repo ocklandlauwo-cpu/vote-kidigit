@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { messages, voterMessages } from './index.js';
+import publicEn from './public-en.json';
+import publicSw from './public-sw.json';
+
+// The public website's strings are imported by its own chunk only (step 38).
+const publicMessages = { sw: publicSw, en: publicEn };
 
 function keys(value: unknown, prefix = ''): string[] {
   if (typeof value !== 'object' || value === null) return [prefix];
@@ -55,6 +60,16 @@ describe('voter UI strings', () => {
     expect(keys(voterMessages.en).sort()).toEqual(keys(voterMessages.sw).sort());
     for (const language of ['sw', 'en'] as const) {
       expect(values(voterMessages[language]).filter((v) => v.trim() === '')).toEqual([]);
+    }
+  });
+});
+
+describe('public website strings', () => {
+  it('has the same keys and placeholders in Swahili and English, none empty', () => {
+    expect(keys(publicMessages.en).sort()).toEqual(keys(publicMessages.sw).sort());
+    for (const language of ['sw', 'en'] as const) {
+      expect(values(publicMessages[language]).filter((v) => v.trim() === '')).toEqual([]);
+      for (const text of values(publicMessages[language])) expect(text).not.toMatch(/!/);
     }
   });
 });

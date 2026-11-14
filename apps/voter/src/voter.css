@@ -381,3 +381,205 @@
   background: var(--vk-surface);
   box-shadow: var(--vk-shadow-md);
 }
+
+/* Public website (Design System 10.11). The site uses Vote-Kidigit's own primary colour, never an
+   organization's brand. */
+.vk-site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--vk-z-sticky);
+  height: 72px;
+  background: var(--vk-surface);
+  border-bottom: 1px solid var(--vk-border);
+}
+.vk-site-nav a {
+  color: var(--vk-text-secondary);
+  font-size: var(--vk-font-label-size);
+  font-weight: 500;
+  transition: color var(--vk-duration-fast) var(--vk-ease-standard);
+}
+.vk-site-nav a:hover,
+.vk-site-nav a[aria-current='page'] {
+  color: var(--vk-text);
+}
+.vk-site-menu {
+  position: fixed;
+  inset: 72px 0 0 0;
+  z-index: var(--vk-z-overlay);
+  overflow-y: auto;
+  background: var(--vk-surface);
+  padding: var(--vk-space-4);
+}
+.vk-site-menu a[aria-current='page'] {
+  color: var(--vk-primary);
+}
+.vk-site a:focus-visible,
+.vk-site button:focus-visible,
+.vk-site textarea:focus-visible {
+  outline: 2px solid var(--vk-focus);
+  outline-offset: 2px;
+  border-radius: var(--vk-radius-sm);
+}
+.vk-skip-link {
+  position: absolute;
+  left: var(--vk-space-4);
+  top: calc(-1 * var(--vk-space-16));
+  z-index: var(--vk-z-toast);
+  padding: var(--vk-space-2) var(--vk-space-4);
+  background: var(--vk-surface);
+  color: var(--vk-primary);
+  border-radius: var(--vk-radius-md);
+  box-shadow: var(--vk-shadow-md);
+}
+.vk-skip-link:focus {
+  top: var(--vk-space-2);
+}
+
+/* The public site's buttons are Vote-Kidigit primary (7.1), M in the header. */
+.vk-site .vk-btn--primary {
+  background: var(--vk-primary);
+  color: var(--vk-on-primary);
+}
+.vk-site .vk-btn--primary:hover:not(:disabled) {
+  background: var(--vk-primary-hover);
+}
+.vk-site .vk-btn--primary:active:not(:disabled) {
+  background: var(--vk-primary-active);
+}
+.vk-site .vk-btn--secondary:hover:not(:disabled) {
+  background: var(--vk-surface);
+  border-color: var(--vk-primary);
+  color: var(--vk-primary);
+}
+.vk-site .vk-btn--secondary:active:not(:disabled) {
+  background: var(--vk-surface-muted);
+}
+.vk-btn--m {
+  min-height: 40px;
+  padding: 0 var(--vk-space-4);
+  font-size: var(--vk-font-label-size);
+}
+/* CTA band: secondary style on dark (10.11). */
+.vk-btn--on-primary {
+  background: var(--vk-surface);
+  color: var(--vk-primary);
+}
+.vk-btn--on-primary:hover {
+  background: var(--vk-surface-muted);
+}
+.vk-cta-band .vk-btn:focus-visible {
+  outline-color: var(--vk-on-primary);
+}
+
+.vk-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--vk-radius-full);
+  background: var(--vk-primary-subtle);
+  color: var(--vk-primary-subtle-text);
+  font-size: var(--vk-font-label-size);
+  font-weight: 600;
+}
+.vk-icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-primary-subtle);
+  color: var(--vk-primary);
+  font-size: 20px;
+}
+.vk-overline {
+  font-size: var(--vk-font-overline-size);
+  line-height: var(--vk-font-overline-line);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vk-primary);
+}
+.vk-cta-band {
+  background: var(--vk-primary);
+  color: var(--vk-on-primary);
+  padding: var(--vk-space-16) 0;
+}
+
+/* Static ballot screenshot in a phone frame (step 38): drawn with tokens, so it follows the
+   theme and costs no image download. */
+.vk-phone {
+  width: 280px;
+  max-width: 100%;
+  padding: var(--vk-space-3);
+  border-radius: var(--vk-radius-xl);
+  background: var(--vk-neutral-900);
+  box-shadow: var(--vk-shadow-md);
+}
+.vk-phone__screen {
+  overflow: hidden;
+  border-radius: var(--vk-radius-lg);
+  background: var(--vk-bg);
+  color: var(--vk-text);
+}
+.vk-phone__header {
+  display: flex;
+  align-items: center;
+  gap: var(--vk-space-2);
+  padding: var(--vk-space-3);
+  background: var(--vk-surface);
+  border-bottom: 3px solid var(--vk-primary);
+}
+.vk-phone__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--vk-space-2);
+}
+.vk-phone__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--vk-space-1);
+  padding: var(--vk-space-2);
+  border: 1px solid var(--vk-border);
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-surface);
+  font-size: var(--vk-font-caption-size);
+  line-height: var(--vk-font-caption-line);
+  text-align: center;
+}
+.vk-phone__card[data-selected='true'] {
+  border: 2px solid var(--vk-primary);
+  background: var(--vk-primary-subtle);
+}
+.vk-phone__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 56px;
+  border-radius: var(--vk-radius-sm);
+  background: var(--vk-surface-muted);
+  color: var(--vk-text-secondary);
+  font-weight: 600;
+}
+.vk-phone__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  border-radius: var(--vk-radius-md);
+  background: var(--vk-primary);
+  color: var(--vk-on-primary);
+  font-size: var(--vk-font-body-sm-size);
+  font-weight: 600;
+}
+
+.vk-textarea {
+  min-height: 128px;
+  padding: var(--vk-space-3);
+  resize: vertical;
+}

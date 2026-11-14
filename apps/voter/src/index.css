@@ -17,6 +17,9 @@
   --color-text-tertiary: var(--vk-text-tertiary);
   --color-text-disabled: var(--vk-text-disabled);
   --color-primary: var(--vk-primary);
+  --color-primary-hover: var(--vk-primary-hover);
+  --color-primary-subtle: var(--vk-primary-subtle);
+  --color-primary-subtle-text: var(--vk-primary-subtle-text);
   --color-on-primary: var(--vk-on-primary);
   --color-brand: var(--vk-brand);
   --color-brand-hover: var(--vk-brand-hover);

@@ -321,6 +321,14 @@ Resolved by the precedence rule or by the newer, more specific document; listed 
 - `UssdEngine` is the VTR-USSD-01 to -10 state machine; state in Redis `ussd:{sessionId}` for 180 s. It drives `VoteService` (sign-in with `channel: 'ussd'` and the caller's phone as the lockout key, identity, status, ballot, submit) and `ResultsService.voterResults`; ballot tokens are checked by `BallotAuthorizer` (shared with `BallotTokenGuard`). Never store the voting code in the USSD state.
 - Screens are pure functions in `ussd-screens.ts`, built with `screen()`, which throws above 182 characters; pages hold up to 6 contesters (fewer if the screen would overflow) with continuous numbers. Wording is App Flow 9 (Swahili); status messages reuse the web's.
 
+## Public website in code
+
+- PUB-01 to PUB-05 live in the voter app (`apps/voter/src/pages/public/`): `PublicLayout` (site header, mobile menu, language and theme switches, footer) with lazy child pages. Screen IDs are in each page's top comment.
+- Strings: `packages/shared/src/i18n/public-sw.json` / `public-en.json`, imported only by `publicText.ts` through the package subpaths `@vote-kidigit/shared/i18n/public-*.json` (not the shared index, or every voter screen carries them). The site has its own i18next instance (`publicI18n`, `usePublicText()`, typed `PublicKey`), so its language switch never changes the Swahili voter screens; the choice is kept in localStorage `vk.publicLanguage`.
+- Contact details and the team mailbox are placeholders: change `contact.phone/email/address` in both JSON files and `CONTACT_TO_EMAIL` in the server `.env`.
+- Forms: `PublicForm` + `contactForm.ts` validate with the shared `PublicContactRequestSchema` (one message per field, focus on the first problem); `POST /api/v1/public/contact` (`modules/public/`) queues an email job, stores nothing; the honeypot `website` field is dropped silently.
+- The ballot "screenshot" is `PhoneMock`, drawn with tokens (follows the theme, no image). Home page first load is about 177 KB gzip (step 38 check: `vite build --manifest` and sum the home page's import closure).
+
 ## Design system in code
 
 - Raw values live only in `packages/shared/src/design/` (`tokens.css`, `tokens.ts`). The `designTokenRules` ESLint rule (root `eslint.config.mjs`, applied to `apps/*/src`) rejects hex colours, `rgb()`/`rgba()` and Tailwind arbitrary values (`text-[15px]`). Tailwind's `utility-(--vk-token)` variable syntax is allowed.
